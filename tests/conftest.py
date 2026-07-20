@@ -1,6 +1,7 @@
 from unittest.mock import AsyncMock
 
 import pytest
+import pytest_asyncio
 import redis.asyncio as redis
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -53,7 +54,7 @@ def redis_mock():
     return mock
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def client(db_mock, redis_mock):
     """Create an async test client with overridden dependencies."""
     app.dependency_overrides[get_db_dep] = lambda: db_mock
