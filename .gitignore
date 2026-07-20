@@ -1,0 +1,11 @@
+.env
+.venv
+.pytest_cache/
+.ruff_cache/
+__pycache__/
+*.py[cod]
+.mypy_cache/
+cortex.egg-info/
+dist/
+build/
+*.egg-info

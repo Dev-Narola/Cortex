@@ -1,0 +1,69 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cortex"
+version = "0.1.0"
+description = "Multi-tenant AI Knowledge and Agent Platform"
+readme = "README.md"
+
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.116.0",
+    "uvicorn[standard]>=0.35.0",
+    "sqlalchemy>=2.0.40",
+    "alembic>=1.16.0",
+    "pydantic>=2.11.0",
+    "pydantic-settings>=2.10.0",
+    "python-dotenv>=1.1.0",
+    "psycopg[binary]>=3.2.0",
+    "redis"
+]
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.4.0",
+    "pytest-asyncio>=1.1.0",
+    "httpx>=0.28.0",
+    "ruff>=0.12.0",
+    "black>=25.1.0",
+    "mypy>=1.8.0",
+    "pre-commit>=4.2.0"
+]
+[tool.setuptools]
+packages = []
+[tool.black]
+line-length = 88
+target-version = ["py312"]
+[tool.ruff]
+target-version = "py312"
+[tool.ruff.lint]
+select = [
+    "E",
+    "F",
+    "I",
+    "UP",
+    "B"
+]
+ignore = ["B008"]
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+markers = [
+    "integration: tests that can use local service dependencies",
+]
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+follow_imports = "silent"
+show_error_codes = true
+namespace_packages = true
+explicit_package_bases = true
+exclude = [
+    "^\\.venv/",
+    "^\\.pytest_cache/",
+    "^\\.ruff_cache/",
+]

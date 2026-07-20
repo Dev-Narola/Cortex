@@ -1,0 +1,86 @@
+name: cortex
+
+networks:
+  cortex-net:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@db:5432/app
+      REDIS_URL: redis://redis:6379/0
+      APP_NAME: Cortex
+      APP_VERSION: 0.1.0
+      APP_DESCRIPTION: Multi-tenant AI Knowledge and Agent Platform
+      ENVIRONMENT: development
+      DEBUG: "true"
+      HOST: 0.0.0.0
+      PORT: "8000"
+      WORKERS: "1"
+      API_V1_PREFIX: /api/v1
+      SECRET_KEY: change-me-in-development
+      ACCESS_TOKEN_EXPIRE_MINUTES: "30"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - cortex-net
+    volumes:
+      - ../src:/app/src
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=2)",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: app
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - cortex-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d app"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - cortex-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
