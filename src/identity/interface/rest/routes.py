@@ -15,32 +15,33 @@ human-readable summary shown in `/docs`.
 from __future__ import annotations
 
 import uuid
-from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Path, Query, Response, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    Path,
+    Query,
+    Response,
+    status,
+)
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.orm import Session
 
 from src.identity.application.services import (
     AuthenticateUserService,
     CreateApiKeyService,
-    GetCurrentUserService,
     RegisterTenantService,
     RevokeApiKeyService,
     UpdateProfileService,
     UpdateTenantService,
 )
 from src.identity.domain.entities import ApiKey, Plan, Role, Tenant, User
+from src.platform.database import get_db
 from src.platform.dependencies import (
-    get_current_tenant,
     get_current_user,
     require_admin,
-    require_api_key,
     require_member,
-    require_owner,
 )
-from src.platform.database import get_db
-
 
 router = APIRouter()
 
@@ -61,7 +62,7 @@ class RegisterRequest(_Base):
     tenant_slug: str = Field(..., min_length=2, max_length=63)
     email: str = Field(..., min_length=3, max_length=320)
     password: str = Field(..., min_length=8, max_length=128)
-    full_name: Optional[str] = Field(default=None, max_length=255)
+    full_name: str | None = Field(default=None, max_length=255)
 
 
 class LoginRequest(_Base):
@@ -82,10 +83,10 @@ class UserResponse(_Base):
     id: uuid.UUID
     tenant_id: uuid.UUID
     email: str
-    full_name: Optional[str] = None
+    full_name: str | None = None
     role: Role
     is_active: bool
-    last_login: Optional[str] = None
+    last_login: str | None = None
     created_at: str
 
 
@@ -110,13 +111,13 @@ class TokenResponse(_Base):
 
 
 class UpdateProfileRequest(_Base):
-    full_name: Optional[str] = Field(default=None, max_length=255)
+    full_name: str | None = Field(default=None, max_length=255)
 
 
 class UpdateTenantRequest(_Base):
-    name: Optional[str] = Field(default=None, min_length=1, max_length=255)
-    plan: Optional[Plan] = None
-    settings: Optional[dict] = None
+    name: str | None = Field(default=None, min_length=1, max_length=255)
+    plan: Plan | None = None
+    settings: dict | None = None
 
 
 class CreateApiKeyRequest(_Base):
@@ -129,8 +130,8 @@ class ApiKeyResponse(_Base):
     tenant_id: uuid.UUID
     name: str
     scopes: list[str]
-    last_used_at: Optional[str] = None
-    revoked_at: Optional[str] = None
+    last_used_at: str | None = None
+    revoked_at: str | None = None
     created_at: str
 
 

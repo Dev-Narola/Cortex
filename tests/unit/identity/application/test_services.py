@@ -17,9 +17,8 @@ from src.identity.application.services import (
     UpdateProfileService,
     UpdateTenantService,
 )
-from src.identity.domain.entities import ApiKey, Plan, Role, Tenant
+from src.identity.domain.entities import Plan, Role, Tenant
 from src.identity.infrastructure.repositories import (
-    ApiKeyRepository,
     TenantRepository,
     UserRepository,
 )
@@ -33,7 +32,6 @@ from src.shared.exceptions import (
     UnauthorizedException,
     ValidationException,
 )
-
 
 # ---------------------------------------------------------------------------
 # RegisterTenantService
@@ -334,7 +332,12 @@ def test_update_tenant_renames_and_changes_plan(db_session):
 
 
 def test_update_tenant_settings_persisted(db_session):
-    result = _register(db_session, slug="upd-settings", email="u@x.com", password="ValidPassword123!")
+    result = _register(
+        db_session,
+        slug="upd-settings",
+        email="u@x.com",
+        password="ValidPassword123!",
+    )
     service = UpdateTenantService(db_session)
     updated = service.execute(
         tenant_id=result.tenant.id,

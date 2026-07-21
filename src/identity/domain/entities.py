@@ -13,7 +13,7 @@ from __future__ import annotations
 import re
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from typing import ClassVar
 
@@ -24,13 +24,12 @@ from src.shared.exceptions import (
     ValidationException,
 )
 
-
 # ---------------------------------------------------------------------------
 # Value objects
 # ---------------------------------------------------------------------------
 
 
-class Plan(str, Enum):
+class Plan(str, Enum):  # noqa: UP042 - intentional str-Enum for JSON round-trip
     """
     Subscription plan that determines a tenant's rate limits and feature
     access. Kept in the domain layer because pricing/plan changes are a
@@ -42,7 +41,7 @@ class Plan(str, Enum):
     ENTERPRISE = "enterprise"
 
 
-class Role(str, Enum):
+class Role(str, Enum):  # noqa: UP042 - intentional str-Enum for JSON round-trip
     """
     Role a user holds inside their tenant. The order is intentional:
     higher index = more privilege, which is useful for hierarchy checks.
@@ -56,7 +55,7 @@ class Role(str, Enum):
     def rank(self) -> int:
         return _ROLE_RANK[self]
 
-    def can_act_as(self, other: "Role") -> bool:
+    def can_act_as(self, other: Role) -> bool:
         """A user with this role may exercise a permission requiring `other`."""
         return self.rank() >= other.rank()
 
@@ -121,10 +120,10 @@ class Tenant:
     plan: Plan = Plan.FREE
     is_active: bool = True
     created_at: datetime = field(
-        default_factory=lambda: datetime.now(timezone.utc)
+        default_factory=lambda: datetime.now(UTC)
     )
     updated_at: datetime = field(
-        default_factory=lambda: datetime.now(timezone.utc)
+        default_factory=lambda: datetime.now(UTC)
     )
     settings: dict = field(default_factory=dict)
 
@@ -146,7 +145,7 @@ class Tenant:
         plan: Plan | str = Plan.FREE,
         is_active: bool = True,
         settings: dict | None = None,
-    ) -> "Tenant":
+    ) -> Tenant:
         """
         Construct a new tenant.
 
@@ -155,7 +154,7 @@ class Tenant:
         at call sites and gives us a single place to extend with
         domain events later (e.g. `TenantCreated`).
         """
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         return cls(
             name=name,
             slug=slug,
@@ -190,7 +189,7 @@ class Tenant:
         created_at: datetime,
         updated_at: datetime,
         settings: dict,
-    ) -> "Tenant":
+    ) -> Tenant:
         """
         Reconstruct a Tenant from a persistence-layer row.
 
@@ -364,7 +363,7 @@ class Tenant:
 
     def _touch(self) -> None:
         """Bump `updated_at` to the current UTC time."""
-        object.__setattr__(self, "updated_at", datetime.now(timezone.utc))
+        object.__setattr__(self, "updated_at", datetime.now(UTC))
 
     def rename(self, new_name: str) -> None:
         """Change the tenant's display name. Validates the new value."""
@@ -460,10 +459,10 @@ class User:
     is_active: bool = True
     last_login: datetime | None = None
     created_at: datetime = field(
-        default_factory=lambda: datetime.now(timezone.utc)
+        default_factory=lambda: datetime.now(UTC)
     )
     updated_at: datetime = field(
-        default_factory=lambda: datetime.now(timezone.utc)
+        default_factory=lambda: datetime.now(UTC)
     )
 
     # Recognized bcrypt-hash prefix. We refuse to construct a User
@@ -483,9 +482,9 @@ class User:
         *,
         full_name: str | None = None,
         is_active: bool = True,
-    ) -> "User":
+    ) -> User:
         """Construct a new user. `hashed_password` must already be a hash."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         return cls(
             tenant_id=tenant_id,
             email=email,
@@ -610,7 +609,7 @@ class User:
     # ---------- mutators ----------
 
     def _touch(self) -> None:
-        object.__setattr__(self, "updated_at", datetime.now(timezone.utc))
+        object.__setattr__(self, "updated_at", datetime.now(UTC))
 
     def set_full_name(self, new_name: str | None) -> None:
         if new_name is not None:
@@ -635,7 +634,7 @@ class User:
 
     def record_login(self, when: datetime | None = None) -> None:
         """Stamp `last_login`. Called by the authentication service."""
-        when = when or datetime.now(timezone.utc)
+        when = when or datetime.now(UTC)
         if when.tzinfo is None:
             raise ValidationException(
                 message="last_login must be timezone-aware.",
@@ -702,7 +701,7 @@ class ApiKey:
     last_used_at: datetime | None = None
     revoked_at: datetime | None = None
     created_at: datetime = field(
-        default_factory=lambda: datetime.now(timezone.utc)
+        default_factory=lambda: datetime.now(UTC)
     )
 
     # ---------- factory ----------
@@ -714,7 +713,7 @@ class ApiKey:
         name: str,
         key_hash: str,
         scopes: list[str] | None = None,
-    ) -> "ApiKey":
+    ) -> ApiKey:
         """Construct a new API key. `key_hash` must already be a bcrypt hash."""
         return cls(
             tenant_id=tenant_id,
@@ -808,7 +807,7 @@ class ApiKey:
 
     def record_usage(self, when: datetime | None = None) -> None:
         """Stamp `last_used_at`. Called by the auth middleware."""
-        when = when or datetime.now(timezone.utc)
+        when = when or datetime.now(UTC)
         if when.tzinfo is None:
             raise ValidationException(
                 message="last_used_at must be timezone-aware.",
@@ -821,7 +820,7 @@ class ApiKey:
         """Revoke this key. Revocation is idempotent."""
         if self.revoked_at is not None:
             return
-        when = when or datetime.now(timezone.utc)
+        when = when or datetime.now(UTC)
         if when.tzinfo is None:
             raise ValidationException(
                 message="revoked_at must be timezone-aware.",

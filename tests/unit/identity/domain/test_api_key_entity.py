@@ -5,14 +5,13 @@ Unit tests for the ApiKey domain entity.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
 from src.identity.domain.entities import ApiKey
 from src.identity.infrastructure.security import hash_api_key
 from src.shared.exceptions import UnauthorizedException, ValidationException
-
 
 SAMPLE_HASH = hash_api_key("ctx_test_raw_key_value")
 
@@ -219,7 +218,7 @@ def test_record_usage_stamps_last_used_at():
         name="k",
         key_hash=SAMPLE_HASH,
     )
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     key.record_usage(now)
     assert key.last_used_at == now
 

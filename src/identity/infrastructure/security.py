@@ -15,7 +15,7 @@ are the only callers.
 from __future__ import annotations
 
 import secrets
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import bcrypt
@@ -24,7 +24,6 @@ from jwt import InvalidTokenError
 
 from src.platform.config import settings
 from src.shared.exceptions import UnauthorizedException, ValidationException
-
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -187,7 +186,7 @@ def create_access_token(
             code=400,
             data={"field": "subject"},
         )
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     expires_at = now + (expires_delta or jwt_default_expiry())
     payload: dict[str, Any] = {
         "sub": subject,

@@ -24,7 +24,6 @@ from src.identity.infrastructure.security import (
 )
 from src.shared.exceptions import UnauthorizedException, ValidationException
 
-
 # ---------------------------------------------------------------------------
 # Password hashing
 # ---------------------------------------------------------------------------
@@ -178,7 +177,8 @@ def test_extra_claims_cannot_override_security_fields():
     # We just assert the observable behavior: a token with an
     # attempted `iss` override fails to decode.
     import jwt as pyjwt
-    from src.identity.infrastructure.security import _secret, JWT_ALGORITHM
+
+    from src.identity.infrastructure.security import JWT_ALGORITHM, _secret
 
     forged = pyjwt.encode(
         {"sub": "u", "iss": "attacker", "aud": "cortex-api", "typ": "access",

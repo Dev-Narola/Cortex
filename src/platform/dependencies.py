@@ -26,22 +26,20 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from fastapi import Depends, Header, HTTPException, status
 from sqlalchemy.orm import Session
 
 from src.platform.config import settings
-from src.platform.database import get_db, SessionLocal  # noqa: F401 — re-exported below
+from src.platform.database import SessionLocal, get_db  # noqa: F401 — re-exported below
 from src.platform.redis_client import get_redis as _get_redis_client
 from src.shared.exceptions import (
-    NotFoundException,
     UnauthorizedException,
-    ValidationException,
 )
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
-    from src.identity.domain.entities import ApiKey, Role, Tenant, User
+    from src.identity.domain.entities import ApiKey, Tenant
 
 
 # ---------------------------------------------------------------------------
@@ -71,7 +69,7 @@ get_db_dependency = get_db
 # ---------------------------------------------------------------------------
 
 
-def _bearer_token(authorization: Optional[str]) -> str:
+def _bearer_token(authorization: str | None) -> str:
     if not authorization:
         raise UnauthorizedException(
             message="Missing Authorization header.",
@@ -104,7 +102,6 @@ class ApiKeyContext:
 
 def _resolve_jwt_user(token: str, db: Session):
     """Decode a JWT, then load the (user, tenant) it points at."""
-    from src.identity.domain.entities import Tenant, User
     from src.identity.infrastructure.repositories import (
         TenantRepository,
         UserRepository,
@@ -140,23 +137,22 @@ def _resolve_jwt_user(token: str, db: Session):
 
 
 def get_current_user(
-    authorization: Optional[str] = Header(default=None),
+    authorization: str | None = Header(default=None),
     db: Session = Depends(get_db),
 ):
     """Resolve the current `(user, tenant)` from a JWT bearer token."""
-    from src.identity.domain.entities import Tenant, User
+    from src.identity.domain.entities import Tenant, User  # noqa: F401
 
     token = _bearer_token(authorization)
     return _resolve_jwt_user(token, db)
 
 
 def get_current_tenant(
-    authorization: Optional[str] = Header(default=None),
-    db: Session = Depends(get_db)):
+    authorization: str | None = Header(default=None),
+    db: Session = Depends(get_db),
+):
     """Return just the current tenant. Use this in endpoints that
     need tenant context but don't operate on a specific user."""
-    from src.identity.domain.entities import Tenant
-
     _, tenant = get_current_user(authorization=authorization, db=db)
     return tenant
 
@@ -224,10 +220,10 @@ def require_member(current=Depends(get_current_user)):
 
 
 def require_api_key(
-    x_api_key: Optional[str] = Header(default=None, alias="X-API-Key"),
-    authorization: Optional[str] = Header(default=None),
+    x_api_key: str | None = Header(default=None, alias="X-API-Key"),
+    authorization: str | None = Header(default=None),
     db: Session = Depends(get_db),
-) -> "ApiKeyContext":
+) -> ApiKeyContext:
     """
     Authenticate via an API key.
 
@@ -241,7 +237,6 @@ def require_api_key(
     scheme (e.g. a short SHA-256 fingerprint stored alongside the
     bcrypt hash).
     """
-    from src.identity.domain.entities import ApiKey
     from src.identity.infrastructure.repositories import (
         ApiKeyRepository,
         TenantRepository,

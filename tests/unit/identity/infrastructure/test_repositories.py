@@ -18,7 +18,6 @@ from src.identity.infrastructure.repositories import (
 from src.identity.infrastructure.security import hash_api_key, hash_password
 from src.shared.exceptions import ConflictException
 
-
 SAMPLE_HASH = hash_password("TestPassword123!")
 SAMPLE_API_KEY_HASH = hash_api_key("ctx_test_raw_key")
 
@@ -369,8 +368,12 @@ def test_api_key_repo_find_tenant_scoped(db_session):
 def test_api_key_repo_list_excludes_revoked_by_default(db_session):
     tenant = _make_tenant(db_session)
     repo = ApiKeyRepository(db_session)
-    active = repo.create(ApiKey.create(tenant_id=tenant.id, name="active", key_hash=SAMPLE_API_KEY_HASH))
-    revoked = repo.create(ApiKey.create(tenant_id=tenant.id, name="revoked", key_hash=SAMPLE_API_KEY_HASH))
+    active = repo.create(
+        ApiKey.create(tenant_id=tenant.id, name="active", key_hash=SAMPLE_API_KEY_HASH)
+    )
+    revoked = repo.create(
+        ApiKey.create(tenant_id=tenant.id, name="revoked", key_hash=SAMPLE_API_KEY_HASH)
+    )
     db_session.commit()
     repo.revoke(revoked.id, tenant_id=tenant.id)
     db_session.commit()

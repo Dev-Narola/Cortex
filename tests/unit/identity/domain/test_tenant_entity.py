@@ -13,13 +13,12 @@ resetting the in-memory slug registry between tests. They cover:
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
 from src.identity.domain.entities import Plan, Tenant
 from src.shared.exceptions import ConflictException, ValidationException
-
 
 # ---------------------------------------------------------------------------
 # Test isolation: the slug registry is a class-level set. Reset it before
@@ -223,14 +222,14 @@ def test_naive_datetime_raises():
             name="Acme",
             slug="acme",
             created_at=datetime.now(),  # no tzinfo
-            updated_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(UTC),
         )
 
     assert "timezone-aware" in exc_info.value.message
 
 
 def test_updated_at_before_created_at_raises():
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     with pytest.raises(ValidationException) as exc_info:
         Tenant(
             name="Acme",

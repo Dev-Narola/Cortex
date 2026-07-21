@@ -9,15 +9,12 @@ for the duration of each test via the `get_db` dependency override.
 
 from __future__ import annotations
 
-import uuid
-
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from src.identity.infrastructure.security import verify_api_key
 from src.main import app
 from src.platform.database import Base, get_db
 
@@ -331,35 +328,25 @@ def test_revoke_api_key(client):
 def test_viewer_cannot_patch_tenant(client):
     """Register the owner, then create a viewer user and confirm
     the viewer is rejected by the role check on PATCH /tenants/me."""
-    from src.identity.infrastructure.security import hash_password
-    from src.identity.domain.entities import Role
+    from src.identity.domain.entities import Role, User
     from src.identity.infrastructure.repositories import (
-        TenantRepository, UserRepository,
+        TenantRepository,
+        UserRepository,
     )
-    from src.platform.database import SessionLocal
+    from src.identity.infrastructure.security import hash_password
 
-    # Bootstrap the owner
+    # Bootstrap the owner.
     _register_and_get_token(client, slug="rbac", email="owner@x.com")
 
-    # Use the engine from the app's overridden dependency to add a
-    # viewer user — this is the simplest way to access the test DB.
-    from src.identity.infrastructure import models  # noqa: F401
-    from src.platform.config import settings
-    settings.DATABASE_URL = "sqlite:///:memory:"  # not used; here for clarity
-
-    # Read the current dependency to grab a session
+    # Borrow a session from the test app's overridden `get_db` so
+    # we write to the same in-memory DB the request just used.
     db_gen = app.dependency_overrides[get_db]()
     db = next(db_gen)
     try:
-        t = TenantRepository(db).find_by_slug("rbac")
-        assert t is not None
-        viewer = UserRepository(db).create(
-            UserRepository(db).__class__.__init__  # touch to satisfy mypy
-        ) if False else None  # placeholder; replaced below
-
-        from src.identity.domain.entities import User
+        tenant = TenantRepository(db).find_by_slug("rbac")
+        assert tenant is not None
         viewer = User.create(
-            tenant_id=t.id,
+            tenant_id=tenant.id,
             email="viewer@x.com",
             hashed_password=hash_password("ViewerPass123!"),
             role=Role.VIEWER,

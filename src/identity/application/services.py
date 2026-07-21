@@ -14,9 +14,8 @@ services; nothing else in the application should.
 from __future__ import annotations
 
 import uuid
+from collections.abc import Sequence
 from dataclasses import dataclass
-from datetime import datetime
-from typing import Sequence
 
 from sqlalchemy.orm import Session
 
@@ -42,7 +41,6 @@ from src.shared.exceptions import (
     UnauthorizedException,
     ValidationException,
 )
-
 
 # ---------------------------------------------------------------------------
 # DTOs (plain dataclasses; Pydantic models live in the interface layer)

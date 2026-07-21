@@ -14,8 +14,8 @@ for transaction boundaries; the application service is.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
-from typing import Optional, Sequence
+from collections.abc import Sequence
+from datetime import UTC, datetime
 
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
@@ -28,7 +28,6 @@ from src.identity.infrastructure.models import (
     UserModel,
 )
 from src.shared.exceptions import ConflictException
-
 
 # ---------------------------------------------------------------------------
 # Mapping helpers
@@ -46,7 +45,7 @@ def _as_utc(value: datetime) -> datetime:
     tzinfo natively.
     """
     if value.tzinfo is None:
-        return value.replace(tzinfo=timezone.utc)
+        return value.replace(tzinfo=UTC)
     return value
 
 
@@ -200,11 +199,11 @@ class TenantRepository:
         Tenant.release_slug(slug)
         return True
 
-    def find_by_id(self, tenant_id: uuid.UUID) -> Optional[Tenant]:
+    def find_by_id(self, tenant_id: uuid.UUID) -> Tenant | None:
         model = self._session.get(TenantModel, tenant_id)
         return _model_to_tenant(model) if model else None
 
-    def find_by_slug(self, slug: str) -> Optional[Tenant]:
+    def find_by_slug(self, slug: str) -> Tenant | None:
         stmt = select(TenantModel).where(TenantModel.slug == slug.lower())
         model = self._session.execute(stmt).scalar_one_or_none()
         return _model_to_tenant(model) if model else None
@@ -305,7 +304,7 @@ class UserRepository:
 
     def find_by_id(
         self, user_id: uuid.UUID, *, tenant_id: uuid.UUID
-    ) -> Optional[User]:
+    ) -> User | None:
         model = self._session.get(UserModel, user_id)
         if model is None or model.tenant_id != tenant_id:
             return None
@@ -313,7 +312,7 @@ class UserRepository:
 
     def find_by_email(
         self, email: str, *, tenant_id: uuid.UUID
-    ) -> Optional[User]:
+    ) -> User | None:
         stmt = (
             select(UserModel)
             .where(UserModel.tenant_id == tenant_id)
@@ -322,7 +321,7 @@ class UserRepository:
         model = self._session.execute(stmt).scalar_one_or_none()
         return _model_to_user(model) if model else None
 
-    def find_by_email_global(self, email: str) -> Optional[User]:
+    def find_by_email_global(self, email: str) -> User | None:
         """
         Look up a user by email without a tenant filter.
 
@@ -391,13 +390,13 @@ class ApiKeyRepository:
 
     def find(
         self, api_key_id: uuid.UUID, *, tenant_id: uuid.UUID
-    ) -> Optional[ApiKey]:
+    ) -> ApiKey | None:
         model = self._session.get(ApiKeyModel, api_key_id)
         if model is None or model.tenant_id != tenant_id:
             return None
         return _model_to_api_key(model)
 
-    def find_by_hash(self, key_hash: str, *, tenant_id: uuid.UUID) -> Optional[ApiKey]:
+    def find_by_hash(self, key_hash: str, *, tenant_id: uuid.UUID) -> ApiKey | None:
         """
         Look up a key by its bcrypt hash within a tenant.
 
@@ -432,16 +431,16 @@ class ApiKeyRepository:
 
     def revoke(
         self, api_key_id: uuid.UUID, *, tenant_id: uuid.UUID
-    ) -> Optional[ApiKey]:
+    ) -> ApiKey | None:
         """Revoke a key. Idempotent — revoking an already-revoked key
         is a no-op that returns the same key."""
         model = self._session.get(ApiKeyModel, api_key_id)
         if model is None or model.tenant_id != tenant_id:
             return None
         if model.revoked_at is None:
-            from datetime import datetime, timezone
+            from datetime import datetime
 
-            model.revoked_at = datetime.now(timezone.utc)
+            model.revoked_at = datetime.now(UTC)
             self._session.flush()
         return _model_to_api_key(model)
 

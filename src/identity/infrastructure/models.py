@@ -22,7 +22,6 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Optional
 
 from sqlalchemy import (
     JSON,
@@ -39,7 +38,6 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.platform.database import Base
-
 
 # ---------------------------------------------------------------------------
 # TenantModel
@@ -66,13 +64,13 @@ class TenantModel(Base):
         DateTime(timezone=True), nullable=False
     )
 
-    users: Mapped[list["UserModel"]] = relationship(
+    users: Mapped[list[UserModel]] = relationship(
         "UserModel",
         back_populates="tenant",
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
-    api_keys: Mapped[list["ApiKeyModel"]] = relationship(
+    api_keys: Mapped[list[ApiKeyModel]] = relationship(
         "ApiKeyModel",
         back_populates="tenant",
         cascade="all, delete-orphan",
@@ -107,10 +105,10 @@ class UserModel(Base):
     )
     email: Mapped[str] = mapped_column(String(320), nullable=False)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
-    full_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    full_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     role: Mapped[str] = mapped_column(String(32), nullable=False, default="member")
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
-    last_login: Mapped[Optional[datetime]] = mapped_column(
+    last_login: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
     created_at: Mapped[datetime] = mapped_column(
@@ -152,10 +150,10 @@ class ApiKeyModel(Base):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     key_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     scopes: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
-    last_used_at: Mapped[Optional[datetime]] = mapped_column(
+    last_used_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
-    revoked_at: Mapped[Optional[datetime]] = mapped_column(
+    revoked_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
     created_at: Mapped[datetime] = mapped_column(

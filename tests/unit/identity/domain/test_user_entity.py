@@ -5,14 +5,13 @@ Unit tests for the User domain entity.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime
 
 import pytest
 
-from src.identity.domain.entities import Plan, Role, Tenant, User
+from src.identity.domain.entities import Role, Tenant, User
 from src.identity.infrastructure.security import hash_password
 from src.shared.exceptions import UnauthorizedException, ValidationException
-
 
 # A bcrypt hash is required for any User — use this for tests.
 SAMPLE_HASH = hash_password("CorrectHorseBatteryStaple!")
@@ -275,7 +274,7 @@ def test_record_login_stamps_last_login():
         role=Role.MEMBER,
     )
     assert user.last_login is None
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     user.record_login(now)
     assert user.last_login == now
 
