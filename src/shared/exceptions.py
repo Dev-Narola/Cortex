@@ -29,7 +29,7 @@ class ValidationException(BaseAppException):
         code: int = 400,
         data: dict | None = None,
     ):
-        super().__init__(message, code, False, data={})
+        super().__init__(message, code, False, data=data)
 
 
 class UnauthorizedException(BaseAppException):
@@ -40,7 +40,7 @@ class UnauthorizedException(BaseAppException):
     def __init__(
         self, message: str = "unauthorized", code: int = 401, data: dict | None = None
     ):
-        super().__init__(message, code, False, data={})
+        super().__init__(message, code, False, data=data)
 
 
 class NotFoundException(BaseAppException):
@@ -51,7 +51,7 @@ class NotFoundException(BaseAppException):
     def __init__(
         self, message: str = "not found", code: int = 404, data: dict | None = None
     ):
-        super().__init__(message, code, False, data={})
+        super().__init__(message, code, False, data=data)
 
 
 class ConflictException(BaseAppException):
@@ -62,4 +62,4 @@ class ConflictException(BaseAppException):
     def __init__(
         self, message: str = "conflict", code: int = 409, data: dict | None = None
     ):
-        super().__init__(message, code, False, data={})
+        super().__init__(message, code, False, data=data)

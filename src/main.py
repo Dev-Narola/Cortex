@@ -2,7 +2,7 @@ import logging
 from contextlib import asynccontextmanager
 from time import time
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
@@ -11,6 +11,13 @@ from .api import api_router
 from .observability.interface.rest.routes import router as health_router
 from .platform.config import settings
 from .platform.redis_client import close_redis, init_redis
+from .shared.exceptions import (
+    BaseAppException,
+    ConflictException,
+    NotFoundException,
+    UnauthorizedException,
+    ValidationException,
+)
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -51,6 +58,41 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# ---------------------------------------------------------------------------
+# Exception handlers — translate domain exceptions to structured HTTP
+# responses. Registered before routers so they take precedence over
+# the catch-all `Exception` handler below.
+# ---------------------------------------------------------------------------
+
+
+def _error_payload(exc: BaseAppException) -> dict:
+    return {
+        "code": exc.code,
+        "message": exc.message,
+        "data": exc.data or {},
+    }
+
+
+@app.exception_handler(ValidationException)
+async def _validation_handler(_: Request, exc: ValidationException) -> JSONResponse:
+    return JSONResponse(status_code=exc.code, content=_error_payload(exc))
+
+
+@app.exception_handler(UnauthorizedException)
+async def _unauthorized_handler(_: Request, exc: UnauthorizedException) -> JSONResponse:
+    return JSONResponse(status_code=exc.code, content=_error_payload(exc))
+
+
+@app.exception_handler(ConflictException)
+async def _conflict_handler(_: Request, exc: ConflictException) -> JSONResponse:
+    return JSONResponse(status_code=exc.code, content=_error_payload(exc))
+
+
+@app.exception_handler(NotFoundException)
+async def _not_found_handler(_: Request, exc: NotFoundException) -> JSONResponse:
+    return JSONResponse(status_code=exc.code, content=_error_payload(exc))
 
 
 @app.get("/")

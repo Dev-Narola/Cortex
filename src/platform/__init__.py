@@ -7,6 +7,10 @@ from .dependencies import (
     get_db,
     get_redis,
     get_settings,
+    require_admin,
+    require_api_key,
+    require_member,
+    require_owner,
 )
 from .logging import logger
 from .middleware import (
@@ -31,6 +35,10 @@ __all__ = [
     "get_redis",
     "get_current_user",
     "get_current_tenant",
+    "require_owner",
+    "require_admin",
+    "require_member",
+    "require_api_key",
     "logger",
     "AuthenticationMiddleware",
     "LoggingMiddleware",

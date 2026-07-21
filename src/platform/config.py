@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     API_V1_PREFIX: str = "/api/v1"
     SECRET_KEY: str = "change-me-in-development"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+    PASSWORD_BCRYPT_ROUNDS: int = 12
+    API_KEY_BCRYPT_ROUNDS: int = 10
     OPENAI_API_KEY: str | None = None
     AWS_REGION: str | None = None
     S3_BUCKET: str | None = None
