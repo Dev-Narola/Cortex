@@ -1,15 +1,29 @@
+from __future__ import annotations
+
+import sys
+from pathlib import Path
 from unittest.mock import AsyncMock
 
-import pytest
-import pytest_asyncio
-import redis.asyncio as redis
-from httpx import ASGITransport, AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession
+# Make `src.*` importable when pytest is invoked from a directory
+# that doesn't already have `src/` on PYTHONPATH (e.g. CI runners
+# that don't read pyproject.toml's [tool.pytest.ini_options]
+# pythonpath setting before conftest.py is loaded). We resolve the
+# path relative to THIS file so the same code works whether the
+# project is checked out at the repo root or one level deeper.
+_SRC_PARENT = Path(__file__).resolve().parent.parent / "src"
+if str(_SRC_PARENT.parent) not in sys.path:
+    sys.path.insert(0, str(_SRC_PARENT.parent))
 
-from src.main import app
-from src.platform.config import Settings
-from src.platform.database import get_db as get_db_dep
-from src.platform.redis_client import get_redis as get_redis_dep
+import pytest  # noqa: E402
+import pytest_asyncio  # noqa: E402
+import redis.asyncio as redis  # noqa: E402
+from httpx import ASGITransport, AsyncClient  # noqa: E402
+from sqlalchemy.ext.asyncio import AsyncSession  # noqa: E402
+
+from src.main import app  # noqa: E402
+from src.platform.config import Settings  # noqa: E402
+from src.platform.database import get_db as get_db_dep  # noqa: E402
+from src.platform.redis_client import get_redis as get_redis_dep  # noqa: E402
 
 
 @pytest.fixture
