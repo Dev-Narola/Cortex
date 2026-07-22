@@ -57,12 +57,8 @@ class TenantModel(Base):
     plan: Mapped[str] = mapped_column(String(32), nullable=False, default="free")
     settings: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     users: Mapped[list[UserModel]] = relationship(
         "UserModel",
@@ -77,9 +73,7 @@ class TenantModel(Base):
         passive_deletes=True,
     )
 
-    __table_args__ = (
-        Index("ix_tenants_slug", "slug", unique=True),
-    )
+    __table_args__ = (Index("ix_tenants_slug", "slug", unique=True),)
 
     def __repr__(self) -> str:  # pragma: no cover - debug helper
         return f"TenantModel(id={self.id!r}, slug={self.slug!r})"
@@ -108,15 +102,9 @@ class UserModel(Base):
     full_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     role: Mapped[str] = mapped_column(String(32), nullable=False, default="member")
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
-    last_login: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False
-    )
+    last_login: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     tenant: Mapped[TenantModel] = relationship("TenantModel", back_populates="users")
 
@@ -150,19 +138,11 @@ class ApiKeyModel(Base):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     key_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     scopes: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
-    last_used_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
-    revoked_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False
-    )
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
-    tenant: Mapped[TenantModel] = relationship(
-        "TenantModel", back_populates="api_keys"
-    )
+    tenant: Mapped[TenantModel] = relationship("TenantModel", back_populates="api_keys")
 
     __table_args__ = (
         Index("ix_api_keys_tenant_id", "tenant_id"),

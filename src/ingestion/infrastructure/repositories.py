@@ -83,6 +83,8 @@ def _model_to_document(model: DocumentModel) -> Document:
         version=model.version,
         created_by=model.created_by,
         created_at=_as_utc(model.created_at),
+        retry_count=getattr(model, "retry_count", 0) or 0,
+        last_error=getattr(model, "last_error", None),
     )
 
 
@@ -171,9 +173,7 @@ class DocumentRepository:
 
     # ---------- reads ----------
 
-    def get_by_id(
-        self, document_id: uuid.UUID, *, tenant_id: uuid.UUID
-    ) -> Document | None:
+    def get_by_id(self, document_id: uuid.UUID, *, tenant_id: uuid.UUID) -> Document | None:
         """
         Fetch a document by id, scoped to a tenant.
 
@@ -209,16 +209,11 @@ class DocumentRepository:
             .limit(limit)
             .offset(offset)
         )
-        return [
-            _model_to_document(m)
-            for m in self._session.execute(stmt).scalars().all()
-        ]
+        return [_model_to_document(m) for m in self._session.execute(stmt).scalars().all()]
 
     def count(self, tenant_id: uuid.UUID) -> int:
         """Return how many documents a tenant has."""
-        stmt = select(DocumentModel.id).where(
-            DocumentModel.tenant_id == tenant_id
-        )
+        stmt = select(DocumentModel.id).where(DocumentModel.tenant_id == tenant_id)
         return len(self._session.execute(stmt).scalars().all())
 
     # ---------- targeted updates ----------
@@ -278,9 +273,7 @@ class DocumentRepository:
             return None
         if expected_version is not None and model.version != expected_version:
             return _model_to_document(model)
-        target_value = (
-            status.value if isinstance(status, DocumentStatus) else str(status)
-        )
+        target_value = status.value if isinstance(status, DocumentStatus) else str(status)
         model.status = target_value
         if bump_version:
             model.version = model.version + 1

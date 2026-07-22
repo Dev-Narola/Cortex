@@ -1,9 +1,13 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
+from src.ingestion.application.reprocess import (
+    ReprocessDocumentService,
+    get_reprocess_document_service,
+)
 from src.ingestion.application.services import (
     CreateDocumentService,
     DeleteDocumentService,
@@ -17,8 +21,11 @@ from src.ingestion.interface.rest.auth import (
     require_document_read,
     require_document_write,
 )
+from src.ingestion.interface.rest.queue import arq_queue
 from src.ingestion.interface.rest.schemas import (
+    DocumentAcceptedResponse,
     DocumentResponse,
+    DocumentStatusProgress,
     DocumentStatusResponse,
     PaginatedDocumentResponse,
 )
@@ -47,7 +54,7 @@ def get_create_document_service(
     repo: DocumentRepository = Depends(get_document_repository),
     storage: S3Storage = Depends(get_s3_storage),
 ) -> CreateDocumentService:
-    return CreateDocumentService(repo, storage)
+    return CreateDocumentService(repo, storage, queue=arq_queue)
 
 
 def get_list_documents_service(
@@ -75,7 +82,7 @@ def get_document_status_service(
     return GetDocumentStatusService(repo)
 
 
-@router.post("", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=DocumentAcceptedResponse, status_code=status.HTTP_202_ACCEPTED)
 def create_document(
     file: UploadFile,
     tenant_id: Annotated[uuid.UUID, Depends(require_document_write)],
@@ -96,7 +103,11 @@ def create_document(
         file_obj=file.file,
     )
     db.commit()
-    return document
+    return DocumentAcceptedResponse(
+        id=document.id,
+        status=document.status,
+        message="Document queued for processing"
+    )
 
 
 @router.get("", response_model=PaginatedDocumentResponse)
@@ -137,10 +148,22 @@ def get_document_status(
     service: GetDocumentStatusService = Depends(get_document_status_service),
 ):
     """
-    Get only the status of a specific document.
+    Poll the ingestion status of a specific document.
+
+    Returns the current lifecycle stage, retry count, and error detail
+    (if the document has failed). Clients should poll this endpoint
+    after upload until status is 'indexed' or 'failed'.
     """
-    doc_status = service.execute(tenant_id=tenant_id, document_id=document_id)
-    return DocumentStatusResponse(document_id=document_id, status=doc_status)
+    document = service.execute(tenant_id=tenant_id, document_id=document_id)
+    return DocumentStatusResponse(
+        document_id=document_id,
+        status=document.status,
+        retry_count=document.retry_count,
+        progress=DocumentStatusProgress(stage=str(document.status.value))
+        if document.status not in ("pending", "indexed", "failed")
+        else None,
+        error=document.last_error,
+    )
 
 
 @router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -156,3 +179,31 @@ def delete_document(
     service.execute(tenant_id=tenant_id, document_id=document_id)
     db.commit()
     return None
+
+
+@router.post("/{document_id}/retry", status_code=status.HTTP_202_ACCEPTED)
+def retry_document(
+    document_id: uuid.UUID,
+    tenant_id: Annotated[uuid.UUID, Depends(require_document_write)],
+    service: ReprocessDocumentService = Depends(get_reprocess_document_service),
+):
+    """
+    Retry a FAILED document.
+    Resets the document status to pending and re-queues it for background ingestion.
+    """
+    service.execute_retry(document_id, tenant_id=tenant_id)
+    return {"message": "Document queued for retry."}
+
+
+@router.post("/{document_id}/reprocess", status_code=status.HTTP_202_ACCEPTED)
+def reprocess_document(
+    document_id: uuid.UUID,
+    tenant_id: Annotated[uuid.UUID, Depends(require_document_write)],
+    service: ReprocessDocumentService = Depends(get_reprocess_document_service),
+):
+    """
+    Force reprocess an INDEXED document.
+    Bumps the document version, resets status to pending, and re-queues it.
+    """
+    service.execute_reprocess(document_id, tenant_id=tenant_id)
+    return {"message": "Document queued for reprocessing."}

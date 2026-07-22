@@ -143,9 +143,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
             data={"field": "password"},
         )
     try:
-        return bcrypt.checkpw(
-            plain_password.encode("utf-8"), hashed_password.encode("utf-8")
-        )
+        return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
     except ValueError:
         # `hashed_password` isn't a valid bcrypt hash at all.
         return False
@@ -307,9 +305,7 @@ def verify_api_key(raw_key: str, hashed_key: str) -> bool:
             data={"field": "api_key"},
         )
     try:
-        return bcrypt.checkpw(
-            raw_key.encode("utf-8"), hashed_key.encode("utf-8")
-        )
+        return bcrypt.checkpw(raw_key.encode("utf-8"), hashed_key.encode("utf-8"))
     except ValueError:
         return False
 

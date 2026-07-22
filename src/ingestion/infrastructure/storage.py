@@ -254,8 +254,7 @@ class LocalStorage(ObjectStorage):
                 buf = buf.encode("utf-8")
             return bytes(buf)
         raise TypeError(
-            "data must be bytes or a binary file-like object, "
-            f"got {type(data).__name__}"
+            f"data must be bytes or a binary file-like object, got {type(data).__name__}"
         )
 
 

@@ -218,10 +218,7 @@ class TenantRepository:
 
     def list(self, *, limit: int = 50, offset: int = 0) -> Sequence[Tenant]:
         stmt = (
-            select(TenantModel)
-            .order_by(TenantModel.created_at.desc())
-            .limit(limit)
-            .offset(offset)
+            select(TenantModel).order_by(TenantModel.created_at.desc()).limit(limit).offset(offset)
         )
         return [_model_to_tenant(m) for m in self._session.execute(stmt).scalars().all()]
 
@@ -249,10 +246,7 @@ class UserRepository:
         except IntegrityError as exc:
             self._session.rollback()
             raise ConflictException(
-                message=(
-                    f"A user with email '{user.email}' already exists in this "
-                    "tenant."
-                ),
+                message=(f"A user with email '{user.email}' already exists in this tenant."),
                 code=409,
                 data={"field": "email", "value": user.email},
             ) from exc
@@ -285,10 +279,7 @@ class UserRepository:
         except IntegrityError as exc:
             self._session.rollback()
             raise ConflictException(
-                message=(
-                    f"A user with email '{user.email}' already exists in this "
-                    "tenant."
-                ),
+                message=(f"A user with email '{user.email}' already exists in this tenant."),
                 code=409,
                 data={"field": "email", "value": user.email},
             ) from exc
@@ -302,17 +293,13 @@ class UserRepository:
         self._session.flush()
         return True
 
-    def find_by_id(
-        self, user_id: uuid.UUID, *, tenant_id: uuid.UUID
-    ) -> User | None:
+    def find_by_id(self, user_id: uuid.UUID, *, tenant_id: uuid.UUID) -> User | None:
         model = self._session.get(UserModel, user_id)
         if model is None or model.tenant_id != tenant_id:
             return None
         return _model_to_user(model)
 
-    def find_by_email(
-        self, email: str, *, tenant_id: uuid.UUID
-    ) -> User | None:
+    def find_by_email(self, email: str, *, tenant_id: uuid.UUID) -> User | None:
         stmt = (
             select(UserModel)
             .where(UserModel.tenant_id == tenant_id)
@@ -361,9 +348,7 @@ class UserRepository:
             .limit(limit)
             .offset(offset)
         )
-        return [
-            _model_to_user(m) for m in self._session.execute(stmt).scalars().all()
-        ]
+        return [_model_to_user(m) for m in self._session.execute(stmt).scalars().all()]
 
 
 # ---------------------------------------------------------------------------
@@ -388,9 +373,7 @@ class ApiKeyRepository:
         self._session.flush()
         return _model_to_api_key(model)
 
-    def find(
-        self, api_key_id: uuid.UUID, *, tenant_id: uuid.UUID
-    ) -> ApiKey | None:
+    def find(self, api_key_id: uuid.UUID, *, tenant_id: uuid.UUID) -> ApiKey | None:
         model = self._session.get(ApiKeyModel, api_key_id)
         if model is None or model.tenant_id != tenant_id:
             return None
@@ -425,13 +408,9 @@ class ApiKeyRepository:
         if not include_revoked:
             stmt = stmt.where(ApiKeyModel.revoked_at.is_(None))
         stmt = stmt.order_by(ApiKeyModel.created_at.desc()).limit(limit).offset(offset)
-        return [
-            _model_to_api_key(m) for m in self._session.execute(stmt).scalars().all()
-        ]
+        return [_model_to_api_key(m) for m in self._session.execute(stmt).scalars().all()]
 
-    def revoke(
-        self, api_key_id: uuid.UUID, *, tenant_id: uuid.UUID
-    ) -> ApiKey | None:
+    def revoke(self, api_key_id: uuid.UUID, *, tenant_id: uuid.UUID) -> ApiKey | None:
         """Revoke a key. Idempotent — revoking an already-revoked key
         is a no-op that returns the same key."""
         model = self._session.get(ApiKeyModel, api_key_id)

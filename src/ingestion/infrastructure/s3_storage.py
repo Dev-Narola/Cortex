@@ -5,6 +5,7 @@ S3 implementation of the ObjectStorage interface.
 from __future__ import annotations
 
 from typing import BinaryIO
+
 import boto3
 from botocore.exceptions import ClientError
 
@@ -86,7 +87,7 @@ class S3Storage(ObjectStorage):
     def delete(self, uri: str) -> bool:
         if not self.exists(uri):
             return False
-        
+
         self.client.delete_object(Bucket=self.bucket, Key=uri)
         return True
 

@@ -11,9 +11,7 @@ def init_metrics() -> None:
     pass
 
 
-def increment_counter(
-    name: str, tags: dict[str, str] | None = None, value: float = 1.0
-) -> None:
+def increment_counter(name: str, tags: dict[str, str] | None = None, value: float = 1.0) -> None:
     """
     Increment a counter metric.
     Placeholder for future metrics backend integration.
@@ -39,9 +37,7 @@ def set_gauge(name: str, value: float, tags: dict[str, str] | None = None) -> No
     pass
 
 
-def record_histogram(
-    name: str, value: float, tags: dict[str, str] | None = None
-) -> None:
+def record_histogram(name: str, value: float, tags: dict[str, str] | None = None) -> None:
     """
     Record a value in a histogram metric.
     Placeholder for future metrics backend integration.

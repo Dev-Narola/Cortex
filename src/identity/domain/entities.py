@@ -119,12 +119,8 @@ class Tenant:
     id: uuid.UUID = field(default_factory=uuid.uuid4)
     plan: Plan = Plan.FREE
     is_active: bool = True
-    created_at: datetime = field(
-        default_factory=lambda: datetime.now(UTC)
-    )
-    updated_at: datetime = field(
-        default_factory=lambda: datetime.now(UTC)
-    )
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     settings: dict = field(default_factory=dict)
 
     # Slug length bounds — anything outside this is almost certainly
@@ -266,10 +262,7 @@ class Tenant:
             )
         if len(cleaned) > Tenant._NAME_MAX_LENGTH:
             raise ValidationException(
-                message=(
-                    f"Tenant name cannot exceed {Tenant._NAME_MAX_LENGTH} "
-                    "characters."
-                ),
+                message=(f"Tenant name cannot exceed {Tenant._NAME_MAX_LENGTH} characters."),
                 code=400,
                 data={"field": "name", "max_length": Tenant._NAME_MAX_LENGTH},
             )
@@ -288,10 +281,7 @@ class Tenant:
                 code=400,
                 data={"field": "slug"},
             )
-        if (
-            len(cleaned) < self._SLUG_MIN_LENGTH
-            or len(cleaned) > self._SLUG_MAX_LENGTH
-        ):
+        if len(cleaned) < self._SLUG_MIN_LENGTH or len(cleaned) > self._SLUG_MAX_LENGTH:
             raise ValidationException(
                 message=(
                     f"Tenant slug must be between {self._SLUG_MIN_LENGTH} "
@@ -458,12 +448,8 @@ class User:
     full_name: str | None = None
     is_active: bool = True
     last_login: datetime | None = None
-    created_at: datetime = field(
-        default_factory=lambda: datetime.now(UTC)
-    )
-    updated_at: datetime = field(
-        default_factory=lambda: datetime.now(UTC)
-    )
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     # Recognized bcrypt-hash prefix. We refuse to construct a User
     # around anything that does not look like a hash, which enforces
@@ -700,9 +686,7 @@ class ApiKey:
     id: uuid.UUID = field(default_factory=uuid.uuid4)
     last_used_at: datetime | None = None
     revoked_at: datetime | None = None
-    created_at: datetime = field(
-        default_factory=lambda: datetime.now(UTC)
-    )
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     # ---------- factory ----------
 
