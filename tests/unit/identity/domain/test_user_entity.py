@@ -297,19 +297,31 @@ def test_record_login_rejects_naive_datetime():
 
 def test_users_equal_when_ids_match():
     shared = uuid.uuid4()
-    a = User(id=shared, tenant_id=_tenant_id(), email="x@example.com",
-             hashed_password=SAMPLE_HASH, role=Role.MEMBER)
-    b = User(id=shared, tenant_id=_tenant_id(), email="y@example.com",
-             hashed_password=SAMPLE_HASH, role=Role.ADMIN)
+    a = User(
+        id=shared,
+        tenant_id=_tenant_id(),
+        email="x@example.com",
+        hashed_password=SAMPLE_HASH,
+        role=Role.MEMBER,
+    )
+    b = User(
+        id=shared,
+        tenant_id=_tenant_id(),
+        email="y@example.com",
+        hashed_password=SAMPLE_HASH,
+        role=Role.ADMIN,
+    )
     assert a == b
     assert hash(a) == hash(b)
 
 
 def test_users_usable_in_sets():
-    u1 = User.create(tenant_id=_tenant_id(), email="q@example.com",
-                     hashed_password=SAMPLE_HASH, role=Role.MEMBER)
-    u2 = User.create(tenant_id=_tenant_id(), email="r@example.com",
-                     hashed_password=SAMPLE_HASH, role=Role.MEMBER)
+    u1 = User.create(
+        tenant_id=_tenant_id(), email="q@example.com", hashed_password=SAMPLE_HASH, role=Role.MEMBER
+    )
+    u2 = User.create(
+        tenant_id=_tenant_id(), email="r@example.com", hashed_password=SAMPLE_HASH, role=Role.MEMBER
+    )
     s = {u1, u2, u1}  # dedupe
     assert len(s) == 2
 

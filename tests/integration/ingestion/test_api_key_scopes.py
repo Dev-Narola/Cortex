@@ -1,12 +1,13 @@
 import io
 import uuid
+
 import pytest
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
+from src.ingestion.infrastructure.storage import LocalStorage
 from src.ingestion.interface.rest.auth import require_document_read, require_document_write
 from src.ingestion.interface.rest.routes import get_s3_storage
-from src.ingestion.infrastructure.storage import LocalStorage
 from src.main import app
 
 
@@ -31,9 +32,7 @@ def _allow_read():
 
 
 @pytest.mark.integration
-def test_api_key_without_write_scope_cannot_upload(
-    client: TestClient, override_storage
-):
+def test_api_key_without_write_scope_cannot_upload(client: TestClient, override_storage):
     app.dependency_overrides[require_document_write] = _deny_write
     app.dependency_overrides[require_document_read] = _allow_read
     try:
@@ -47,9 +46,7 @@ def test_api_key_without_write_scope_cannot_upload(
 
 
 @pytest.mark.integration
-def test_api_key_without_write_scope_cannot_delete(
-    client: TestClient, override_storage
-):
+def test_api_key_without_write_scope_cannot_delete(client: TestClient, override_storage):
     app.dependency_overrides[require_document_write] = _deny_write
     try:
         res = client.delete(f"/api/v1/documents/{uuid.uuid4()}")

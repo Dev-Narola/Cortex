@@ -185,15 +185,23 @@ def test_user_repo_unique_email_per_tenant(db_session):
     tenant = _make_tenant(db_session)
     repo = UserRepository(db_session)
     repo.create(
-        User.create(tenant_id=tenant.id, email="dup@example.com",
-                    hashed_password=SAMPLE_HASH, role=Role.MEMBER)
+        User.create(
+            tenant_id=tenant.id,
+            email="dup@example.com",
+            hashed_password=SAMPLE_HASH,
+            role=Role.MEMBER,
+        )
     )
     db_session.commit()
 
     with pytest.raises(ConflictException):
         repo.create(
-            User.create(tenant_id=tenant.id, email="dup@example.com",
-                        hashed_password=SAMPLE_HASH, role=Role.MEMBER)
+            User.create(
+                tenant_id=tenant.id,
+                email="dup@example.com",
+                hashed_password=SAMPLE_HASH,
+                role=Role.MEMBER,
+            )
         )
 
 
@@ -205,12 +213,20 @@ def test_user_repo_email_can_be_reused_across_tenants(db_session):
     assert t2 is not None
 
     UserRepository(db_session).create(
-        User.create(tenant_id=t1.id, email="shared@example.com",
-                    hashed_password=SAMPLE_HASH, role=Role.MEMBER)
+        User.create(
+            tenant_id=t1.id,
+            email="shared@example.com",
+            hashed_password=SAMPLE_HASH,
+            role=Role.MEMBER,
+        )
     )
     UserRepository(db_session).create(
-        User.create(tenant_id=t2.id, email="shared@example.com",
-                    hashed_password=SAMPLE_HASH, role=Role.MEMBER)
+        User.create(
+            tenant_id=t2.id,
+            email="shared@example.com",
+            hashed_password=SAMPLE_HASH,
+            role=Role.MEMBER,
+        )
     )
     db_session.commit()
     # Both inserts succeed.
@@ -224,8 +240,9 @@ def test_user_repo_find_by_id_tenant_scoped(db_session):
     assert t2 is not None
 
     user = UserRepository(db_session).create(
-        User.create(tenant_id=t1.id, email="x@example.com",
-                    hashed_password=SAMPLE_HASH, role=Role.MEMBER)
+        User.create(
+            tenant_id=t1.id, email="x@example.com", hashed_password=SAMPLE_HASH, role=Role.MEMBER
+        )
     )
     db_session.commit()
 
@@ -245,8 +262,9 @@ def test_user_repo_find_by_email_tenant_scoped(db_session):
     assert t2 is not None
 
     UserRepository(db_session).create(
-        User.create(tenant_id=t1.id, email="x@example.com",
-                    hashed_password=SAMPLE_HASH, role=Role.MEMBER)
+        User.create(
+            tenant_id=t1.id, email="x@example.com", hashed_password=SAMPLE_HASH, role=Role.MEMBER
+        )
     )
     db_session.commit()
 
@@ -257,8 +275,9 @@ def test_user_repo_find_by_email_tenant_scoped(db_session):
 def test_user_repo_exists(db_session):
     tenant = _make_tenant(db_session)
     UserRepository(db_session).create(
-        User.create(tenant_id=tenant.id, email="e@x.com",
-                    hashed_password=SAMPLE_HASH, role=Role.MEMBER)
+        User.create(
+            tenant_id=tenant.id, email="e@x.com", hashed_password=SAMPLE_HASH, role=Role.MEMBER
+        )
     )
     db_session.commit()
 
@@ -277,10 +296,16 @@ def test_user_repo_list_by_tenant(db_session):
 
     repo = UserRepository(db_session)
     for i in range(3):
-        repo.create(User.create(tenant_id=t1.id, email=f"u{i}@x.com",
-                                 hashed_password=SAMPLE_HASH, role=Role.MEMBER))
-    repo.create(User.create(tenant_id=t2.id, email="other@x.com",
-                            hashed_password=SAMPLE_HASH, role=Role.MEMBER))
+        repo.create(
+            User.create(
+                tenant_id=t1.id, email=f"u{i}@x.com", hashed_password=SAMPLE_HASH, role=Role.MEMBER
+            )
+        )
+    repo.create(
+        User.create(
+            tenant_id=t2.id, email="other@x.com", hashed_password=SAMPLE_HASH, role=Role.MEMBER
+        )
+    )
     db_session.commit()
 
     users = list(repo.list_by_tenant(t1.id, limit=10))
@@ -293,9 +318,13 @@ def test_user_repo_update_persists_changes(db_session):
     tenant = _make_tenant(db_session)
     repo = UserRepository(db_session)
     user = repo.create(
-        User.create(tenant_id=tenant.id, email="up@x.com",
-                    hashed_password=SAMPLE_HASH, role=Role.MEMBER,
-                    full_name="Before")
+        User.create(
+            tenant_id=tenant.id,
+            email="up@x.com",
+            hashed_password=SAMPLE_HASH,
+            role=Role.MEMBER,
+            full_name="Before",
+        )
     )
     db_session.commit()
 
@@ -317,8 +346,9 @@ def test_user_repo_delete_tenant_scoped(db_session):
     assert t2 is not None
 
     user = UserRepository(db_session).create(
-        User.create(tenant_id=t1.id, email="del@x.com",
-                    hashed_password=SAMPLE_HASH, role=Role.MEMBER)
+        User.create(
+            tenant_id=t1.id, email="del@x.com", hashed_password=SAMPLE_HASH, role=Role.MEMBER
+        )
     )
     db_session.commit()
 
@@ -336,7 +366,9 @@ def test_user_repo_delete_tenant_scoped(db_session):
 def test_api_key_repo_create_persists(db_session):
     tenant = _make_tenant(db_session)
     key = ApiKey.create(
-        tenant_id=tenant.id, name="k1", key_hash=SAMPLE_API_KEY_HASH,
+        tenant_id=tenant.id,
+        name="k1",
+        key_hash=SAMPLE_API_KEY_HASH,
         scopes=["documents:read"],
     )
     saved = ApiKeyRepository(db_session).create(key)

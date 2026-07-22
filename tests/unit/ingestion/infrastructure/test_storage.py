@@ -27,7 +27,6 @@ from src.ingestion.infrastructure.storage import (
     ObjectStorage,
 )
 
-
 # ---------------------------------------------------------------------------
 # Interface contract — verified against a tiny in-memory fake so
 # the assertions are about the abstraction, not about

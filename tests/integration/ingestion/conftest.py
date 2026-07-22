@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from typing import Generator
+from collections.abc import Generator
 
 import pytest
 from fastapi.testclient import TestClient
@@ -13,8 +13,8 @@ from sqlalchemy.pool import StaticPool
 # before create_all() is called. Order doesn't matter; the import is enough.
 import src.identity.infrastructure.models  # noqa: F401
 import src.ingestion.infrastructure.models  # noqa: F401
-from src.platform.database import Base, get_db
 from src.main import app
+from src.platform.database import Base, get_db
 
 # ---------------------------------------------------------------------------
 # In-memory SQLite engine — StaticPool means every connection shares the

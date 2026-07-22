@@ -1,9 +1,10 @@
 import io
+
 import pytest
 
 from src.ingestion.application.validators import FileValidator
-from src.shared.exceptions import ValidationException
 from src.platform.config import settings
+from src.shared.exceptions import ValidationException
 
 
 def test_validator_accepts_valid_pdf():

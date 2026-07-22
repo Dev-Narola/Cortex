@@ -16,9 +16,7 @@ async def test_live_endpoint(client: AsyncClient):
 async def test_ready_endpoint_success(client: AsyncClient, db_mock, redis_mock):
     """Test the readiness endpoint when dependencies are healthy."""
     # Configure mocks to return success
-    db_mock.execute.return_value = (
-        None  # execute returns None, but we just need it not to raise
-    )
+    db_mock.execute.return_value = None  # execute returns None, but we just need it not to raise
     redis_mock.ping.return_value = True
 
     response = await client.get("/api/v1/health/ready")
@@ -30,9 +28,7 @@ async def test_ready_endpoint_success(client: AsyncClient, db_mock, redis_mock):
 
 
 @pytest.mark.asyncio
-async def test_ready_endpoint_database_failure(
-    client: AsyncClient, db_mock, redis_mock
-):
+async def test_ready_endpoint_database_failure(client: AsyncClient, db_mock, redis_mock):
     """Test the readiness probe when database fails."""
     # Configure mocks: database fails, redis succeeds
     db_mock.execute.side_effect = SQLAlchemyError("Database error")

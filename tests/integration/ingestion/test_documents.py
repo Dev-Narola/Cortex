@@ -1,4 +1,5 @@
 import uuid
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -32,9 +33,7 @@ def _make_doc(tenant_id: uuid.UUID, title: str = "doc.pdf") -> Document:
 
 
 @pytest.mark.integration
-def test_list_documents(
-    client: TestClient, setup_auth, db_session, tenant_id, override_storage
-):
+def test_list_documents(client: TestClient, setup_auth, db_session, tenant_id, override_storage):
     repo = DocumentRepository(db_session)
     repo.create(_make_doc(tenant_id, "doc1.pdf"))
     repo.create(_make_doc(tenant_id, "doc2.pdf"))
@@ -51,9 +50,7 @@ def test_list_documents(
 
 
 @pytest.mark.integration
-def test_get_document(
-    client: TestClient, setup_auth, db_session, tenant_id, override_storage
-):
+def test_get_document(client: TestClient, setup_auth, db_session, tenant_id, override_storage):
     repo = DocumentRepository(db_session)
     doc = repo.create(_make_doc(tenant_id, "getme.pdf"))
     db_session.commit()
@@ -81,8 +78,6 @@ def test_get_document_status(
 
 
 @pytest.mark.integration
-def test_get_document_not_found(
-    client: TestClient, setup_auth, tenant_id, override_storage
-):
+def test_get_document_not_found(client: TestClient, setup_auth, tenant_id, override_storage):
     response = client.get(f"/api/v1/documents/{uuid.uuid4()}")
     assert response.status_code == 404

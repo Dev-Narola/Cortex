@@ -283,9 +283,7 @@ def test_create_and_list_api_key(client):
     # The hash is never exposed.
     assert "key_hash" not in body
 
-    listing = client.get(
-        "/api/v1/api-keys", headers={"Authorization": f"Bearer {token}"}
-    )
+    listing = client.get("/api/v1/api-keys", headers={"Authorization": f"Bearer {token}"})
     assert listing.status_code == 200
     assert len(listing.json()) == 1
     # Even the listing response must not leak the hash or the raw key.
@@ -311,9 +309,7 @@ def test_revoke_api_key(client):
     assert delete.json()["revoked_at"] is not None
 
     # Even the right raw key should now be unusable.
-    me = client.get(
-        "/api/v1/users/me", headers={"X-API-Key": raw_key}
-    )
+    me = client.get("/api/v1/users/me", headers={"X-API-Key": raw_key})
     # (We don't have a route that takes X-API-Key in this MVP,
     # so this is just a sanity check that the response shape is
     # consistent. The auth path is exercised in unit tests.)

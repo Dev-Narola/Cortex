@@ -20,12 +20,9 @@ async def test_init_redis():
     """Test Redis initialization."""
     with (
         patch("src.platform.redis_client.get_redis_url") as mock_get_url,
-        patch(
-            "src.platform.redis_client.ConnectionPool.from_url"
-        ) as mock_pool_from_url,
+        patch("src.platform.redis_client.ConnectionPool.from_url") as mock_pool_from_url,
         patch("src.platform.redis_client.redis.Redis") as mock_redis_class,
     ):
-
         # Setup mocks
         mock_get_url.return_value = "redis://localhost:6379"
         mock_pool = AsyncMock()
@@ -190,15 +187,13 @@ async def test_init_redis_when_server_unreachable_does_not_raise(caplog):
 
     # Point at a definitely-closed port to force a connection error.
     with caplog.at_level(logging.WARNING, logger="src.platform.redis_client"):
-        with patch.object(
-            redis_client, "get_redis_url", return_value="redis://127.0.0.1:1"
-        ):
+        with patch.object(redis_client, "get_redis_url", return_value="redis://127.0.0.1:1"):
             await redis_client.init_redis()
 
     # App should be in a clean, "no Redis" state — not crashed.
     assert redis_client._redis_client is None
     assert redis_client._redis_pool is None
     # And the user gets a clear warning explaining what happened.
-    assert any(
-        "Redis unreachable" in record.message for record in caplog.records
-    ), [r.message for r in caplog.records]
+    assert any("Redis unreachable" in record.message for record in caplog.records), [
+        r.message for r in caplog.records
+    ]

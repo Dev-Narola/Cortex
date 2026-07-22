@@ -1,12 +1,13 @@
 import io
-import uuid
+
 import pytest
+from botocore.exceptions import ClientError, EndpointConnectionError
 from fastapi.testclient import TestClient
-from botocore.exceptions import EndpointConnectionError, ClientError
 
 from src.ingestion.infrastructure.s3_storage import S3Storage
 from src.ingestion.interface.rest.routes import get_s3_storage
 from src.main import app
+
 
 def check_minio_available() -> bool:
     try:
@@ -20,13 +21,15 @@ def check_minio_available() -> bool:
         return True
     except EndpointConnectionError:
         return False
-    except ClientError as e:
+    except ClientError:
         # 404 or something is fine, it means it connected
         return True
     except Exception:
         return False
 
+
 MINIO_AVAILABLE = check_minio_available()
+
 
 @pytest.fixture
 def real_s3_storage():
@@ -38,9 +41,12 @@ def real_s3_storage():
         aws_secret_access_key="miniopassword",
     )
 
+
 @pytest.mark.integration
 @pytest.mark.skipif(not MINIO_AVAILABLE, reason="Minio not available at localhost:9000")
-def test_document_upload_e2e_orchestration(client: TestClient, setup_auth, tenant_id, real_s3_storage):
+def test_document_upload_e2e_orchestration(
+    client: TestClient, setup_auth, tenant_id, real_s3_storage
+):
     """
     Test E2E orchestration of Document Upload hitting real DB (SQLite) and real Minio.
     """
@@ -48,39 +54,38 @@ def test_document_upload_e2e_orchestration(client: TestClient, setup_auth, tenan
     app.dependency_overrides[get_s3_storage] = lambda: real_s3_storage
 
     file_content = b"Integration test PDF content"
-    files = {
-        "file": ("test_e2e.pdf", io.BytesIO(file_content), "application/pdf")
-    }
+    files = {"file": ("test_e2e.pdf", io.BytesIO(file_content), "application/pdf")}
 
     try:
         response = client.post("/api/v1/documents", files=files)
         assert response.status_code == 201
-        
+
         data = response.json()
         assert data["title"] == "test_e2e.pdf"
         assert data["mime_type"] == "application/pdf"
         assert data["status"] == "pending"
-        
+
         doc_id = data["id"]
-        
+
         # Verify in S3
         object_key = f"tenants/{tenant_id}/documents/{doc_id}/original/test_e2e.pdf"
         assert real_s3_storage.exists(object_key)
-        
+
         # Cleanup
         real_s3_storage.delete(object_key)
     finally:
         app.dependency_overrides.pop(get_s3_storage, None)
 
+
 @pytest.mark.integration
 @pytest.mark.skipif(not MINIO_AVAILABLE, reason="Minio not available at localhost:9000")
-def test_document_upload_invalid_type_e2e(client: TestClient, setup_auth, tenant_id, real_s3_storage):
+def test_document_upload_invalid_type_e2e(
+    client: TestClient, setup_auth, tenant_id, real_s3_storage
+):
     app.dependency_overrides[get_s3_storage] = lambda: real_s3_storage
 
     # Try to upload an .exe which is forbidden
-    files = {
-        "file": ("malware.exe", io.BytesIO(b"badstuff"), "application/x-msdownload")
-    }
+    files = {"file": ("malware.exe", io.BytesIO(b"badstuff"), "application/x-msdownload")}
 
     try:
         response = client.post("/api/v1/documents", files=files)

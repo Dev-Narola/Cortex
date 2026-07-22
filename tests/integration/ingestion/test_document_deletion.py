@@ -1,4 +1,5 @@
 import uuid
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -67,8 +68,6 @@ def test_document_deletion_success(
 
 
 @pytest.mark.integration
-def test_document_deletion_not_found(
-    client: TestClient, setup_auth, tenant_id
-):
+def test_document_deletion_not_found(client: TestClient, setup_auth, tenant_id):
     response = client.delete(f"/api/v1/documents/{uuid.uuid4()}")
     assert response.status_code == 404

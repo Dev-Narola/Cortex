@@ -120,9 +120,7 @@ def test_decode_rejects_garbage_token():
 
 
 def test_custom_expiry_is_respected():
-    token = create_access_token(
-        subject="u", expires_delta=timedelta(seconds=10)
-    )
+    token = create_access_token(subject="u", expires_delta=timedelta(seconds=10))
     claims = decode_access_token(token)
     iat = claims["iat"]
     exp = claims["exp"]
@@ -160,9 +158,7 @@ def test_jwt_algorithm_is_hs256():
 
 def test_extra_claims_layer_non_security_fields():
     """`extra_claims` should layer over the base claims for arbitrary fields."""
-    token = create_access_token(
-        subject="u", extra_claims={"role": "owner", "tenant_id": "t-1"}
-    )
+    token = create_access_token(subject="u", extra_claims={"role": "owner", "tenant_id": "t-1"})
     claims = decode_access_token(token)
     assert claims["role"] == "owner"
     assert claims["tenant_id"] == "t-1"
@@ -181,9 +177,16 @@ def test_extra_claims_cannot_override_security_fields():
     from src.identity.infrastructure.security import JWT_ALGORITHM, _secret
 
     forged = pyjwt.encode(
-        {"sub": "u", "iss": "attacker", "aud": "cortex-api", "typ": "access",
-         "iat": 0, "exp": 9_999_999_999},
-        _secret(), algorithm=JWT_ALGORITHM,
+        {
+            "sub": "u",
+            "iss": "attacker",
+            "aud": "cortex-api",
+            "typ": "access",
+            "iat": 0,
+            "exp": 9_999_999_999,
+        },
+        _secret(),
+        algorithm=JWT_ALGORITHM,
     )
     with pytest.raises(UnauthorizedException):
         decode_access_token(forged)

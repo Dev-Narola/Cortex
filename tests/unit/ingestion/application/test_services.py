@@ -1,14 +1,12 @@
 import io
 import uuid
-from unittest.mock import MagicMock, call
+from unittest.mock import MagicMock
 
 import pytest
 
 from src.ingestion.application.services import (
     CreateDocumentService,
     DeleteDocumentService,
-    GetDocumentService,
-    GetDocumentStatusService,
     ListDocumentsService,
 )
 from src.ingestion.domain.entities import Document, DocumentStatus

@@ -32,7 +32,6 @@ from src.ingestion.domain.exceptions import (
 )
 from src.shared.exceptions import ValidationException
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------

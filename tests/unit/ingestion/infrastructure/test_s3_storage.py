@@ -1,6 +1,7 @@
 """
 Unit tests for the S3Storage adapter.
 """
+
 import io
 from unittest.mock import MagicMock, patch
 
@@ -16,9 +17,7 @@ from src.ingestion.infrastructure.storage import ObjectNotFoundError
 
 def test_generate_document_uri():
     uri = generate_document_uri(
-        tenant_id="tenant-123",
-        document_id="doc-456",
-        filename="report.pdf"
+        tenant_id="tenant-123", document_id="doc-456", filename="report.pdf"
     )
     assert uri == "tenants/tenant-123/documents/doc-456/original/report.pdf"
 
@@ -77,20 +76,20 @@ def test_upload_rejects_empty_uri(s3_storage):
 def test_delete_existing(s3_storage, mock_boto_client):
     # Mock exists to return True (head_object doesn't raise)
     mock_boto_client.head_object.return_value = {}
-    
+
     result = s3_storage.delete("test/uri")
-    
+
     assert result is True
     mock_boto_client.delete_object.assert_called_once_with(Bucket="test-bucket", Key="test/uri")
 
 
 def test_delete_non_existing(s3_storage, mock_boto_client):
     # Mock exists to return False
-    error_response = {'Error': {'Code': '404', 'Message': 'Not Found'}}
-    mock_boto_client.head_object.side_effect = ClientError(error_response, 'HeadObject')
-    
+    error_response = {"Error": {"Code": "404", "Message": "Not Found"}}
+    mock_boto_client.head_object.side_effect = ClientError(error_response, "HeadObject")
+
     result = s3_storage.delete("test/uri")
-    
+
     assert result is False
     mock_boto_client.delete_object.assert_not_called()
 
@@ -101,14 +100,14 @@ def test_exists_true(s3_storage, mock_boto_client):
 
 
 def test_exists_false(s3_storage, mock_boto_client):
-    error_response = {'Error': {'Code': '404', 'Message': 'Not Found'}}
-    mock_boto_client.head_object.side_effect = ClientError(error_response, 'HeadObject')
+    error_response = {"Error": {"Code": "404", "Message": "Not Found"}}
+    mock_boto_client.head_object.side_effect = ClientError(error_response, "HeadObject")
     assert s3_storage.exists("test/uri") is False
 
 
 def test_exists_raises_other_errors(s3_storage, mock_boto_client):
-    error_response = {'Error': {'Code': '500', 'Message': 'Internal Error'}}
-    mock_boto_client.head_object.side_effect = ClientError(error_response, 'HeadObject')
+    error_response = {"Error": {"Code": "500", "Message": "Internal Error"}}
+    mock_boto_client.head_object.side_effect = ClientError(error_response, "HeadObject")
     with pytest.raises(ClientError):
         s3_storage.exists("test/uri")
 
@@ -117,18 +116,18 @@ def test_download_success(s3_storage, mock_boto_client):
     mock_body = MagicMock()
     mock_body.read.return_value = b"file data"
     mock_boto_client.get_object.return_value = {"Body": mock_body}
-    
+
     result = s3_storage.download("test/uri")
-    
+
     assert result == b"file data"
     mock_boto_client.get_object.assert_called_once_with(Bucket="test-bucket", Key="test/uri")
 
 
 def test_download_not_found(s3_storage, mock_boto_client):
-    error_response = {'Error': {'Code': 'NoSuchKey', 'Message': 'Not Found'}}
-    mock_boto_client.get_object.side_effect = ClientError(error_response, 'GetObject')
-    
+    error_response = {"Error": {"Code": "NoSuchKey", "Message": "Not Found"}}
+    mock_boto_client.get_object.side_effect = ClientError(error_response, "GetObject")
+
     with pytest.raises(ObjectNotFoundError) as exc:
         s3_storage.download("test/uri")
-    
+
     assert exc.value.data["uri"] == "test/uri"
