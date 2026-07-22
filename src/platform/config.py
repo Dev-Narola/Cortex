@@ -21,9 +21,29 @@ class Settings(BaseSettings):
     PASSWORD_BCRYPT_ROUNDS: int = 12
     API_KEY_BCRYPT_ROUNDS: int = 10
     OPENAI_API_KEY: str | None = None
-    AWS_REGION: str | None = None
-    S3_BUCKET: str | None = None
     LOG_FORMAT: str = ""
+
+    # --- Object storage (S3 / S3-compatible, e.g. MinIO) ---
+    # These are read by the ingestion layer's `S3Storage` adapter.
+    # The same `ObjectStorage` interface is used whether the
+    # backend is AWS S3 in production or MinIO in local
+    # development, so application code never has to branch on
+    # `S3_ENDPOINT`.
+    #
+    # S3_ENDPOINT is optional. When unset, boto3 talks to the
+    # real AWS S3 service using S3_REGION. When set (typical for
+    # local dev with MinIO or for testing against a custom S3
+    # endpoint), boto3 routes all calls there instead. Setting
+    # `S3_ENDPOINT` to "http://localhost:9000" is the standard
+    # MinIO default.
+    S3_ENDPOINT: str | None = None
+    S3_REGION: str = "us-east-1"
+    S3_BUCKET: str | None = None
+    S3_ACCESS_KEY: str | None = None
+    S3_SECRET_KEY: str | None = None
+    
+    # --- Ingestion specific ---
+    MAX_DOCUMENT_SIZE_BYTES: int = 10 * 1024 * 1024  # 10MB default
 
 
 settings = Settings()

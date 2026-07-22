@@ -21,6 +21,16 @@ dependencies = [
     "redis",
     "pyjwt>=2.10.0",
     "bcrypt>=4.2.0",
+    # boto3 is the official AWS SDK for Python and the de-facto
+    # standard for talking to S3 (and S3-compatible stores like
+    # MinIO). The S3Storage adapter in src/ingestion/infrastructure/
+    # s3_storage.py is the only file that imports it; the abstract
+    # ObjectStorage interface and the LocalStorage in-memory
+    # implementation in storage.py are deliberately boto3-free so
+    # the rest of the codebase stays testable without it.
+    "boto3>=1.34.0",
+    # Required by FastAPI for multipart/form-data file upload support.
+    "python-multipart>=0.0.9",
 ]
 [project.optional-dependencies]
 dev = [
