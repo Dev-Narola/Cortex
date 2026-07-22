@@ -52,6 +52,27 @@ services:
       retries: 3
       start_period: 20s
 
+  worker:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    command: python -m arq src.ingestion.workers.worker.WorkerSettings
+    environment:
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@db:5432/app
+      REDIS_URL: redis://redis:6379/0
+      APP_NAME: Cortex
+      ENVIRONMENT: development
+      DEBUG: "true"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - cortex-net
+    volumes:
+      - ../src:/app/src
+
   db:
     image: pgvector/pgvector:pg16
     environment:

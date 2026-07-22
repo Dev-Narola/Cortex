@@ -24,20 +24,21 @@ own migrations/models when they arrive.
 from __future__ import annotations
 
 import uuid
+from datetime import datetime
 
 from sqlalchemy import (
     CheckConstraint,
+    DateTime,
     ForeignKey,
     Index,
     Integer,
     String,
     text,
+    JSON,
+    UniqueConstraint,
 )
 from sqlalchemy import (
     Uuid as SAUuid,
-)
-from sqlalchemy import (
-    DateTime,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -77,28 +78,20 @@ class DocumentModel(Base):
         ForeignKey("tenants.id", ondelete="CASCADE"),
         nullable=False,
     )
-    source_type: Mapped[str] = mapped_column(
-        String(16), nullable=False, default="upload"
-    )
+    source_type: Mapped[str] = mapped_column(String(16), nullable=False, default="upload")
     title: Mapped[str] = mapped_column(String(512), nullable=False)
-    storage_uri: Mapped[str | None] = mapped_column(
-        String(1024), nullable=True
-    )
+    storage_uri: Mapped[str | None] = mapped_column(String(1024), nullable=True)
     mime_type: Mapped[str] = mapped_column(String(255), nullable=False)
-    status: Mapped[str] = mapped_column(
-        String(16), nullable=False, default="pending"
-    )
-    version: Mapped[int] = mapped_column(
-        Integer, nullable=False, default=1
-    )
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="pending")
+    version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     created_by: Mapped[uuid.UUID] = mapped_column(
         SAUuid(as_uuid=True),
         ForeignKey("users.id", ondelete="RESTRICT"),
         nullable=False,
     )
-    created_at = mapped_column(
-        DateTime(timezone=True), nullable=False
-    )
+    created_at = mapped_column(DateTime(timezone=True), nullable=False)
+    retry_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    last_error: Mapped[str | None] = mapped_column(String(1024), nullable=True)
 
     # Convenience relationships. The relationship to `Tenant` and
     # `User` is intentionally one-directional here — we never query
@@ -149,4 +142,92 @@ class DocumentModel(Base):
         )
 
 
-__all__ = ["DocumentModel"]
+# ---------------------------------------------------------------------------
+# DocumentChunkModel
+# ---------------------------------------------------------------------------
+
+
+class DocumentChunkModel(Base):
+    """ORM mapping for the `document_chunks` table."""
+
+    __tablename__ = "document_chunks"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        SAUuid(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    document_id: Mapped[uuid.UUID] = mapped_column(
+        SAUuid(as_uuid=True),
+        ForeignKey("documents.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        SAUuid(as_uuid=True),
+        ForeignKey("tenants.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    content: Mapped[str] = mapped_column(String, nullable=False)
+    chunk_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    token_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    # the column is named 'metadata' in DB, attribute is 'chunk_metadata' to avoid conflict with Base.metadata
+    chunk_metadata: Mapped[dict] = mapped_column("metadata", JSON, nullable=False, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("document_id", "chunk_index", name="uq_document_chunks_document_index"),
+        Index("ix_document_chunks_document_index", "document_id", "chunk_index"),
+        Index("ix_document_chunks_tenant_document", "tenant_id", "document_id"),
+        CheckConstraint("chunk_index >= 0", name="ck_document_chunks_chunk_index_positive"),
+        CheckConstraint("token_count >= 0", name="ck_document_chunks_token_count_positive"),
+    )
+
+    def __repr__(self) -> str:  # pragma: no cover - debug helper
+        return (
+            f"DocumentChunkModel(id={self.id!r}, document_id={self.document_id!r}, "
+            f"chunk_index={self.chunk_index!r})"
+        )
+
+
+# ---------------------------------------------------------------------------
+# DocumentProcessingAttemptModel
+# ---------------------------------------------------------------------------
+
+
+class DocumentProcessingAttemptModel(Base):
+    """ORM mapping for the `document_processing_attempts` table."""
+
+    __tablename__ = "document_processing_attempts"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        SAUuid(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    document_id: Mapped[uuid.UUID] = mapped_column(
+        SAUuid(as_uuid=True),
+        ForeignKey("documents.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        SAUuid(as_uuid=True),
+        ForeignKey("tenants.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    attempt_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    # 'running' | 'succeeded' | 'failed'
+    status: Mapped[str] = mapped_column(String(16), nullable=False)
+    error_code: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    error_message: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    __table_args__ = (
+        Index("ix_processing_attempts_document", "document_id"),
+        Index("ix_processing_attempts_tenant", "tenant_id", "document_id"),
+    )
+
+    def __repr__(self) -> str:  # pragma: no cover
+        return (
+            f"DocumentProcessingAttemptModel(document_id={self.document_id!r}, "
+            f"attempt={self.attempt_number!r}, status={self.status!r})"
+        )
+
+
+__all__ = ["DocumentModel", "DocumentChunkModel", "DocumentProcessingAttemptModel"]

@@ -104,6 +104,6 @@ async def ping() -> bool:
     if _redis_client is None:
         return False
     try:
-        return (await _redis_client.ping())
+        return await _redis_client.ping()
     except Exception:
         return False

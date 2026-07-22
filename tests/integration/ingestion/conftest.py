@@ -1,106 +1,106 @@
+"""
+Test fixtures for the ingestion module tests.
+
+Provides a fresh in-memory SQLite database per test with the
+identity + ingestion schema created, plus a small helper to
+create a tenant + user the test can attach documents to.
+
+The session is bound to a sync engine so the SQLAlchemy models
+and repositories work the same way they do in production (just
+against SQLite, not Postgres).
+"""
+
 from __future__ import annotations
 
 import uuid
-from collections.abc import Generator
 
 import pytest
-from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, sessionmaker
-from sqlalchemy.pool import StaticPool
+from sqlalchemy.orm import sessionmaker
 
-# Import all ORM models so their tables are registered on the shared Base
-# before create_all() is called. Order doesn't matter; the import is enough.
-import src.identity.infrastructure.models  # noqa: F401
-import src.ingestion.infrastructure.models  # noqa: F401
-from src.main import app
-from src.platform.database import Base, get_db
-
-# ---------------------------------------------------------------------------
-# In-memory SQLite engine — StaticPool means every connection shares the
-# same in-memory database, which is what we need so that rows committed by
-# the test session are visible to the TestClient's request handler.
-# ---------------------------------------------------------------------------
-
-SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
-
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL,
-    connect_args={"check_same_thread": False},
-    poolclass=StaticPool,
+from src.identity.domain.entities import Role, Tenant, User
+from src.identity.infrastructure.repositories import (
+    TenantRepository,
+    UserRepository,
 )
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-
-# ---------------------------------------------------------------------------
-# Fixtures
-# ---------------------------------------------------------------------------
-
-
-@pytest.fixture(scope="session", autouse=True)
-def setup_database():
-    """Create all tables once per test session."""
-    Base.metadata.create_all(bind=engine)
-    yield
-    Base.metadata.drop_all(bind=engine)
-
-
-@pytest.fixture(autouse=True)
-def reset_tables(setup_database):
-    """Truncate all rows between tests for isolation without recreating schema."""
-    yield
-    with engine.begin() as conn:
-        for table in reversed(Base.metadata.sorted_tables):
-            conn.execute(table.delete())
+from src.identity.infrastructure.security import hash_password
+from src.platform.database import Base
 
 
 @pytest.fixture
-def db_session() -> Generator[Session, None, None]:
-    """Provide a single SQLAlchemy session for a test."""
-    session = TestingSessionLocal()
+def db_session():
+    """Yield a SQLAlchemy session backed by an in-memory SQLite DB."""
+    # Import models so they register on `Base.metadata` before we
+    # create the schema. Both identity and ingestion models are
+    # needed because the `documents` table has FKs to `tenants`
+    # and `users`.
+    from src.identity.infrastructure import models as _identity_models  # noqa: F401
+    from src.ingestion.infrastructure import models as _ingestion_models  # noqa: F401
+
+    engine = create_engine("sqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    Session = sessionmaker(bind=engine, autoflush=False, autocommit=False)
+    session = Session()
     try:
         yield session
     finally:
         session.close()
+        Base.metadata.drop_all(engine)
+        engine.dispose()
+        # Tests can create Tenant entities and they land in the
+        # in-process slug registry; clear it so order is irrelevant.
+        Tenant.reset_slug_registry()
+
+
+# ---------------------------------------------------------------------------
+# Convenience builders — tests use these to skip the boilerplate
+# of "make a tenant, make a user, attach to session" so each test
+# can focus on what it's actually testing.
+# ---------------------------------------------------------------------------
+
+
+def _safe_slug(prefix: str = "tenant") -> str:
+    """
+    Build a slug that won't collide with the in-process registry.
+
+    A plain `f"{prefix}-{uuid.uuid4().hex[:8]}"` would do, but we
+    also strip leading hyphens and clamp to the regex the
+    `Tenant` entity enforces.
+    """
+    raw = f"{prefix}-{uuid.uuid4().hex[:10]}".lower()
+    return raw[:60]
 
 
 @pytest.fixture
-def client(db_session: Session) -> Generator[TestClient, None, None]:
-    """FastAPI TestClient with the DB dependency wired to the test session."""
+def make_tenant(db_session):
+    """Return a factory for persisted Tenant + User pairs."""
 
-    def override_get_db():
-        try:
-            yield db_session
-        finally:
-            pass
+    def _factory(*, name: str | None = None, slug: str | None = None):
+        repo = TenantRepository(db_session)
+        users = UserRepository(db_session)
+        tenant = repo.create(
+            Tenant.create(
+                name=name or f"Tenant {uuid.uuid4().hex[:6]}",
+                slug=slug or _safe_slug(),
+            )
+        )
+        user = users.create(
+            User.create(
+                tenant_id=tenant.id,
+                email=f"u-{uuid.uuid4().hex[:8]}@example.com",
+                hashed_password=hash_password("TestPassword123!"),
+                role=Role.MEMBER,
+            )
+        )
+        db_session.commit()
+        return tenant, user
 
-    app.dependency_overrides[get_db] = override_get_db
-    with TestClient(app) as test_client:
-        yield test_client
-    # Only remove the DB override; auth overrides are managed per-test
-    app.dependency_overrides.pop(get_db, None)
+    return _factory
 
 
 @pytest.fixture
-def tenant_id() -> uuid.UUID:
-    return uuid.uuid4()
-
-
-@pytest.fixture
-def user_id() -> uuid.UUID:
-    return uuid.uuid4()
-
-
-@pytest.fixture
-def setup_auth(tenant_id):
-    """Override auth dependencies so tests don't need real API keys."""
-    from src.ingestion.interface.rest.auth import (
-        require_document_read,
-        require_document_write,
-    )
-
-    app.dependency_overrides[require_document_read] = lambda: tenant_id
-    app.dependency_overrides[require_document_write] = lambda: tenant_id
-    yield
-    app.dependency_overrides.pop(require_document_read, None)
-    app.dependency_overrides.pop(require_document_write, None)
+def two_tenants(db_session, make_tenant):
+    """Yield two independent `(tenant, user)` pairs for cross-tenant tests."""
+    t1, u1 = make_tenant()
+    t2, u2 = make_tenant()
+    return (t1, u1), (t2, u2)

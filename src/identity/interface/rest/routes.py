@@ -279,9 +279,7 @@ def login(body: LoginRequest, db: Session = Depends(get_db)) -> TokenResponse:
         401: {"description": "Refresh token is invalid or expired"},
     },
 )
-def refresh_token(
-    body: RefreshRequest, db: Session = Depends(get_db)
-) -> TokenResponse:
+def refresh_token(body: RefreshRequest, db: Session = Depends(get_db)) -> TokenResponse:
     """Trade a still-valid refresh token for a fresh access + refresh pair."""
     service = AuthenticateUserService(db)
     issued = service.refresh(refresh_token=body.refresh_token)
@@ -448,9 +446,7 @@ def list_api_keys(
 
     _, tenant = current
     repo = ApiKeyRepository(db)
-    keys = repo.list(
-        tenant.id, include_revoked=include_revoked, limit=100, offset=0
-    )
+    keys = repo.list(tenant.id, include_revoked=include_revoked, limit=100, offset=0)
     return [_api_key_to_response(k) for k in keys]
 
 

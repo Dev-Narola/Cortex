@@ -86,30 +86,16 @@ class DocumentStatus(str, Enum):  # noqa: UP042 - intentional str-Enum for JSON
 # has a path to put the document back in the queue without a version
 # bump (a retry is idempotent; a re-process increments `version`).
 _ALLOWED_TRANSITIONS: dict[DocumentStatus, frozenset[DocumentStatus]] = {
-    DocumentStatus.PENDING: frozenset(
-        {DocumentStatus.PARSING, DocumentStatus.FAILED}
-    ),
-    DocumentStatus.PARSING: frozenset(
-        {DocumentStatus.CHUNKING, DocumentStatus.FAILED}
-    ),
-    DocumentStatus.CHUNKING: frozenset(
-        {DocumentStatus.EMBEDDING, DocumentStatus.FAILED}
-    ),
-    DocumentStatus.EMBEDDING: frozenset(
-        {DocumentStatus.INDEXED, DocumentStatus.FAILED}
-    ),
-    DocumentStatus.INDEXED: frozenset(
-        {DocumentStatus.PARSING, DocumentStatus.FAILED}
-    ),
-    DocumentStatus.FAILED: frozenset(
-        {DocumentStatus.PENDING, DocumentStatus.PARSING}
-    ),
+    DocumentStatus.PENDING: frozenset({DocumentStatus.PARSING, DocumentStatus.FAILED}),
+    DocumentStatus.PARSING: frozenset({DocumentStatus.CHUNKING, DocumentStatus.FAILED}),
+    DocumentStatus.CHUNKING: frozenset({DocumentStatus.EMBEDDING, DocumentStatus.FAILED}),
+    DocumentStatus.EMBEDDING: frozenset({DocumentStatus.INDEXED, DocumentStatus.FAILED}),
+    DocumentStatus.INDEXED: frozenset({DocumentStatus.PARSING, DocumentStatus.FAILED}),
+    DocumentStatus.FAILED: frozenset({DocumentStatus.PENDING, DocumentStatus.PARSING}),
 }
 
 
-def is_valid_transition(
-    from_status: DocumentStatus, to_status: DocumentStatus
-) -> bool:
+def is_valid_transition(from_status: DocumentStatus, to_status: DocumentStatus) -> bool:
     """Return True iff `from -> to` is a permitted status transition."""
     return to_status in _ALLOWED_TRANSITIONS.get(from_status, frozenset())
 
@@ -195,9 +181,9 @@ class Document:
     storage_uri: str | None = None
     status: DocumentStatus | str = DocumentStatus.PENDING
     version: int = 1
-    created_at: datetime = field(
-        default_factory=lambda: datetime.now(UTC)
-    )
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    retry_count: int = 0
+    last_error: str | None = None
 
     # ----- length / numeric bounds -----
 
@@ -255,6 +241,8 @@ class Document:
         version: int,
         created_by: uuid.UUID,
         created_at: datetime,
+        retry_count: int = 0,
+        last_error: str | None = None,
     ) -> Document:
         """
         Reconstruct a Document from a persistence-layer row.
@@ -273,38 +261,30 @@ class Document:
         instance = object.__new__(cls)
         object.__setattr__(instance, "id", id)
         object.__setattr__(instance, "tenant_id", tenant_id)
-        object.__setattr__(
-            instance, "source_type", cls._validate_source_type(source_type)
-        )
+        object.__setattr__(instance, "source_type", cls._validate_source_type(source_type))
         object.__setattr__(instance, "title", cls._validate_title(title))
         object.__setattr__(
             instance,
             "storage_uri",
             cls._validate_storage_uri(storage_uri, allow_empty=True),
         )
-        object.__setattr__(
-            instance, "mime_type", cls._validate_mime_type(mime_type)
-        )
-        object.__setattr__(
-            instance, "status", cls._validate_status(status)
-        )
+        object.__setattr__(instance, "mime_type", cls._validate_mime_type(mime_type))
+        object.__setattr__(instance, "status", cls._validate_status(status))
         object.__setattr__(instance, "version", cls._validate_version(version))
         object.__setattr__(
             instance, "created_by", cls._validate_user_id(created_by, field="created_by")
         )
         object.__setattr__(instance, "created_at", cls._validate_timestamp(created_at))
+        object.__setattr__(instance, "retry_count", retry_count)
+        object.__setattr__(instance, "last_error", last_error)
         return instance
 
     # ---------- validation ----------
 
     def __post_init__(self) -> None:
         """Enforce the business rules documented on the class."""
-        object.__setattr__(
-            self, "tenant_id", self._validate_tenant_id(self.tenant_id)
-        )
-        object.__setattr__(
-            self, "source_type", self._validate_source_type(self.source_type)
-        )
+        object.__setattr__(self, "tenant_id", self._validate_tenant_id(self.tenant_id))
+        object.__setattr__(self, "source_type", self._validate_source_type(self.source_type))
         object.__setattr__(self, "title", self._validate_title(self.title))
         object.__setattr__(
             self,
@@ -317,9 +297,7 @@ class Document:
         object.__setattr__(
             self, "created_by", self._validate_user_id(self.created_by, field="created_by")
         )
-        object.__setattr__(
-            self, "created_at", self._validate_timestamp(self.created_at)
-        )
+        object.__setattr__(self, "created_at", self._validate_timestamp(self.created_at))
 
     @staticmethod
     def _validate_tenant_id(tenant_id: uuid.UUID) -> uuid.UUID:
@@ -358,10 +336,7 @@ class Document:
             )
         if len(cleaned) > Document._TITLE_MAX_LENGTH:
             raise ValidationException(
-                message=(
-                    f"Document title cannot exceed {Document._TITLE_MAX_LENGTH} "
-                    "characters."
-                ),
+                message=(f"Document title cannot exceed {Document._TITLE_MAX_LENGTH} characters."),
                 code=400,
                 data={
                     "field": "title",
@@ -387,8 +362,7 @@ class Document:
         if len(cleaned) > Document._MIME_TYPE_MAX_LENGTH:
             raise InvalidDocumentFieldException(
                 message=(
-                    f"Document mime_type cannot exceed "
-                    f"{Document._MIME_TYPE_MAX_LENGTH} characters."
+                    f"Document mime_type cannot exceed {Document._MIME_TYPE_MAX_LENGTH} characters."
                 ),
                 field="mime_type",
                 value=cleaned,
@@ -405,9 +379,7 @@ class Document:
         return cleaned
 
     @staticmethod
-    def _validate_storage_uri(
-        storage_uri: str | None, *, allow_empty: bool
-    ) -> str | None:
+    def _validate_storage_uri(storage_uri: str | None, *, allow_empty: bool) -> str | None:
         if storage_uri is None:
             return None
         if not isinstance(storage_uri, str):
@@ -436,10 +408,7 @@ class Document:
             )
         if not _S3_URI_RE.match(cleaned):
             raise InvalidDocumentFieldException(
-                message=(
-                    "Document storage_uri must be a valid s3:// URI "
-                    "(s3://<bucket>/<key>)."
-                ),
+                message=("Document storage_uri must be a valid s3:// URI (s3://<bucket>/<key>)."),
                 field="storage_uri",
                 value=cleaned,
             )
@@ -462,10 +431,7 @@ class Document:
                     data={"field": "source_type", "value": source_type},
                 ) from exc
         raise ValidationException(
-            message=(
-                "source_type must be a SourceType enum value or a valid "
-                "source_type string."
-            ),
+            message=("source_type must be a SourceType enum value or a valid source_type string."),
             code=400,
             data={"field": "source_type"},
         )
@@ -487,10 +453,7 @@ class Document:
                     data={"field": "status", "value": status},
                 ) from exc
         raise ValidationException(
-            message=(
-                "status must be a DocumentStatus enum value or a valid "
-                "status string."
-            ),
+            message=("status must be a DocumentStatus enum value or a valid status string."),
             code=400,
             data={"field": "status"},
         )
@@ -545,10 +508,7 @@ class Document:
         target = self._validate_status(to_status)
         if not is_valid_transition(current, target):
             raise DocumentStateException(
-                message=(
-                    f"Illegal document status transition: "
-                    f"{current.value} -> {target.value}."
-                ),
+                message=(f"Illegal document status transition: {current.value} -> {target.value}."),
                 from_status=current.value,
                 to_status=target.value,
             )
@@ -654,9 +614,195 @@ class Document:
         )
 
 
+# ---------------------------------------------------------------------------
+# Chunk
+# ---------------------------------------------------------------------------
+
+
+@dataclass(eq=False)
+class Chunk:
+    """
+    Chunk — a persistent representation of a chunk of extracted text from a Document.
+
+    This represents the V2 state of ingestion. Vector embeddings and indexing
+    belong to V3, so this model only includes the fields necessary for V2.
+
+    Business rules enforced by this entity:
+
+    * `content` is not empty (and not just whitespace).
+    * `chunk_index` is >= 0.
+    * `document_id` is a valid UUID (not null).
+    * `tenant_id` is a valid UUID (not null).
+    * The chunk must belong to exactly one document.
+    * The chunk must belong to the same tenant as the document.
+    """
+
+    document_id: uuid.UUID
+    tenant_id: uuid.UUID
+    content: str
+    chunk_index: int
+    token_count: int
+    id: uuid.UUID = field(default_factory=uuid.uuid4)
+    metadata: dict = field(default_factory=dict)
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+
+    @classmethod
+    def create(
+        cls,
+        *,
+        document_id: uuid.UUID,
+        tenant_id: uuid.UUID,
+        content: str,
+        chunk_index: int,
+        token_count: int,
+        metadata: dict | None = None,
+    ) -> Chunk:
+        """Construct a new chunk."""
+        return cls(
+            document_id=document_id,
+            tenant_id=tenant_id,
+            content=content,
+            chunk_index=chunk_index,
+            token_count=token_count,
+            metadata=metadata if metadata is not None else {},
+        )
+
+    @classmethod
+    def from_persistence(
+        cls,
+        *,
+        id: uuid.UUID,
+        document_id: uuid.UUID,
+        tenant_id: uuid.UUID,
+        content: str,
+        chunk_index: int,
+        token_count: int,
+        metadata: dict,
+        created_at: datetime,
+    ) -> Chunk:
+        """Reconstruct a Chunk from a persistence-layer row."""
+        instance = object.__new__(cls)
+        object.__setattr__(instance, "id", id)
+        object.__setattr__(instance, "document_id", cls._validate_uuid(document_id, field="document_id"))
+        object.__setattr__(instance, "tenant_id", cls._validate_uuid(tenant_id, field="tenant_id"))
+        object.__setattr__(instance, "content", cls._validate_content(content))
+        object.__setattr__(instance, "chunk_index", cls._validate_non_negative_int(chunk_index, field="chunk_index"))
+        object.__setattr__(instance, "token_count", cls._validate_non_negative_int(token_count, field="token_count"))
+        object.__setattr__(instance, "metadata", cls._validate_metadata(metadata))
+        object.__setattr__(instance, "created_at", cls._validate_timestamp(created_at))
+        return instance
+
+    def __post_init__(self) -> None:
+        """Enforce the business rules documented on the class."""
+        object.__setattr__(self, "document_id", self._validate_uuid(self.document_id, field="document_id"))
+        object.__setattr__(self, "tenant_id", self._validate_uuid(self.tenant_id, field="tenant_id"))
+        object.__setattr__(self, "content", self._validate_content(self.content))
+        object.__setattr__(self, "chunk_index", self._validate_non_negative_int(self.chunk_index, field="chunk_index"))
+        object.__setattr__(self, "token_count", self._validate_non_negative_int(self.token_count, field="token_count"))
+        object.__setattr__(self, "metadata", self._validate_metadata(self.metadata))
+        object.__setattr__(self, "created_at", self._validate_timestamp(self.created_at))
+
+    @staticmethod
+    def _validate_uuid(val: uuid.UUID, *, field: str) -> uuid.UUID:
+        if not isinstance(val, uuid.UUID):
+            raise ValidationException(
+                message=f"Chunk {field} must be a UUID.",
+                code=400,
+                data={"field": field},
+            )
+        return val
+
+    @staticmethod
+    def _validate_content(content: str) -> str:
+        if not isinstance(content, str):
+            raise ValidationException(
+                message="Chunk content must be a string.",
+                code=400,
+                data={"field": "content"},
+            )
+        cleaned = content.strip()
+        if not cleaned:
+            raise ValidationException(
+                message="Chunk content cannot be empty.",
+                code=400,
+                data={"field": "content"},
+            )
+        return cleaned
+
+    @staticmethod
+    def _validate_non_negative_int(val: int, *, field: str) -> int:
+        if not isinstance(val, int) or isinstance(val, bool):
+            raise ValidationException(
+                message=f"Chunk {field} must be an integer.",
+                code=400,
+                data={"field": field},
+            )
+        if val < 0:
+            raise ValidationException(
+                message=f"Chunk {field} must be >= 0.",
+                code=400,
+                data={"field": field},
+            )
+        return val
+
+    @staticmethod
+    def _validate_metadata(metadata: dict) -> dict:
+        if not isinstance(metadata, dict):
+            raise ValidationException(
+                message="Chunk metadata must be a dictionary.",
+                code=400,
+                data={"field": "metadata"},
+            )
+        return metadata
+
+    @staticmethod
+    def _validate_timestamp(ts: datetime) -> datetime:
+        if not isinstance(ts, datetime):
+            raise ValidationException(
+                message="Chunk timestamp must be a datetime.",
+                code=400,
+                data={"field": "created_at"},
+            )
+        if ts.tzinfo is None:
+            raise ValidationException(
+                message="Chunk timestamp must be timezone-aware.",
+                code=400,
+                data={"field": "created_at"},
+            )
+        return ts
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Chunk):
+            return NotImplemented
+        return self.id == other.id
+
+    def __hash__(self) -> int:
+        return hash(self.id)
+
+
+# ---------------------------------------------------------------------------
+# ParsedDocument
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class ParsedDocument:
+    """
+    ParsedDocument — represents the extracted text and metadata from a raw file.
+
+    This is an intermediate representation passed from the parser to the chunker,
+    isolating the application layer from file-format-specific parsing details.
+    """
+    document_id: uuid.UUID
+    text: str
+    metadata: dict = field(default_factory=dict)
+
+
 __all__ = [
+    "Chunk",
     "Document",
     "DocumentStatus",
+    "ParsedDocument",
     "SourceType",
     "is_valid_transition",
 ]

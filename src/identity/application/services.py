@@ -297,9 +297,7 @@ class GetCurrentUserService:
         self._tenants = TenantRepository(session)
         self._users = UserRepository(session)
 
-    def execute(
-        self, *, user_id: uuid.UUID, tenant_id: uuid.UUID
-    ) -> tuple[User, Tenant]:
+    def execute(self, *, user_id: uuid.UUID, tenant_id: uuid.UUID) -> tuple[User, Tenant]:
         user = self._users.find_by_id(user_id, tenant_id=tenant_id)
         if user is None:
             raise UnauthorizedException(

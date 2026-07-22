@@ -1,6 +1,6 @@
 import logging
 import uuid
-from typing import BinaryIO
+from typing import BinaryIO, Protocol
 
 from src.ingestion.application.validators import FileValidator
 from src.ingestion.domain.entities import Document, DocumentStatus
@@ -11,12 +11,31 @@ from src.shared.exceptions import NotFoundException
 logger = logging.getLogger(__name__)
 
 
+class QueueClient(Protocol):
+    """
+    Minimal async-queue interface the upload service depends on.
+
+    The concrete implementation (ArqQueue) lives in the interface layer
+    so the application layer has zero direct dependency on Arq.
+    """
+
+    async def enqueue(self, task_name: str, **kwargs: object) -> None:
+        """Enqueue a named task with keyword arguments."""
+        ...
+
+
 class CreateDocumentService:
     """Orchestrates the creation and upload of a document."""
 
-    def __init__(self, repository: DocumentRepository, storage: ObjectStorage):
+    def __init__(
+        self,
+        repository: DocumentRepository,
+        storage: ObjectStorage,
+        queue: QueueClient | None = None,
+    ):
         self.repository = repository
         self.storage = storage
+        self._queue = queue
 
     def execute(
         self,
@@ -27,9 +46,7 @@ class CreateDocumentService:
         file_obj: BinaryIO,
     ) -> Document:
         # 1. Validate file
-        FileValidator.validate_file(
-            filename=filename, mime_type=mime_type, file_obj=file_obj
-        )
+        FileValidator.validate_file(filename=filename, mime_type=mime_type, file_obj=file_obj)
         file_obj.seek(0)
 
         # 2. Build domain entity and persist immediately with PENDING status
@@ -43,9 +60,7 @@ class CreateDocumentService:
         persisted = self.repository.create(document)
 
         # tenants/{tenant_id}/documents/{document_id}/original/{filename}
-        object_key = (
-            f"tenants/{tenant_id}/documents/{persisted.id}/original/{filename}"
-        )
+        object_key = f"tenants/{tenant_id}/documents/{persisted.id}/original/{filename}"
 
         # 3. Upload file; on failure mark the DB record as failed and re-raise
         try:
@@ -69,6 +84,20 @@ class CreateDocumentService:
         )
         persisted.set_storage_uri(storage_uri)
 
+        # 5. Enqueue background ingestion task — fire and forget.
+        #    The HTTP response returns immediately; the worker does the rest.
+        if self._queue is not None:
+            import asyncio
+
+            asyncio.get_event_loop().run_until_complete(
+                self._queue.enqueue(
+                    "ingest_document_task",
+                    document_id=str(persisted.id),
+                    tenant_id=str(tenant_id),
+                )
+            )
+            logger.info("Enqueued ingestion task for document %s", persisted.id)
+
         return persisted
 
 
@@ -81,9 +110,7 @@ class ListDocumentsService:
     def execute(
         self, tenant_id: uuid.UUID, limit: int = 50, offset: int = 0
     ) -> tuple[list[Document], int]:
-        documents = self.repository.list(
-            tenant_id=tenant_id, limit=limit, offset=offset
-        )
+        documents = self.repository.list(tenant_id=tenant_id, limit=limit, offset=offset)
         total = self.repository.count(tenant_id=tenant_id)
         return list(documents), total
 
@@ -111,7 +138,37 @@ class GetDocumentStatusService:
     def __init__(self, repository: DocumentRepository):
         self.repository = repository
 
-    def execute(self, tenant_id: uuid.UUID, document_id: uuid.UUID) -> DocumentStatus:
+    def execute(self, tenant_id: uuid.UUID, document_id: uuid.UUID) -> Document:
+        import asyncio
+        from src.platform.cache import get_cache, set_cache
+        from src.ingestion.domain.entities import DocumentStatus, SourceType
+        import datetime
+
+        cache_key = f"doc_status:{document_id}"
+        try:
+            cached = asyncio.run(get_cache(cache_key))
+            if cached and cached.get("tenant_id") == str(tenant_id):
+                # We need to construct a Document from the cached dict
+                # Note: this bypasses full domain validation to save time,
+                # as we only care about the status properties for polling
+                doc = Document(
+                    id=uuid.UUID(cached["id"]),
+                    tenant_id=uuid.UUID(cached["tenant_id"]),
+                    source_type=cached["source_type"],
+                    title=cached["title"],
+                    mime_type=cached["mime_type"],
+                    created_by=uuid.UUID(cached["created_by"]),
+                    storage_uri=cached.get("storage_uri"),
+                    status=cached["status"],
+                    version=cached.get("version", 1),
+                    created_at=datetime.datetime.fromisoformat(cached["created_at"]),
+                    retry_count=cached.get("retry_count", 0),
+                    last_error=cached.get("last_error"),
+                )
+                return doc
+        except Exception as e:
+            logger.error(f"Cache read error for {document_id}: {e}")
+
         document = self.repository.get_by_id(document_id, tenant_id=tenant_id)
         if not document:
             raise NotFoundException(
@@ -119,7 +176,29 @@ class GetDocumentStatusService:
                 code=404,
                 data={"document_id": str(document_id)},
             )
-        return document.status
+            
+        try:
+            import dataclasses
+            # Extract basic dict and serialize specific fields
+            doc_dict = dataclasses.asdict(document)
+            doc_dict["id"] = str(document.id)
+            doc_dict["tenant_id"] = str(document.tenant_id)
+            doc_dict["created_by"] = str(document.created_by)
+            if document.source_type:
+                doc_dict["source_type"] = (
+                    document.source_type.value if hasattr(document.source_type, "value") else str(document.source_type)
+                )
+            if document.status:
+                doc_dict["status"] = (
+                    document.status.value if hasattr(document.status, "value") else str(document.status)
+                )
+            doc_dict["created_at"] = document.created_at.isoformat()
+            
+            asyncio.run(set_cache(cache_key, doc_dict, ttl_seconds=60))
+        except Exception as e:
+            logger.error(f"Cache write error for {document_id}: {e}")
+
+        return document
 
 
 class DeleteDocumentService:

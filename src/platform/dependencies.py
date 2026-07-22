@@ -178,10 +178,7 @@ def _role_check(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail={
-                "message": (
-                    f"This action requires at least the "
-                    f"'{min_role.value}' role."
-                ),
+                "message": (f"This action requires at least the '{min_role.value}' role."),
                 "code": 403,
                 "data": {
                     "field": "role",

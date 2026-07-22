@@ -37,9 +37,7 @@ class UnauthorizedException(BaseAppException):
     Exception raised for unauthorized access.
     """
 
-    def __init__(
-        self, message: str = "unauthorized", code: int = 401, data: dict | None = None
-    ):
+    def __init__(self, message: str = "unauthorized", code: int = 401, data: dict | None = None):
         super().__init__(message, code, False, data=data)
 
 
@@ -48,9 +46,7 @@ class NotFoundException(BaseAppException):
     Exception raised when a resource is not found.
     """
 
-    def __init__(
-        self, message: str = "not found", code: int = 404, data: dict | None = None
-    ):
+    def __init__(self, message: str = "not found", code: int = 404, data: dict | None = None):
         super().__init__(message, code, False, data=data)
 
 
@@ -59,7 +55,5 @@ class ConflictException(BaseAppException):
     Exception raised for conflict errors.
     """
 
-    def __init__(
-        self, message: str = "conflict", code: int = 409, data: dict | None = None
-    ):
+    def __init__(self, message: str = "conflict", code: int = 409, data: dict | None = None):
         super().__init__(message, code, False, data=data)

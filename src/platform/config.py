@@ -41,7 +41,7 @@ class Settings(BaseSettings):
     S3_BUCKET: str | None = None
     S3_ACCESS_KEY: str | None = None
     S3_SECRET_KEY: str | None = None
-    
+
     # --- Ingestion specific ---
     MAX_DOCUMENT_SIZE_BYTES: int = 10 * 1024 * 1024  # 10MB default
 
