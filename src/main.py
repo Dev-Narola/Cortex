@@ -7,10 +7,19 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 
-from .api import api_router
+from .api import api_router, ws_router
 from .observability.interface.rest.routes import router as health_router
-from .platform.config import settings
-from .platform.redis_client import close_redis, init_redis
+from .core.config import settings
+from .core.logging import configure_logging
+from .core.middleware import (
+    LoggingMiddleware,
+    TracingMiddleware,
+)
+from .core.redis_client import close_redis, init_redis
+from .observability.infrastructure.otel import (
+    configure_tracing,
+    shutdown_tracing,
+)
 from .shared.exceptions import (
     BaseAppException,
     ConflictException,
@@ -27,6 +36,20 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # --- V4: Boot-time observability setup ---------------
+    # Configure structlog first so the subsequent
+    # ``logger.info(...)`` calls render as JSON. The
+    # function is idempotent — safe to call here even
+    # though ``logging.basicConfig`` already installed a
+    # stdlib handler above; the function will replace the
+    # root handler list.
+    configure_logging()
+    # Install the OpenTelemetry tracer provider + the
+    # standard auto-instrumentors (SQLAlchemy, Redis,
+    # HTTPX). ``component="api"`` is the value that ends
+    # up in the ``service.name`` resource attribute.
+    configure_tracing(component="api")
+
     start_time = time()
     logger.info("Starting up the application...")
     await init_redis()
@@ -34,6 +57,9 @@ async def lifespan(app: FastAPI):
         yield
     finally:
         await close_redis()
+        # Flush any buffered spans before the process
+        # exits so the last batch of traces isn't lost.
+        shutdown_tracing()
         end_time = time()
         logger.info(
             "Shutting down the application... Total uptime: %.2f seconds",
@@ -58,6 +84,22 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# --- V4: request-level observability middlewares ---
+# ``TracingMiddleware`` wraps each request in an OpenTelemetry
+# server span so the trace tree (HTTP → application → DB → Redis
+# → LLM) is queryable end-to-end. ``LoggingMiddleware``
+# generates / propagates the ``X-Request-ID`` and binds it to
+# the per-request log context so every log line carries the
+# same id.
+#
+# Starlette runs the *last* added middleware *first*, so
+# ``TracingMiddleware`` ends up as the outermost layer (so
+# its span encloses the whole request, including the work
+# ``LoggingMiddleware`` does). Both are best-effort: a
+# failure in either never breaks the request.
+app.add_middleware(LoggingMiddleware)
+app.add_middleware(TracingMiddleware)
 
 
 # ---------------------------------------------------------------------------
@@ -102,6 +144,7 @@ async def root():
 
 app.include_router(health_router)
 app.include_router(api_router, prefix=settings.API_V1_PREFIX, tags=["API"])
+app.include_router(ws_router)
 
 
 @app.exception_handler(Exception)

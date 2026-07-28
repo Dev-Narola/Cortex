@@ -34,7 +34,7 @@ os.environ.setdefault("ENVIRONMENT", "test")
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from src.platform.database import Base
+from src.core.database import Base
 from src.ingestion.infrastructure.models import (
     DocumentModel,
     DocumentChunkModel,

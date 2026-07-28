@@ -9,7 +9,7 @@ import os
 import pytest
 from redis.exceptions import ConnectionError, RedisError
 
-from src.platform.redis_client import close_redis, get_redis, init_redis, ping
+from src.core.redis_client import close_redis, get_redis, init_redis, ping
 
 
 @pytest.mark.integration
@@ -84,7 +84,7 @@ async def test_redis_integration():
 @pytest.mark.integration
 def test_get_redis_client_sync():
     """Test the synchronous getter for Redis client."""
-    from src.platform.redis_client import get_redis_client
+    from src.core.redis_client import get_redis_client
 
     # Should return None when not initialized
     assert get_redis_client() is None

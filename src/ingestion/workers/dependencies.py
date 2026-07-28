@@ -20,7 +20,7 @@ from src.ingestion.infrastructure.chunk_repository import ChunkRepository
 from src.ingestion.infrastructure.parser_registry import parser_registry
 from src.ingestion.infrastructure.repositories import DocumentRepository
 from src.ingestion.infrastructure.s3_storage import S3Storage
-from src.platform.config import settings
+from src.core.config import settings
 
 # ---------------------------------------------------------------------------
 # Database
@@ -76,6 +76,30 @@ def get_chunker(config: ChunkingConfig):
 
 
 # ---------------------------------------------------------------------------
+# Embedding resolution
+# ---------------------------------------------------------------------------
+
+def get_embedding_provider():
+    """
+    Resolve the configured embedding provider.
+
+    Centralised here (not in the application service) so the same
+    provider is reused across every worker invocation, and so the
+    worker code never imports from ``src.embedding.infrastructure``
+    directly.
+    """
+    provider = (settings.EMBEDDING_PROVIDER or "openai").lower()
+    if provider == "openai":
+        from src.embedding.infrastructure.providers.openai import (
+            OpenAIEmbeddingProvider,
+        )
+        return OpenAIEmbeddingProvider()
+    raise ValueError(
+        f"Unknown embedding provider: {settings.EMBEDDING_PROVIDER!r}. "
+        f"Supported: 'openai'."
+    )
+
+# ---------------------------------------------------------------------------
 # Convenience re-exports used by tasks.py
 # ---------------------------------------------------------------------------
 
@@ -88,4 +112,5 @@ __all__ = [
     "DocumentRepository",
     "ProcessingAttemptRepository",
     "ChunkingConfig",
+    "get_embedding_provider",
 ]

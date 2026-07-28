@@ -81,8 +81,13 @@ services:
       POSTGRES_DB: app
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    # V4 fix — host port 5432 is taken by a Windows
+    # Postgres service on this machine; map to 5433
+    # on the host instead. The application / migrations
+    # talk to ``localhost:5433``; everything inside
+    # the docker network still uses 5432.
     ports:
-      - "5432:5432"
+      - "5433:5432"
     networks:
       - cortex-net
     healthcheck:
@@ -94,8 +99,13 @@ services:
 
   redis:
     image: redis:7-alpine
+    # V4 fix — host port 6379 is taken by a Windows
+    # redis-server on this machine; map to 6380 on
+    # the host instead. The application / migrations
+    # talk to ``localhost:6380``; everything inside
+    # the docker network still uses 6379.
     ports:
-      - "6379:6379"
+      - "6380:6379"
     volumes:
       - redis_data:/data
     networks:

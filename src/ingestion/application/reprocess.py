@@ -13,7 +13,7 @@ from src.ingestion.application.services import QueueClient
 from src.ingestion.application.status_transition import DocumentStatusTransitionService
 from src.ingestion.infrastructure.repositories import DocumentRepository
 from src.ingestion.interface.rest.queue import get_arq_queue
-from src.platform.database import get_db
+from src.core.database import get_db
 
 
 class ReprocessDocumentService:
@@ -52,7 +52,7 @@ class ReprocessDocumentService:
 
     def _enqueue(self, document_id: uuid.UUID, *, tenant_id: uuid.UUID) -> None:
         import asyncio
-        from src.platform.cache import invalidate_cache
+        from src.core.cache import invalidate_cache
 
         # Invalidate cache since status was reset to PENDING
         cache_key = f"doc_status:{document_id}"

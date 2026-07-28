@@ -21,6 +21,7 @@ from fastapi import (
     Depends,
     Path,
     Query,
+    Request,
     Response,
     status,
 )
@@ -36,14 +37,94 @@ from src.identity.application.services import (
     UpdateTenantService,
 )
 from src.identity.domain.entities import ApiKey, Plan, Role, Tenant, User
-from src.platform.database import get_db
-from src.platform.dependencies import (
+from src.core.database import get_db
+from src.core.dependencies import (
     get_current_user,
     require_admin,
     require_member,
 )
 
+# V4 Phase 15 / Phase 30 — audit event wiring on the
+# privileged routes (login, API key create / revoke,
+# tenant / user / role changes). The audit log is
+# append-only; the audit row is the *only* evidence
+# the operator has that an action happened, so the
+# call sites catch AuditRecordingError and log a
+# critical line (the security gap is signal, not
+# silent) but do not re-raise — the underlying
+# action has already succeeded.
+from src.observability.application.audit_service import (  # noqa: E402
+    AuditRecordingError,
+    AuditService,
+)
+from src.observability.domain.entities import AuditAction  # noqa: E402
+from src.observability.infrastructure.repositories import (  # noqa: E402
+    AuditSqlRepository,
+)
+
+
 router = APIRouter()
+
+
+def _client_ip(request: Request | None) -> str | None:
+    """Best-effort client IP extraction.
+
+    Reads ``X-Forwarded-For`` first (the operator's
+    load balancer / ingress is expected to set it),
+    then ``request.client.host``. Returns ``None`` if
+    neither is available (which the audit row treats
+    as "unknown" — never as a 500).
+    """
+    if request is None:
+        return None
+    xff = request.headers.get("x-forwarded-for")
+    if xff:
+        # XFF is a comma-separated list; the first
+        # entry is the original client.
+        return xff.split(",")[0].strip()
+    if request.client is not None:
+        return request.client.host
+    return None
+
+
+def _safe_audit(
+    db: Session,
+    *,
+    tenant_id: uuid.UUID,
+    action: AuditAction,
+    actor_user_id: uuid.UUID | None = None,
+    resource_type: str | None = None,
+    resource_id: str | None = None,
+    metadata: dict | None = None,
+    ip_address: str | None = None,
+) -> None:
+    """Record an audit event, swallowing + logging the failure.
+
+    Used by the route layer. The underlying action
+    (login, API key create, tenant update) has
+    already succeeded by the time the audit row is
+    attempted; we never want to fail the request
+    because the audit log write failed. We do want
+    to make the gap visible: critical log + a
+    counter tick (handled inside ``AuditService``).
+    """
+    try:
+        AuditService(repository=AuditSqlRepository(db)).record(
+            tenant_id=tenant_id,
+            action=action,
+            actor_user_id=actor_user_id,
+            resource_type=resource_type,
+            resource_id=str(resource_id) if resource_id else None,
+            metadata=metadata or {},
+            ip_address=ip_address,
+        )
+    except AuditRecordingError:
+        # The counter + critical log already fired
+        # inside AuditService. We intentionally do
+        # not raise — the action that was audited
+        # has already succeeded and the user should
+        # not see a 500 for a logging-side failure.
+        pass
 
 
 # ---------------------------------------------------------------------------
@@ -203,6 +284,7 @@ def _api_key_to_response(key: ApiKey) -> ApiKeyResponse:
 )
 def register_tenant(
     body: RegisterRequest,
+    request: Request,
     response: Response,
     db: Session = Depends(get_db),
 ) -> TokenResponse:
@@ -227,6 +309,28 @@ def register_tenant(
         email=body.email,
         password=body.password,
     )
+    # V4 Phase 30 — record the tenant creation. The
+    # owner is the actor; the new tenant id is both
+    # the resource and the audit tenant scope. Done
+    # *after* the service call so a failed write
+    # never blocks registration.
+    _safe_audit(
+        db,
+        tenant_id=result.tenant.id,
+        action=AuditAction.TENANT_CREATED,
+        actor_user_id=issued.user.id,
+        resource_type="tenant",
+        resource_id=result.tenant.id,
+        metadata={"slug": result.tenant.slug, "name": result.tenant.name},
+        ip_address=_client_ip(request),
+    )
+    # The V3 services auto-commit internally, so the
+    # tenant + user rows are already persisted. The
+    # audit row is appended in the *same* session and
+    # needs an explicit commit before the request
+    # handler returns; otherwise the row would be
+    # rolled back when ``get_db`` closes the session.
+    db.commit()
     response.status_code = status.HTTP_201_CREATED
     return TokenResponse(
         access_token=issued.access_token,
@@ -248,17 +352,76 @@ def register_tenant(
         401: {"description": "Invalid credentials"},
     },
 )
-def login(body: LoginRequest, db: Session = Depends(get_db)) -> TokenResponse:
+def login(
+    body: LoginRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> TokenResponse:
     """
     Authenticate with `tenant_slug` + `email` + `password` and
     receive a new access + refresh token pair.
     """
     service = AuthenticateUserService(db)
-    issued = service.execute(
-        tenant_slug=body.tenant_slug,
-        email=body.email,
-        password=body.password,
+    try:
+        issued = service.execute(
+            tenant_slug=body.tenant_slug,
+            email=body.email,
+            password=body.password,
+        )
+    except Exception:
+        # V4 Phase 30 — failed login audit. The
+        # tenant_slug from the request body is the
+        # only tenant context we have; we still try
+        # to resolve the tenant id so the audit row
+        # is properly tenant-scoped (a failed login
+        # is a per-tenant security event, not a
+        # global one).
+        try:
+            from src.identity.infrastructure.repositories import (
+                TenantRepository,
+            )
+
+            tenant_obj = (
+                TenantRepository(db).get_by_slug(body.tenant_slug)
+                if body.tenant_slug
+                else None
+            )
+            tenant_id = tenant_obj.id if tenant_obj else uuid.UUID(int=0)
+        except Exception:
+            # Fall back to a zero UUID; the row is
+            # tagged outcome=failed so the operator
+            # can filter for it.
+            tenant_id = uuid.UUID(int=0)
+        _safe_audit(
+            db,
+            tenant_id=tenant_id,
+            action=AuditAction.LOGIN_FAILURE,
+            resource_type="session",
+            resource_id=None,
+            metadata={
+                "tenant_slug": body.tenant_slug,
+                "email": body.email,
+            },
+            ip_address=_client_ip(request),
+        )
+        # Commit so the failure audit row is durable
+        # even when the underlying auth error is
+        # re-raised to the client.
+        db.commit()
+        raise
+    _safe_audit(
+        db,
+        tenant_id=issued.tenant.id,
+        action=AuditAction.LOGIN_SUCCESS,
+        actor_user_id=issued.user.id,
+        resource_type="session",
+        resource_id=issued.user.id,
+        ip_address=_client_ip(request),
     )
+    # Commit so the audit row is durable — the
+    # ``AuthenticateUserService`` updates ``last_login``
+    # but does not commit the audit row.
+    db.commit()
     return TokenResponse(
         access_token=issued.access_token,
         refresh_token=issued.refresh_token,
@@ -377,10 +540,11 @@ def get_my_tenant(
 )
 def update_my_tenant(
     body: UpdateTenantRequest,
+    request: Request,
     current: tuple[User, Tenant] = Depends(require_admin),
     db: Session = Depends(get_db),
 ) -> TenantResponse:
-    _, tenant = current
+    user, tenant = current
     service = UpdateTenantService(db)
     updated = service.execute(
         tenant_id=tenant.id,
@@ -388,6 +552,31 @@ def update_my_tenant(
         plan=body.plan,
         settings=body.settings,
     )
+    # V4 Phase 30 — tenant changes (name, plan,
+    # settings) are audited. The metadata captures
+    # only the *fields* that actually changed, not
+    # the full new value, so a tenant-wide PII
+    # field accidentally placed under ``settings``
+    # is not leaked into the audit log.
+    changed_fields: list[str] = []
+    if body.name is not None and body.name != tenant.name:
+        changed_fields.append("name")
+    if body.plan is not None and body.plan != tenant.plan:
+        changed_fields.append("plan")
+    if body.settings is not None:
+        changed_fields.append("settings")
+    _safe_audit(
+        db,
+        tenant_id=tenant.id,
+        action=AuditAction.TENANT_UPDATED,
+        actor_user_id=user.id,
+        resource_type="tenant",
+        resource_id=tenant.id,
+        metadata={"changed_fields": changed_fields},
+        ip_address=_client_ip(request),
+    )
+    # Commit so the audit row is durable.
+    db.commit()
     return _tenant_to_response(updated)
 
 
@@ -410,16 +599,36 @@ def update_my_tenant(
 )
 def create_api_key(
     body: CreateApiKeyRequest,
+    request: Request,
     current: tuple[User, Tenant] = Depends(require_admin),
     db: Session = Depends(get_db),
 ) -> ApiKeyCreatedResponse:
-    _, tenant = current
+    user, tenant = current
     service = CreateApiKeyService(db)
     issued = service.execute(
         tenant_id=tenant.id,
         name=body.name,
         scopes=body.scopes,
     )
+    # V4 Phase 30 — API key creation is a privileged
+    # action; the audit row records the actor, the
+    # new key id, and the scopes. The raw key is
+    # *never* written to the audit log (it's only
+    # in the response body, returned once).
+    _safe_audit(
+        db,
+        tenant_id=tenant.id,
+        action=AuditAction.API_KEY_CREATED,
+        actor_user_id=user.id,
+        resource_type="api_key",
+        resource_id=issued.api_key.id,
+        metadata={"name": body.name, "scopes": list(body.scopes)},
+        ip_address=_client_ip(request),
+    )
+    # Commit so the audit row is durable; the V3
+    # ``CreateApiKeyService`` commits the key but
+    # not the audit.
+    db.commit()
     base = _api_key_to_response(issued.api_key)
     return ApiKeyCreatedResponse(
         **base.model_dump(),
@@ -463,13 +672,29 @@ def list_api_keys(
     },
 )
 def revoke_api_key(
+    request: Request,
     api_key_id: uuid.UUID = Path(..., description="ID of the API key to revoke"),
     current: tuple[User, Tenant] = Depends(require_admin),
     db: Session = Depends(get_db),
 ) -> ApiKeyResponse:
-    _, tenant = current
+    user, tenant = current
     service = RevokeApiKeyService(db)
     key = service.execute(api_key_id=api_key_id, tenant_id=tenant.id)
+    # V4 Phase 30 — API key revocation is a privileged
+    # action; the audit row is the only place a
+    # future operator can find out who revoked what.
+    _safe_audit(
+        db,
+        tenant_id=tenant.id,
+        action=AuditAction.API_KEY_REVOKED,
+        actor_user_id=user.id,
+        resource_type="api_key",
+        resource_id=key.id,
+        metadata={"name": key.name},
+        ip_address=_client_ip(request),
+    )
+    # Commit so the audit row is durable.
+    db.commit()
     return _api_key_to_response(key)
 
 

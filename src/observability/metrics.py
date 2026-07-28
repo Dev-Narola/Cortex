@@ -1,50 +1,77 @@
 """
-Metrics initialization layer for observability.
+Metrics compatibility shim (V3 → V4).
+
+V3 had a tiny ``metrics.py`` that exposed two counters and
+called them via the Prometheus client. V4 replaces the
+contents of that module with a fully-namespaced registry of
+counters / histograms / gauges in
+:mod:`src.observability.infrastructure.metrics`.
+
+This shim re-exports the new module's public surface so any
+existing V3 import keeps working without a code change.
 """
 
-
-def init_metrics() -> None:
-    """
-    Initialize metrics infrastructure.
-    Placeholder for future metrics backend integration.
-    """
-    pass
-
-
-def increment_counter(name: str, tags: dict[str, str] | None = None, value: float = 1.0) -> None:
-    """
-    Increment a counter metric.
-    Placeholder for future metrics backend integration.
-
-    Args:
-        name: Name of the metric
-        tags: Optional tags for the metric
-        value: Value to increment by (default: 1.0)
-    """
-    pass
-
-
-def set_gauge(name: str, value: float, tags: dict[str, str] | None = None) -> None:
-    """
-    Set a gauge metric.
-    Placeholder for future metrics backend integration.
-
-    Args:
-        name: Name of the metric
-        value: Value to set the gauge to
-        tags: Optional tags for the metric
-    """
-    pass
+from src.observability.infrastructure.metrics import (
+    EMBEDDING_CACHE_HITS_TOTAL,
+    EMBEDDING_CACHE_MISSES_TOTAL,
+    EMBEDDING_CALLS_TOTAL,
+    EMBEDDING_DURATION_SECONDS,
+    EMBEDDING_TOKENS_TOTAL,
+    EMBEDDING_VECTORS_TOTAL,
+    HTTP_REQUESTS_IN_FLIGHT,
+    HTTP_REQUEST_DURATION_SECONDS,
+    HTTP_REQUESTS_TOTAL,
+    LLM_CALLS_TOTAL,
+    LLM_COST_TOTAL,
+    LLM_INPUT_TOKENS_TOTAL,
+    LLM_LATENCY_SECONDS,
+    LLM_OUTPUT_TOKENS_TOTAL,
+    REDIS_CACHE_HITS_TOTAL,
+    REDIS_CACHE_MISSES_TOTAL,
+    REGISTRY,
+    RERANK_CALLS_TOTAL,
+    RERANK_CANDIDATES_TOTAL,
+    RERANK_DURATION_SECONDS,
+    RETRIEVAL_DURATION_SECONDS,
+    RETRIEVAL_REQUESTS_TOTAL,
+    RETRIEVAL_RESULTS_COUNT,
+    USAGE_RECORDING_FAILURES_TOTAL,
+    WORKER_TASK_DURATION_SECONDS,
+    WORKER_TASK_FAILURES_TOTAL,
+    WORKER_TASK_RETRIES_TOTAL,
+    WORKER_TASKS_TOTAL,
+    render_latest,
+)
 
 
-def record_histogram(name: str, value: float, tags: dict[str, str] | None = None) -> None:
-    """
-    Record a value in a histogram metric.
-    Placeholder for future metrics backend integration.
-
-    Args:
-        name: Name of the metric
-        value: Value to record
-        tags: Optional tags for the metric
-    """
-    pass
+__all__ = [
+    "EMBEDDING_CACHE_HITS_TOTAL",
+    "EMBEDDING_CACHE_MISSES_TOTAL",
+    "EMBEDDING_CALLS_TOTAL",
+    "EMBEDDING_DURATION_SECONDS",
+    "EMBEDDING_TOKENS_TOTAL",
+    "EMBEDDING_VECTORS_TOTAL",
+    "HTTP_REQUESTS_IN_FLIGHT",
+    "HTTP_REQUEST_DURATION_SECONDS",
+    "HTTP_REQUESTS_TOTAL",
+    "LLM_CALLS_TOTAL",
+    "LLM_COST_TOTAL",
+    "LLM_INPUT_TOKENS_TOTAL",
+    "LLM_LATENCY_SECONDS",
+    "LLM_OUTPUT_TOKENS_TOTAL",
+    "REDIS_CACHE_HITS_TOTAL",
+    "REDIS_CACHE_MISSES_TOTAL",
+    "REGISTRY",
+    "RERANK_CALLS_TOTAL",
+    "RERANK_CANDIDATES_TOTAL",
+    "RERANK_DURATION_SECONDS",
+    "RETRIEVAL_DURATION_SECONDS",
+    "RETRIEVAL_REQUESTS_TOTAL",
+    "RETRIEVAL_RESULTS_COUNT",
+    "USAGE_RECORDING_FAILURES_TOTAL",
+    "WORKER_TASK_DURATION_SECONDS",
+    "WORKER_TASK_FAILURES_TOTAL",
+    "WORKER_TASK_RETRIES_TOTAL",
+    "WORKER_TASKS_TOTAL",
+    "render_latest",
+]

@@ -27,7 +27,7 @@ def test_execute_retry(repository, transition_service, queue):
     with patch.object(transition_service, 'retry') as mock_retry, \
          patch("asyncio.run") as mock_asyncio_run, \
          patch("asyncio.get_event_loop") as mock_get_loop, \
-         patch("src.platform.cache.invalidate_cache", new_callable=AsyncMock) as mock_invalidate:
+         patch("src.core.cache.invalidate_cache", new_callable=AsyncMock) as mock_invalidate:
         
         import asyncio
         # Actually run the coroutine in the test loop
@@ -61,7 +61,7 @@ def test_execute_reprocess(repository, transition_service, queue):
     with patch.object(transition_service, 'reprocess') as mock_reprocess, \
          patch("asyncio.run") as mock_asyncio_run, \
          patch("asyncio.get_event_loop") as mock_get_loop, \
-         patch("src.platform.cache.invalidate_cache", new_callable=AsyncMock) as mock_invalidate:
+         patch("src.core.cache.invalidate_cache", new_callable=AsyncMock) as mock_invalidate:
              
         import asyncio
         def run_coro(coro):

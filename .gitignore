@@ -9,3 +9,19 @@ cortex.egg-info/
 dist/
 build/
 *.egg-info
+htmlcov/
+
+# V4 dev artifacts
+coverage.xml
+evals/results/
+_worker.log
+_api.log
+_*.py
+_*.json
+_worker_out.log
+htmlcov/
+
+# IDE
+.vscode/
+.idea/
+*.swp

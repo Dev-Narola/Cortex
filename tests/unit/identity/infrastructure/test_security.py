@@ -140,7 +140,7 @@ def test_jwt_expiry_reflects_settings_change():
     """jwt_default_expiry() reads from settings at call time so a
     platform operator can tune token lifetimes via .env without a
     code change or a restart of the test process."""
-    from src.platform import config
+    from src.core import config
 
     original = config.settings.ACCESS_TOKEN_EXPIRE_MINUTES
     try:

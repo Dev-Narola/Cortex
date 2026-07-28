@@ -140,7 +140,7 @@ class GetDocumentStatusService:
 
     def execute(self, tenant_id: uuid.UUID, document_id: uuid.UUID) -> Document:
         import asyncio
-        from src.platform.cache import get_cache, set_cache
+        from src.core.cache import get_cache, set_cache
         from src.ingestion.domain.entities import DocumentStatus, SourceType
         import datetime
 

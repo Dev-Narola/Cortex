@@ -35,6 +35,7 @@ from src.ingestion.workers.dependencies import (
     get_db_session,
     get_storage,
     parser_registry,
+    get_embedding_provider,
 )
 from src.ingestion.workers.errors import (
     ChunkingError,
@@ -43,7 +44,7 @@ from src.ingestion.workers.errors import (
     StorageError,
     TransientWorkerError,
 )
-from src.platform.cache import invalidate_cache
+from src.core.cache import invalidate_cache
 
 logger = logging.getLogger(__name__)
 
@@ -219,16 +220,24 @@ async def ingest_document_task(
         logger.info("Document %s: persisted %d chunks", doc_id, inserted)
 
         # ------------------------------------------------------------------
-        # 9. Mark INDEXED and close attempt
+        # 9. Mark EMBEDDING and enqueue embedding task
         # ------------------------------------------------------------------
-        doc_repo.update_status(doc_id, tenant_id=ten_id, status=DocumentStatus.INDEXED)
+        doc_repo.update_status(doc_id, tenant_id=ten_id, status=DocumentStatus.EMBEDDING)
         attempt_repo.succeed(attempt_id)
         session.commit()
         await invalidate_cache(f"doc_status:{doc_id}")
-        logger.info("Document %s → indexed ✓", doc_id)
+        logger.info("Document %s → embedding", doc_id)
+        
+        # Enqueue the next pipeline step
+        if "redis" in ctx:
+            await ctx["redis"].enqueue_job(
+                "embed_chunks_task",
+                document_id=document_id,
+                tenant_id=tenant_id,
+            )
 
         return {
-            "status": "indexed",
+            "status": "embedding",
             "document_id": document_id,
             "chunk_count": inserted,
         }
@@ -331,3 +340,126 @@ def _mark_failed_permanent(
         )
     )
     session.flush()
+
+async def embed_chunks_task(
+    ctx: dict,
+    *,
+    document_id: str,
+    tenant_id: str,
+) -> dict:
+    from src.embedding.application.services import EmbedDocumentChunksService
+    from src.embedding.domain.errors import PermanentEmbeddingError, TransientEmbeddingError
+    from arq import Retry
+
+    doc_id = uuid.UUID(document_id)
+    ten_id = uuid.UUID(tenant_id)
+    attempt_number: int = ctx.get("job_try", 1)
+
+    session = get_db_session()
+    attempt_id: uuid.UUID | None = None
+    
+    try:
+        doc_repo = DocumentRepository(session)
+        chunk_repo = ChunkRepository(session)
+        attempt_repo = ProcessingAttemptRepository(session)
+
+        document = doc_repo.get_by_id(doc_id, tenant_id=ten_id)
+        if not document:
+            return {"status": "not_found"}
+        
+        if document.status != DocumentStatus.EMBEDDING:
+            logger.warning(
+                "Document %s is already in status %s; skipping.",
+                doc_id,
+                document.status,
+            )
+            return {"status": "skipped", "reason": str(document.status)}
+
+        attempt_id = attempt_repo.start(
+            doc_id, tenant_id=ten_id, attempt_number=attempt_number
+        )
+        session.commit()
+
+        provider = get_embedding_provider()
+        service = EmbedDocumentChunksService(provider, chunk_repo)
+        
+        try:
+            embedded_count = await service.embed_document(doc_id, tenant_id=ten_id)
+        except TransientEmbeddingError as exc:
+            raise TransientWorkerError(str(exc), original=exc) from exc
+        except PermanentEmbeddingError as exc:
+            raise PermanentWorkerError(
+                error_code="EMBEDDING_FAILED",
+                message=str(exc),
+                original=exc
+            ) from exc
+
+        # Mark INDEXED
+        doc_repo.update_status(doc_id, tenant_id=ten_id, status=DocumentStatus.INDEXED)
+        attempt_repo.succeed(attempt_id)
+        session.commit()
+        await invalidate_cache(f"doc_status:{doc_id}")
+        logger.info("Document %s → indexed ✓", doc_id)
+
+        return {
+            "status": "indexed",
+            "document_id": document_id,
+            "embedded_count": embedded_count
+        }
+
+    except TransientWorkerError as exc:
+        session.rollback()
+        logger.warning(
+            "Transient failure embedding document %s (attempt %d). Error: %s",
+            doc_id,
+            attempt_number,
+            exc,
+        )
+        delay = _backoff_seconds(attempt_number)
+        raise Retry(defer=delay) from exc
+
+    except PermanentWorkerError as exc:
+        session.rollback()
+        logger.error("Permanent failure embedding document %s: %s", doc_id, exc)
+        _mark_failed_permanent(
+            doc_repo=doc_repo,
+            session=session,
+            doc_id=doc_id,
+            ten_id=ten_id,
+            error_message=str(exc),
+        )
+        if attempt_id:
+            attempt_repo.fail(
+                attempt_id,
+                error_code=exc.error_code,
+                error_message=str(exc),
+            )
+        session.commit()
+        await invalidate_cache(f"doc_status:{doc_id}")
+        return {"status": "failed", "reason": exc.error_code}
+
+    except Exception as exc:
+        session.rollback()
+        logger.exception("Unexpected error embedding document %s", doc_id)
+        if attempt_number < 4:
+            delay = _backoff_seconds(attempt_number)
+            raise Retry(defer=delay) from exc
+        
+        _mark_failed_permanent(
+            doc_repo=doc_repo,
+            session=session,
+            doc_id=doc_id,
+            ten_id=ten_id,
+            error_message=f"Unexpected error: {exc}",
+        )
+        if attempt_id:
+            attempt_repo.fail(
+                attempt_id,
+                error_code="UNEXPECTED_ERROR",
+                error_message=str(exc)[:1024],
+            )
+        session.commit()
+        await invalidate_cache(f"doc_status:{doc_id}")
+        return {"status": "failed", "reason": "unexpected_error"}
+    finally:
+        session.close()

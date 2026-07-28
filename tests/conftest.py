@@ -21,9 +21,9 @@ from httpx import ASGITransport, AsyncClient  # noqa: E402
 from sqlalchemy.ext.asyncio import AsyncSession  # noqa: E402
 
 from src.main import app  # noqa: E402
-from src.platform.config import Settings  # noqa: E402
-from src.platform.database import get_db as get_db_dep  # noqa: E402
-from src.platform.redis_client import get_redis as get_redis_dep  # noqa: E402
+from src.core.config import Settings  # noqa: E402
+from src.core.database import get_db as get_db_dep  # noqa: E402
+from src.core.redis_client import get_redis as get_redis_dep  # noqa: E402
 
 
 @pytest.fixture

@@ -29,7 +29,7 @@ from pathlib import Path
 # Make `src` importable when running this script directly.
 # Put the PARENT of `src/` on sys.path so that `src.xxx` imports
 # work, but `import platform` still resolves to the stdlib module
-# (otherwise the project's `src.platform` package shadows it and
+# (otherwise the project's `src.core` package shadows it and
 # SQLAlchemy's import breaks).
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 _SRC_PARENT = _REPO_ROOT  # the directory that contains `src/`
@@ -42,7 +42,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from src.main import app
-from src.platform.database import Base, get_db
+from src.core.database import Base, get_db
 
 
 def _print(label: str, value: object) -> None:

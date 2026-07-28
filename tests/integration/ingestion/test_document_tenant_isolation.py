@@ -1,7 +1,6 @@
 import uuid
 
 import pytest
-from fastapi.testclient import TestClient
 
 from src.ingestion.domain.entities import Document
 from src.ingestion.infrastructure.repositories import DocumentRepository
@@ -30,22 +29,21 @@ def _make_doc(tenant_id: uuid.UUID, title: str = "doc.pdf") -> Document:
 
 
 @pytest.mark.integration
-def test_tenant_cannot_list_another_tenants_documents(
-    client: TestClient, db_session, override_storage
+@pytest.mark.asyncio
+async def test_tenant_cannot_list_another_tenants_documents(
+    client, db_session, override_storage
 ):
     """Tenant A's list endpoint must never return Tenant B's documents."""
     tenant_a = uuid.uuid4()
     tenant_b = uuid.uuid4()
 
-    # Seed a document owned by tenant_b
     repo = DocumentRepository(db_session)
     repo.create(_make_doc(tenant_b, "tenant_b.pdf"))
     db_session.commit()
 
-    # Authenticate the client as tenant_a
     app.dependency_overrides[require_document_read] = lambda: tenant_a
     try:
-        res = client.get("/api/v1/documents")
+        res = await client.get("/api/v1/documents")
         assert res.status_code == 200
         assert res.json()["total"] == 0
     finally:
@@ -53,8 +51,9 @@ def test_tenant_cannot_list_another_tenants_documents(
 
 
 @pytest.mark.integration
-def test_tenant_cannot_read_another_tenants_document(
-    client: TestClient, db_session, override_storage
+@pytest.mark.asyncio
+async def test_tenant_cannot_read_another_tenants_document(
+    client, db_session, override_storage
 ):
     """A direct GET on another tenant's document ID must return 404."""
     tenant_a = uuid.uuid4()
@@ -66,15 +65,16 @@ def test_tenant_cannot_read_another_tenants_document(
 
     app.dependency_overrides[require_document_read] = lambda: tenant_a
     try:
-        res = client.get(f"/api/v1/documents/{doc_b.id}")
+        res = await client.get(f"/api/v1/documents/{doc_b.id}")
         assert res.status_code == 404
     finally:
         app.dependency_overrides.pop(require_document_read, None)
 
 
 @pytest.mark.integration
-def test_tenant_cannot_delete_another_tenants_document(
-    client: TestClient, db_session, override_storage
+@pytest.mark.asyncio
+async def test_tenant_cannot_delete_another_tenants_document(
+    client, db_session, override_storage
 ):
     """A DELETE on another tenant's document ID must return 404 and leave the
     document untouched in the database."""
@@ -87,7 +87,7 @@ def test_tenant_cannot_delete_another_tenants_document(
 
     app.dependency_overrides[require_document_write] = lambda: tenant_a
     try:
-        res = client.delete(f"/api/v1/documents/{doc_b.id}")
+        res = await client.delete(f"/api/v1/documents/{doc_b.id}")
         assert res.status_code == 404
     finally:
         app.dependency_overrides.pop(require_document_write, None)

@@ -9,8 +9,13 @@ import logging
 
 from arq.connections import RedisSettings
 
-from src.ingestion.workers.tasks import ingest_document_task
-from src.platform.config import settings
+from src.ingestion.workers.tasks import ingest_document_task, embed_chunks_task
+from src.core.config import settings
+from src.core.logging import configure_logging
+from src.observability.infrastructure.otel import (
+    configure_tracing,
+    shutdown_tracing,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +34,7 @@ class WorkerSettings:
     possible without Redis bloat.
     """
 
-    functions = [ingest_document_task]
+    functions = [ingest_document_task, embed_chunks_task]
 
     redis_settings = RedisSettings.from_dsn(settings.REDIS_URL)
 
@@ -50,18 +55,36 @@ class WorkerSettings:
 
     @staticmethod
     async def on_startup(ctx: dict) -> None:
-        logging.basicConfig(level=logging.INFO)
+        # --- V4: boot-time observability setup ---
+        # ``configure_logging`` is idempotent and replaces
+        # the root handler list so the JSON output shape
+        # applies to every subsequent log call (including
+        # the stdlib ``logger.info`` calls below).
+        configure_logging()
+        # The worker's tracer provider is distinct from
+        # the API's — same SDK, different ``service.name``
+        # resource attribute (``cortex-worker``) so the
+        # trace backend can group worker spans
+        # separately.
+        configure_tracing(component="worker")
+
         logger.info("Ingestion worker started. Initializing Redis...")
-        
-        from src.platform.redis_client import init_redis
+
+        from src.core.redis_client import init_redis
         await init_redis()
 
     @staticmethod
     async def on_shutdown(ctx: dict) -> None:
         logger.info("Ingestion worker shutting down. Cleaning up connections...")
-        
-        from src.platform.redis_client import close_redis
+
+        from src.core.redis_client import close_redis
         await close_redis()
-        
-        from src.platform.database import engine
+
+        from src.core.database import engine
         engine.dispose()
+
+        # Flush any in-flight spans before the worker
+        # process exits. Safe to call even if
+        # ``configure_tracing`` was somehow not invoked
+        # at startup.
+        shutdown_tracing()

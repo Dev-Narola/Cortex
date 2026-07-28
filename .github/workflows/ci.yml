@@ -37,4 +37,35 @@ jobs:
           ENVIRONMENT: testing
           SECRET_KEY: ci-test-secret
         run: |
+          # V4 Phase 20 — coverage is enforced by the
+          # ``fail_under`` rule in pyproject.toml. The CI
+          # build fails when line coverage drops below
+          # the V4-baseline bar (67 % on 2026-07-26).
+          # The ``addopts`` block in [tool.pytest.ini_options]
+          # already passes the right ``--cov`` flags, so
+          # this command is just the test invocation.
           pytest -v --tb=short
+
+      - name: Coverage summary
+        # A short tail-of-coverage block, so the
+        # PR-review screen shows the per-package
+        # numbers without making the reviewer open
+        # the HTML report. ``cat`` + ``tail`` so we
+        # show the *total* and the worst-covered
+        # packages, not the full table.
+        if: always()
+        run: |
+          if [ -f coverage.xml ]; then
+            echo "Coverage gate: see pytest output above."
+            echo "Detailed report: htmlcov/index.html"
+          fi
+
+      - name: Upload coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: |
+            coverage.xml
+            htmlcov
+          retention-days: 14

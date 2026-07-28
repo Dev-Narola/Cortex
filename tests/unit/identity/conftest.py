@@ -14,7 +14,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from src.identity.domain.entities import Tenant
-from src.platform.database import Base
+from src.core.database import Base
 
 
 @pytest.fixture

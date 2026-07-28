@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from src.platform.redis_client import (
+from src.core.redis_client import (
     close_redis,
     get_redis,
     get_redis_client,
@@ -19,9 +19,9 @@ from src.platform.redis_client import (
 async def test_init_redis():
     """Test Redis initialization."""
     with (
-        patch("src.platform.redis_client.get_redis_url") as mock_get_url,
-        patch("src.platform.redis_client.ConnectionPool.from_url") as mock_pool_from_url,
-        patch("src.platform.redis_client.redis.Redis") as mock_redis_class,
+        patch("src.core.redis_client.get_redis_url") as mock_get_url,
+        patch("src.core.redis_client.ConnectionPool.from_url") as mock_pool_from_url,
+        patch("src.core.redis_client.redis.Redis") as mock_redis_class,
     ):
         # Setup mocks
         mock_get_url.return_value = "redis://localhost:6379"
@@ -52,7 +52,7 @@ async def test_init_redis():
 async def test_close_redis():
     """Test Redis cleanup."""
     # Setup global state
-    import src.platform.redis_client as redis_client
+    import src.core.redis_client as redis_client
 
     mock_redis_client = AsyncMock()
     mock_pool = AsyncMock()
@@ -73,7 +73,7 @@ async def test_close_redis():
 async def test_get_redis_not_initialized():
     """Test getting Redis client when not initialized."""
     # Reset global state
-    import src.platform.redis_client as redis_client
+    import src.core.redis_client as redis_client
 
     redis_client._redis_client = None
 
@@ -86,7 +86,7 @@ async def test_get_redis_not_initialized():
 async def test_get_redis_initialized():
     """Test getting Redis client when initialized."""
     # Setup global state
-    import src.platform.redis_client as redis_client
+    import src.core.redis_client as redis_client
 
     mock_redis = AsyncMock()
     redis_client._redis_client = mock_redis
@@ -102,7 +102,7 @@ async def test_get_redis_initialized():
 async def test_ping_success():
     """Test successful Redis ping."""
     # Setup global state
-    import src.platform.redis_client as redis_client
+    import src.core.redis_client as redis_client
 
     mock_redis = AsyncMock()
     mock_redis.ping.return_value = True
@@ -120,7 +120,7 @@ async def test_ping_success():
 async def test_ping_failure():
     """Test failed Redis ping."""
     # Setup global state
-    import src.platform.redis_client as redis_client
+    import src.core.redis_client as redis_client
 
     mock_redis = AsyncMock()
     mock_redis.ping.side_effect = Exception("Connection failed")
@@ -138,7 +138,7 @@ async def test_ping_failure():
 async def test_ping_not_initialized():
     """Test ping when Redis is not initialized."""
     # Reset global state
-    import src.platform.redis_client as redis_client
+    import src.core.redis_client as redis_client
 
     redis_client._redis_client = None
 
@@ -152,7 +152,7 @@ async def test_ping_not_initialized():
 def test_get_redis_client():
     """Test getting Redis client directly."""
     # Reset global state
-    import src.platform.redis_client as redis_client
+    import src.core.redis_client as redis_client
 
     redis_client._redis_client = None
 
@@ -177,7 +177,7 @@ async def test_init_redis_when_server_unreachable_does_not_raise(caplog):
     """
     import logging
 
-    import src.platform.redis_client as redis_client
+    import src.core.redis_client as redis_client
 
     # Wipe any state left by other tests.
     redis_client._redis_client = None
@@ -186,7 +186,7 @@ async def test_init_redis_when_server_unreachable_does_not_raise(caplog):
     redis_client.redis_client_instance = None
 
     # Point at a definitely-closed port to force a connection error.
-    with caplog.at_level(logging.WARNING, logger="src.platform.redis_client"):
+    with caplog.at_level(logging.WARNING, logger="src.core.redis_client"):
         with patch.object(redis_client, "get_redis_url", return_value="redis://127.0.0.1:1"):
             await redis_client.init_redis()
 

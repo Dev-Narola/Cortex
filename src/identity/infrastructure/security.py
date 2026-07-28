@@ -22,7 +22,7 @@ import bcrypt
 import jwt
 from jwt import InvalidTokenError
 
-from src.platform.config import settings
+from src.core.config import settings
 from src.shared.exceptions import UnauthorizedException, ValidationException
 
 # ---------------------------------------------------------------------------
