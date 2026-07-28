@@ -3,7 +3,6 @@ import uuid
 
 import pytest
 from fastapi import HTTPException
-from fastapi.testclient import TestClient
 
 from src.ingestion.infrastructure.storage import LocalStorage
 from src.ingestion.interface.rest.auth import require_document_read, require_document_write
@@ -32,12 +31,13 @@ def _allow_read():
 
 
 @pytest.mark.integration
-def test_api_key_without_write_scope_cannot_upload(client: TestClient, override_storage):
+@pytest.mark.asyncio
+async def test_api_key_without_write_scope_cannot_upload(client, override_storage):
     app.dependency_overrides[require_document_write] = _deny_write
     app.dependency_overrides[require_document_read] = _allow_read
     try:
         files = {"file": ("test.pdf", io.BytesIO(b"content"), "application/pdf")}
-        res = client.post("/api/v1/documents", files=files)
+        res = await client.post("/api/v1/documents", files=files)
         assert res.status_code == 403
         assert "Missing required scope" in res.json()["detail"]
     finally:
@@ -46,40 +46,44 @@ def test_api_key_without_write_scope_cannot_upload(client: TestClient, override_
 
 
 @pytest.mark.integration
-def test_api_key_without_write_scope_cannot_delete(client: TestClient, override_storage):
+@pytest.mark.asyncio
+async def test_api_key_without_write_scope_cannot_delete(client, override_storage):
     app.dependency_overrides[require_document_write] = _deny_write
     try:
-        res = client.delete(f"/api/v1/documents/{uuid.uuid4()}")
+        res = await client.delete(f"/api/v1/documents/{uuid.uuid4()}")
         assert res.status_code == 403
     finally:
         app.dependency_overrides.pop(require_document_write, None)
 
 
 @pytest.mark.integration
-def test_api_key_without_read_scope_cannot_list(client: TestClient):
+@pytest.mark.asyncio
+async def test_api_key_without_read_scope_cannot_list(client):
     app.dependency_overrides[require_document_read] = _deny_read
     try:
-        res = client.get("/api/v1/documents")
+        res = await client.get("/api/v1/documents")
         assert res.status_code == 403
     finally:
         app.dependency_overrides.pop(require_document_read, None)
 
 
 @pytest.mark.integration
-def test_api_key_without_read_scope_cannot_get(client: TestClient):
+@pytest.mark.asyncio
+async def test_api_key_without_read_scope_cannot_get(client):
     app.dependency_overrides[require_document_read] = _deny_read
     try:
-        res = client.get(f"/api/v1/documents/{uuid.uuid4()}")
+        res = await client.get(f"/api/v1/documents/{uuid.uuid4()}")
         assert res.status_code == 403
     finally:
         app.dependency_overrides.pop(require_document_read, None)
 
 
 @pytest.mark.integration
-def test_api_key_without_read_scope_cannot_get_status(client: TestClient):
+@pytest.mark.asyncio
+async def test_api_key_without_read_scope_cannot_get_status(client):
     app.dependency_overrides[require_document_read] = _deny_read
     try:
-        res = client.get(f"/api/v1/documents/{uuid.uuid4()}/status")
+        res = await client.get(f"/api/v1/documents/{uuid.uuid4()}/status")
         assert res.status_code == 403
     finally:
         app.dependency_overrides.pop(require_document_read, None)

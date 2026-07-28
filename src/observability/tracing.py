@@ -1,27 +1,47 @@
 """
-Tracing initialization layer for observability.
+Tracing compatibility shim (V3 → V4).
+
+V3 had a single ``tracing.py`` with one helper; V4 replaces
+its responsibilities with a structured package:
+
+* :mod:`src.observability.infrastructure.otel`
+  (``configure_tracing``, ``get_tracer``, …) — the
+  OpenTelemetry SDK integration.
+* :mod:`src.observability.infrastructure.genai_spans`
+  (``traced_embedding``, ``traced_completion``,
+  ``traced_rerank``, ``traced_retrieval``) — typed GenAI
+  spans.
+* :mod:`src.observability.infrastructure.metrics` —
+  Prometheus metrics.
+* :mod:`src.core.middleware` — HTTP server / X-Request-ID
+  middleware.
+
+This module re-exports the public surface so existing V3
+imports keep working. The shim is *thin* — it just
+re-exports; do not add new helpers here.
 """
 
-from typing import Any
+from src.observability.infrastructure.otel import (
+    configure_tracing,
+    get_tracer,
+    service_name_for,
+    shutdown_tracing,
+)
+from src.observability.infrastructure.genai_spans import (
+    traced_completion,
+    traced_embedding,
+    traced_rerank,
+    traced_retrieval,
+)
 
 
-def init_tracing() -> None:
-    """
-    Initialize tracing infrastructure.
-    Placeholder for future OpenTelemetry integration.
-    """
-    pass
-
-
-def get_tracer(name: str) -> Any:
-    """
-    Get a tracer instance for the given name.
-    Placeholder for future OpenTelemetry integration.
-
-    Args:
-        name: Name of the tracer, typically __name__ of the module
-
-    Returns:
-        A tracer object (currently returns None as placeholder)
-    """
-    return None
+__all__ = [
+    "configure_tracing",
+    "get_tracer",
+    "service_name_for",
+    "shutdown_tracing",
+    "traced_completion",
+    "traced_embedding",
+    "traced_rerank",
+    "traced_retrieval",
+]

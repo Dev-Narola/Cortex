@@ -1,0 +1,10 @@
+{"question": "How are failed ingestion jobs retried?", "expected_document": "Architecture", "expected_keywords": ["retry", "idempotent"]}
+{"question": "What is the document lifecycle in Cortex?", "expected_document": "Architecture", "expected_keywords": ["pending", "parsing", "chunking", "embedding", "indexed"]}
+{"question": "How does the RAG answer service stream tokens?", "expected_document": "Architecture", "expected_keywords": ["WebSocket", "stream", "token"]}
+{"question": "What is the difference between vector and keyword retrieval?", "expected_document": "Architecture", "expected_keywords": ["vector", "keyword", "RRF"]}
+{"question": "How is the knowledge graph populated?", "expected_document": "Architecture", "expected_keywords": ["entity", "relation", "extract"]}
+{"question": "What is the search cache strategy?", "expected_document": "Architecture", "expected_keywords": ["cache", "tenant", "version"]}
+{"question": "How does the conversation context manager handle long conversations?", "expected_document": "Architecture", "expected_keywords": ["summary", "recent", "window"]}
+{"question": "What is the multi-tenant isolation guarantee?", "expected_document": "Architecture", "expected_keywords": ["tenant", "isolation", "WHERE"]}
+{"question": "How is HNSW index configured for the embedding column?", "expected_document": "Architecture", "expected_keywords": ["hnsw", "m", "ef_construction"]}
+{"question": "What does the reranker do when it fails?", "expected_document": "Architecture", "expected_keywords": ["fallback", "fused", "resilient"]}

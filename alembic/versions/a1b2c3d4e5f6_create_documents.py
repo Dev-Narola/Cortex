@@ -13,7 +13,14 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "a1b2c3d4e5f6"
-down_revision: str | None = "e9c487b1711c"
+# V4 hotfix — re-pointed from the baseline
+# (``e9c487b1711c``) to the new identity-tables
+# migration (``i1j2k3l4m5n6``) so the FKs on
+# ``documents.tenant_id`` / ``documents.created_by``
+# resolve to a real ``tenants`` / ``users`` table.
+# See ``i1j2k3l4m5n6_create_identity_tables.py``
+# for the rationale.
+down_revision: str | None = "i1j2k3l4m5n6"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

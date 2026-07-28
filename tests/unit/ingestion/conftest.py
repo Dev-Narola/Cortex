@@ -24,7 +24,7 @@ from src.identity.infrastructure.repositories import (
     UserRepository,
 )
 from src.identity.infrastructure.security import hash_password
-from src.platform.database import Base
+from src.core.database import Base
 
 
 @pytest.fixture

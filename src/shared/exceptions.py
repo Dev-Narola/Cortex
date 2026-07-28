@@ -18,6 +18,12 @@ class BaseAppException(Exception):
         super().__init__(message)
 
 
+# Backwards-compat alias — older modules (e.g.
+# ``src.embedding.domain.errors``) imported a class named
+# ``CortexException``; the real name is ``BaseAppException``.
+CortexException = BaseAppException
+
+
 class ValidationException(BaseAppException):
     """
     Exception raised for validation errors.

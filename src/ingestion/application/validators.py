@@ -1,7 +1,7 @@
 import os
 from typing import BinaryIO
 
-from src.platform.config import settings
+from src.core.config import settings
 from src.shared.exceptions import ValidationException
 
 

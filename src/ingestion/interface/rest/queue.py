@@ -9,7 +9,7 @@ from arq import ArqRedis, create_pool
 from arq.connections import RedisSettings
 
 from src.ingestion.application.services import QueueClient
-from src.platform.config import settings
+from src.core.config import settings
 
 
 class ArqQueue:

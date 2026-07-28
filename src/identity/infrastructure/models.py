@@ -37,7 +37,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from src.platform.database import Base
+from src.core.database import Base
 
 # ---------------------------------------------------------------------------
 # TenantModel

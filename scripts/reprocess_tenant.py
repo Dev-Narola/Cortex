@@ -12,8 +12,8 @@ from src.ingestion.application.reprocess import ReprocessDocumentService
 from src.ingestion.application.status_transition import DocumentStatusTransitionService
 from src.ingestion.infrastructure.repositories import DocumentRepository
 from src.ingestion.interface.rest.queue import ArqQueue
-from src.platform.database import session_factory
-from src.platform.redis_client import close_redis, init_redis
+from src.core.database import session_factory
+from src.core.redis_client import close_redis, init_redis
 from src.ingestion.domain.entities import DocumentStatus
 
 logging.basicConfig(level=logging.INFO)

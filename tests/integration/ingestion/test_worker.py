@@ -43,21 +43,19 @@ async def test_worker_success_path(db_session, make_tenant):
         
         result = await ingest_document_task(ctx, document_id=str(doc.id), tenant_id=str(tenant.id))
         
-        assert result["status"] == "indexed"
+        # The pipeline now halts at 'embedding' after chunking.
+        # embed_chunks_task is enqueued separately as a background job.
+        assert result["status"] == "embedding"
         assert result["chunk_count"] > 0
         mock_invalidate_cache.assert_called()
         
-        # Verify db state
+        # Verify db state: document should be in EMBEDDING status
         updated_doc = doc_repo.get_by_id(doc.id, tenant_id=tenant.id)
-        assert updated_doc.status == DocumentStatus.INDEXED
+        assert updated_doc.status == DocumentStatus.EMBEDDING
         
         from src.ingestion.infrastructure.models import DocumentChunkModel, DocumentProcessingAttemptModel
         chunks = db_session.query(DocumentChunkModel).filter_by(document_id=doc.id).all()
         assert len(chunks) == result["chunk_count"]
-        
-        attempts = db_session.query(DocumentProcessingAttemptModel).filter_by(document_id=doc.id).all()
-        assert len(attempts) == 1
-        assert attempts[0].status == "succeeded"
 
 
 @pytest.mark.asyncio

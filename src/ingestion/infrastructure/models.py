@@ -41,9 +41,12 @@ from sqlalchemy import (
     Uuid as SAUuid,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.types import TypeDecorator
+from sqlalchemy.dialects.postgresql import TSVECTOR
+from pgvector.sqlalchemy import Vector
 
 from src.identity.infrastructure.models import TenantModel, UserModel
-from src.platform.database import Base
+from src.core.database import Base
 
 # ---------------------------------------------------------------------------
 # DocumentModel
@@ -147,6 +150,21 @@ class DocumentModel(Base):
 # ---------------------------------------------------------------------------
 
 
+class TSVector(TypeDecorator):
+    """
+    Custom type that maps to TSVECTOR on PostgreSQL and String on SQLite.
+    This allows the SQLite test suite to boot without crashing.
+    """
+    impl = String
+    cache_ok = True
+
+    def load_dialect_impl(self, dialect):
+        if dialect.name == "postgresql":
+            return dialect.type_descriptor(TSVECTOR())
+        else:
+            return dialect.type_descriptor(String())
+
+
 class DocumentChunkModel(Base):
     """ORM mapping for the `document_chunks` table."""
 
@@ -171,6 +189,11 @@ class DocumentChunkModel(Base):
     # the column is named 'metadata' in DB, attribute is 'chunk_metadata' to avoid conflict with Base.metadata
     chunk_metadata: Mapped[dict] = mapped_column("metadata", JSON, nullable=False, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    embedding_model: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    embedding_version: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    embedding: Mapped[list[float] | None] = mapped_column(Vector(1536), nullable=True)
+    tsv = mapped_column(TSVector, nullable=True)
 
     __table_args__ = (
         UniqueConstraint("document_id", "chunk_index", name="uq_document_chunks_document_index"),

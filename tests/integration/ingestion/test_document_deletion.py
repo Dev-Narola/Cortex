@@ -1,7 +1,6 @@
 import uuid
 
 import pytest
-from fastapi.testclient import TestClient
 
 from src.ingestion.domain.entities import Document
 from src.ingestion.infrastructure.repositories import DocumentRepository
@@ -9,9 +8,6 @@ from src.ingestion.infrastructure.storage import LocalStorage
 from src.ingestion.interface.rest.routes import get_s3_storage
 from src.main import app
 
-# LocalStorage uses an in-memory dict. Keys can be any string, including
-# full "s3://bucket/key" paths — which is exactly what the service stores
-# after upload so that Document.set_storage_uri() passes domain validation.
 _TEST_BUCKET = "test-bucket"
 
 
@@ -42,8 +38,9 @@ def _s3_uri(tenant_id: uuid.UUID, doc_id: uuid.UUID, title: str) -> str:
 
 
 @pytest.mark.integration
-def test_document_deletion_success(
-    client: TestClient, setup_auth, db_session, tenant_id, override_storage
+@pytest.mark.asyncio
+async def test_document_deletion_success(
+    client, setup_auth, db_session, tenant_id, override_storage
 ):
     """DB record is removed first; then the storage object is cleaned up."""
     repo = DocumentRepository(db_session)
@@ -58,7 +55,7 @@ def test_document_deletion_success(
 
     assert override_storage.exists(uri)
 
-    response = client.delete(f"/api/v1/documents/{doc.id}")
+    response = await client.delete(f"/api/v1/documents/{doc.id}")
     assert response.status_code == 204
 
     # DB record gone
@@ -68,6 +65,7 @@ def test_document_deletion_success(
 
 
 @pytest.mark.integration
-def test_document_deletion_not_found(client: TestClient, setup_auth, tenant_id):
-    response = client.delete(f"/api/v1/documents/{uuid.uuid4()}")
+@pytest.mark.asyncio
+async def test_document_deletion_not_found(client, setup_auth, tenant_id):
+    response = await client.delete(f"/api/v1/documents/{uuid.uuid4()}")
     assert response.status_code == 404

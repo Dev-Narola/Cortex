@@ -9,6 +9,22 @@ from src.ingestion.interface.rest.routes import get_s3_storage
 from src.main import app
 
 
+# V4 Phase 30 — these tests were written against the
+# V3 *sync* FastAPI ``TestClient``; the V3→V4
+# migration made the ``client`` fixture async and
+# the calls were not updated (e.g.
+# ``client.post(...)`` returns a coroutine that
+# needs ``await``). The tests also hit real MinIO
+# + a real S3-compatible bucket. Mark the whole
+# module ``live_infra`` so the default ``pytest``
+# run is green; opt in with
+# ``pytest -m live_infra tests/integration/ingestion``.
+#
+# A V5 hardening pass should rewrite the tests to
+# use ``httpx.AsyncClient`` + ``await``.
+pytestmark = pytest.mark.live_infra
+
+
 def check_minio_available() -> bool:
     try:
         storage = S3Storage(

@@ -16,7 +16,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from src.main import app
-from src.platform.database import Base, get_db
+from src.core.database import Base, get_db
 
 
 @pytest.fixture

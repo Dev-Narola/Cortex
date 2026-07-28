@@ -4,8 +4,8 @@ from fastapi import Depends, Header, HTTPException, status
 from sqlalchemy.orm import Session
 
 from src.identity.domain.entities import Role, Tenant
-from src.platform.database import get_db
-from src.platform.dependencies import (
+from src.core.database import get_db
+from src.core.dependencies import (
     _role_check,
     get_current_user,
     require_api_key,

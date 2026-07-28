@@ -1,7 +1,6 @@
 import uuid
 
 import pytest
-from fastapi.testclient import TestClient
 
 from src.ingestion.domain.entities import Document, DocumentStatus
 from src.ingestion.infrastructure.repositories import DocumentRepository
@@ -33,13 +32,14 @@ def _make_doc(tenant_id: uuid.UUID, title: str = "doc.pdf") -> Document:
 
 
 @pytest.mark.integration
-def test_list_documents(client: TestClient, setup_auth, db_session, tenant_id, override_storage):
+@pytest.mark.asyncio
+async def test_list_documents(client, setup_auth, db_session, tenant_id, override_storage):
     repo = DocumentRepository(db_session)
     repo.create(_make_doc(tenant_id, "doc1.pdf"))
     repo.create(_make_doc(tenant_id, "doc2.pdf"))
     db_session.commit()
 
-    response = client.get("/api/v1/documents")
+    response = await client.get("/api/v1/documents")
     assert response.status_code == 200
 
     data = response.json()
@@ -50,12 +50,13 @@ def test_list_documents(client: TestClient, setup_auth, db_session, tenant_id, o
 
 
 @pytest.mark.integration
-def test_get_document(client: TestClient, setup_auth, db_session, tenant_id, override_storage):
+@pytest.mark.asyncio
+async def test_get_document(client, setup_auth, db_session, tenant_id, override_storage):
     repo = DocumentRepository(db_session)
     doc = repo.create(_make_doc(tenant_id, "getme.pdf"))
     db_session.commit()
 
-    response = client.get(f"/api/v1/documents/{doc.id}")
+    response = await client.get(f"/api/v1/documents/{doc.id}")
     assert response.status_code == 200
     data = response.json()
     assert data["id"] == str(doc.id)
@@ -63,14 +64,15 @@ def test_get_document(client: TestClient, setup_auth, db_session, tenant_id, ove
 
 
 @pytest.mark.integration
-def test_get_document_status(
-    client: TestClient, setup_auth, db_session, tenant_id, override_storage
+@pytest.mark.asyncio
+async def test_get_document_status(
+    client, setup_auth, db_session, tenant_id, override_storage
 ):
     repo = DocumentRepository(db_session)
     doc = repo.create(_make_doc(tenant_id, "status.pdf"))
     db_session.commit()
 
-    response = client.get(f"/api/v1/documents/{doc.id}/status")
+    response = await client.get(f"/api/v1/documents/{doc.id}/status")
     assert response.status_code == 200
     data = response.json()
     assert data["document_id"] == str(doc.id)
@@ -78,6 +80,7 @@ def test_get_document_status(
 
 
 @pytest.mark.integration
-def test_get_document_not_found(client: TestClient, setup_auth, tenant_id, override_storage):
-    response = client.get(f"/api/v1/documents/{uuid.uuid4()}")
+@pytest.mark.asyncio
+async def test_get_document_not_found(client, setup_auth, tenant_id, override_storage):
+    response = await client.get(f"/api/v1/documents/{uuid.uuid4()}")
     assert response.status_code == 404
