@@ -89,3 +89,16 @@ async def test_metrics_endpoint(client: AsyncClient):
     response = await client.get("/metrics")
     assert response.status_code == 200
     assert "text/plain" in response.headers["content-type"]
+
+
+@pytest.mark.asyncio
+async def test_system_status_endpoint(client: AsyncClient):
+    """Test the operations status endpoint."""
+    response = await client.get("/system/status")
+    assert response.status_code == 200
+    data = response.json()
+    assert "status" in data
+    assert data["version"] == "0.7.0"
+    assert "uptime_seconds" in data
+    assert "services" in data
+

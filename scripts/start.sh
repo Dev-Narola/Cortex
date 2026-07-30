@@ -158,8 +158,8 @@ fi
 # of failing in a partial state later).
 if [[ "${RUN_DB_MIGRATIONS_ON_START}" == "true" ]]; then
     log "INFO" "Running alembic migrations"
-    if ! alembic upgrade head; then
-        log "ERROR" "alembic upgrade head failed"
+    if ! alembic upgrade heads; then
+        log "ERROR" "alembic upgrade heads failed"
         exit 1
     fi
     log "INFO" "Migrations applied"
