@@ -1,0 +1,355 @@
+# =============================================================================
+# Cortex — production docker-compose
+# =============================================================================
+#
+# One EC2 host runs the full platform:
+#
+#     [public]  ──►  nginx  ──►  api (uvicorn, WORKERS replicas)
+#                       │                │
+#                       │                ▼
+#                       │            postgres ◄── alembic migrations
+#                       │                ▲
+#                       ▼                │
+#                   worker (arq) ────────┘
+#                       │
+#                       ▼
+#                    redis
+#
+# All five services share a private network. Only nginx publishes
+# ports to the host. The api and worker have no port mapping
+# because they are never reached directly from outside — only via
+# nginx (and, in front of nginx, the ALB).
+#
+# Secrets are *not* baked into the image. ``start.sh`` inside the
+# api/worker containers pulls them from AWS Secrets Manager on
+# boot (using the EC2 instance role) and renders them to a tmpfs
+# at ``/run/secrets/.env``. Postgres uses the environment
+# variables directly — no .env file on disk.
+#
+# Image registry
+# --------------
+# The default ``image:`` values point at ``ghcr.io/<owner>/cortex``
+# so the same compose file works whether you push the image from
+# CI or pull a pre-built one. Override ``CORTEX_IMAGE`` /
+# ``CORTEX_IMAGE_TAG`` at deploy time.
+# =============================================================================
+
+name: cortex-prod
+
+# ---------------------------------------------------------------------------
+# Networks
+# ---------------------------------------------------------------------------
+# A single private bridge. ``internal: false`` so the containers
+# can reach the AWS APIs (Secrets Manager, S3) via the host's
+# egress. No service publishes anything except nginx.
+networks:
+  cortex-internal:
+    driver: bridge
+    name: cortex-internal
+
+# ---------------------------------------------------------------------------
+# Volumes
+# ---------------------------------------------------------------------------
+# Postgres data and redis data are named volumes so they survive
+# container restarts and ``docker compose down`` (which only
+# removes the containers, not the volumes). The ``secrets`` tmpfs
+# is a per-container mount created in the api/worker service
+# definitions; it is not declared here.
+volumes:
+  postgres_data:
+    name: cortex_postgres_data
+  redis_data:
+    name: cortex_redis_data
+  nginx_logs:
+    name: cortex_nginx_logs
+
+# ---------------------------------------------------------------------------
+# x-anchors — DRY defaults shared across the api and worker
+# ---------------------------------------------------------------------------
+# Both services share the same image, secrets pipeline, and
+# configuration. ``x-cortex-common`` is the single source of
+# truth for the platform-level environment that does not vary by
+# role. The role-specific services override only what differs.
+x-cortex-common: &cortex-common
+  image: ${CORTEX_IMAGE:-ghcr.io/cortex/cortex}:${CORTEX_IMAGE_TAG:-latest}
+  restart: unless-stopped
+  init: true
+  # The non-root user from the Dockerfile is ``cortex`` (uid
+  # 10001). The two service definitions override this only when
+  # they need to drop further privileges.
+  user: "10001:10001"
+  # Read-only filesystem with explicit writable tmpfs mounts is
+  # the strongest production posture for the api/worker
+  # containers — neither process needs to write to ``/app``.
+  read_only: true
+  tmpfs:
+    - /tmp
+    - /home/cortex/.cache
+  networks:
+    - cortex-internal
+  # Drop most capabilities. The api/worker have no need for
+  # anything beyond a normal Linux process. ``NET_BIND_SERVICE``
+  # is excluded because the api listens on a non-privileged
+  # port inside the container (8000) and never binds to 80/443
+  # directly.
+  cap_drop:
+    - ALL
+  # ``no-new-privileges`` is a one-way trip that prevents the
+  # process from escalating via setuid binaries — a
+  # defence-in-depth measure on top of the non-root user.
+  security_opt:
+    - "no-new-privileges:true"
+  # Mem/CPU limits. Tuned for a t3.small (2GB RAM, 2 vCPU);
+  # raise both for larger instances. The ``deploy.resources``
+  # block is ignored by classic docker-compose but honoured by
+  # ``docker swarm`` mode — kept here so a future migration to
+  # swarm / ECS does not require a compose rewrite.
+  mem_limit: 1g
+  mem_reservation: 512m
+  cpus: "1.0"
+  environment:
+    # ---- V5: production posture ----
+    ENVIRONMENT: production
+    DEBUG: "false"
+    LOG_FORMAT: json
+    TZ: UTC
+    # Tell ``start.sh`` to fetch from AWS Secrets Manager.
+    SECRETS_MANAGER_ENABLED: "true"
+    SECRETS_RENDER_PATH: /run/secrets/.env
+    AWS_REGION: ${AWS_REGION:-us-east-1}
+    AWS_DEFAULT_REGION: ${AWS_REGION:-us-east-1}
+    # Pool sizes (overridable per environment).
+    DB_POOL_SIZE: "10"
+    DB_MAX_OVERFLOW: "5"
+    # Worker concurrency for the arq worker; the api ignores
+    # this but it is harmless to set.
+    ARQ_MAX_JOBS: "10"
+    # ALB / proxy headers.
+    BEHIND_PROXY: "true"
+    TRUSTED_PROXY_CIDRS: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+    # CORS — should be the real public origin(s). ``*`` here
+    # is a safe default that you must override before opening
+    # the platform to a browser-based client.
+    CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-*}
+    # Trusted hosts. Replace with the real public hostname
+    # (e.g. ``api.cortex.example.com``) once the ALB / DNS are
+    # configured.
+    TRUSTED_HOSTS: ${TRUSTED_HOSTS:-*}
+  # Healthcheck mirrors the in-container ``HEALTHCHECK`` so
+  # ``docker compose ps`` shows the same state the orchestrator
+  # sees. nginx also has a separate check below.
+  healthcheck:
+    test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8000/health"]
+    interval: 30s
+    timeout: 5s
+    retries: 3
+    start_period: 30s
+  # Shared tmpfs that ``start.sh`` writes the rendered secrets
+  # to. ``size=1m`` is generous for a 30-line env file. The
+  # tmpfs is private to each container — secrets are never
+  # visible to other containers on the network.
+  volumes:
+    - type: tmpfs
+      source: secrets
+      target: /run/secrets
+      tmpfs:
+        size: 1m
+        mode: 0700
+
+# ---------------------------------------------------------------------------
+# Services
+# ---------------------------------------------------------------------------
+services:
+  # -------------------------------------------------------------------------
+  # api — the FastAPI application
+  # -------------------------------------------------------------------------
+  api:
+    <<: *cortex-common
+    container_name: cortex-api
+    # The api role is the default in the Dockerfile (``CMD
+    # ["api"]``), so we do not need to set ``command:`` here
+    # unless overriding the worker count.
+    command: ["api"]
+    environment:
+      # Inherit the shared env block, then add role-specific
+      # overrides. Compose merges these on top of the anchor.
+      API_WORKERS: "${API_WORKERS:-2}"
+      API_WORKER_TIMEOUT: "60"
+      # The web service must reach S3 (uploads), Secrets
+      # Manager (boot), and the public LLM APIs (chat). The
+      # egress is fine; this is documentation more than
+      # configuration.
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    # The api does not publish a host port directly; nginx
+    # reaches it on the private network at api:8000. We expose
+    # 8000 to the host only as a debugging affordance — the
+    # comment makes the intent obvious to anyone reading.
+    ports:
+      - "127.0.0.1:8000:8000"   # localhost-only debug; nginx fronts the public port
+    # The api never needs to write to ``/app``; it only writes
+    # to ``/tmp`` (via the tmpfs above). The read_only flag in
+    # the anchor makes that a hard constraint.
+
+  # -------------------------------------------------------------------------
+  # worker — the Arq ingestion worker
+  # -------------------------------------------------------------------------
+  worker:
+    <<: *cortex-common
+    container_name: cortex-worker
+    command: ["worker"]
+    # The worker does not listen on any port. The image still
+    # EXPOSEs 8000 for symmetry; that is harmless when no
+    # ``ports:`` mapping is declared.
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      ARQ_MAX_JOBS: "${ARQ_MAX_JOBS:-10}"
+      ARQ_JOB_TIMEOUT_SECONDS: "300"
+      ARQ_MAX_TRIES: "4"
+    # The worker is CPU-light and memory-light per job but
+    # benefits from a slightly higher memory ceiling than the
+    # api when many embeddings are in flight.
+    mem_limit: 1.5g
+    mem_reservation: 768m
+    cpus: "1.0"
+
+  # -------------------------------------------------------------------------
+  # postgres — primary relational store
+  # -------------------------------------------------------------------------
+  # Self-managed Postgres on the same host. The blueprint's
+  # explicit trade-off: "start on plain EC2 with self-managed
+  # Postgres, migrate to RDS only when an operational pain
+  # justifies it." Volume is on a named volume so ``docker
+  # compose down`` does not delete the data; ``docker compose
+  # down -v`` does (and is documented in backup.md).
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: cortex-postgres
+    restart: unless-stopped
+    user: "999:999"   # postgres image's default UID/GID
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-cortex}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in the env file or .env}
+      POSTGRES_DB: ${POSTGRES_DB:-cortex}
+      # PGTUNE-style baseline. These are the docker-entrypoint
+      # variables the official image respects; they are not
+      # full ``postgresql.conf`` settings but they cover the
+      # common case.
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # Custom postgresql.conf — small but production-aware.
+      # Mounted read-only so the container cannot accidentally
+      # rewrite it at runtime. The path is relative to this
+      # compose file's location (``Docker/``); the
+      # ``./postgres/postgresql.conf`` reference resolves
+      # to ``Docker/postgres/postgresql.conf`` on the host.
+      - ./postgres/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+    command: ["postgres", "-c", "config_file=/etc/postgresql/postgresql.conf"]
+    networks:
+      - cortex-internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cortex} -d ${POSTGRES_DB:-cortex}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    # The DB is not reachable from the host. Debug access goes
+    # through ``docker compose exec postgres psql -U cortex``.
+    # If you need a host-side psql for one-off work, add a
+    # ``ports:`` mapping temporarily.
+    mem_limit: 1g
+    mem_reservation: 512m
+
+  # -------------------------------------------------------------------------
+  # redis — cache + Arq broker
+  # -------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: cortex-redis
+    restart: unless-stopped
+    # redis:7-alpine ships without a non-root user. We add one
+    # via the ``user:`` directive below so the redis process
+    # cannot write to its own config / data files.
+    user: "999:999"
+    command:
+      - "redis-server"
+      - "--appendonly"        # AOF persistence — survives restarts
+      - "--maxmemory"         # Cap to 256MB by default
+      - "256mb"
+      - "--maxmemory-policy"  # Evict least-recently-used keys first
+      - "allkeys-lru"
+      - "--save"              # RDB on shutdown / every 60s if 100+ keys
+      - "60"
+      - "100"
+      - "--bind"
+      - "0.0.0.0"
+      - "--protected-mode"    # No external clients without auth
+      - "yes"
+    volumes:
+      - redis_data:/data
+    networks:
+      - cortex-internal
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    mem_limit: 320m
+    mem_reservation: 128m
+
+  # -------------------------------------------------------------------------
+  # nginx — reverse proxy + TLS terminator (when configured)
+  # -------------------------------------------------------------------------
+  # nginx is the only service exposed to the public. It serves
+  # the static ``/var/www/html`` directory (placeholder for a
+  # future frontend) and reverse-proxies everything else to the
+  # api. Health checks come from the ALB at ``/health``.
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: cortex-nginx
+    restart: unless-stopped
+    ports:
+      # The public surface. ALB is in front of these.
+      - "80:80"
+      - "443:443"
+    volumes:
+      # Read-only configs. Edit on the host and restart the
+      # container to apply. The path is relative to this
+      # compose file's location (``Docker/``); the
+      # ``./nginx/*`` references resolve to
+      # ``Docker/nginx/*`` on the host.
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      # Writable directory for cached bodies, temp files, and
+      # the access/error logs that the docker compose ``logs``
+      # command tails.
+      - nginx_logs:/var/log/nginx
+      # When TLS is enabled, the certificate and key are
+      # rendered here by ``scripts/deploy.sh`` after fetching
+      # them from AWS ACM / Let's Encrypt. Mounted read-only.
+      - /etc/cortex/tls:/etc/nginx/tls:ro
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - cortex-internal
+    healthcheck:
+      # ``/health`` is proxied to the api. A 200 from nginx
+      # therefore means: nginx up, api up, api healthy. This
+      # is what the ALB target group should poll.
+      test: ["CMD", "wget", "-q", "-O-", "http://localhost/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    mem_limit: 256m
+    mem_reservation: 64m

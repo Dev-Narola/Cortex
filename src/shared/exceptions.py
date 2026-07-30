@@ -47,6 +47,22 @@ class UnauthorizedException(BaseAppException):
         super().__init__(message, code, False, data=data)
 
 
+class ForbiddenException(BaseAppException):
+    """
+    Exception raised for forbidden access.
+
+    Distinct from :class:`UnauthorizedException`
+    (401) so the API can return the spec's
+    required 403 for cross-tenant and
+    role-violation cases — the request was
+    authenticated, the policy just doesn't
+    allow the action.
+    """
+
+    def __init__(self, message: str = "forbidden", code: int = 403, data: dict | None = None):
+        super().__init__(message, code, False, data=data)
+
+
 class NotFoundException(BaseAppException):
     """
     Exception raised when a resource is not found.

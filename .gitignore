@@ -1,4 +1,5 @@
 .env
+.env.runtime
 .venv
 .pytest_cache/
 .ruff_cache/
@@ -20,6 +21,26 @@ _*.py
 _*.json
 _worker_out.log
 htmlcov/
+
+# V5 production artifacts
+# The host-side rendered env (read by docker-compose) must
+# never be committed; the secrets it contains belong only in
+# AWS Secrets Manager.
+.env.runtime
+.last-good-tag
+
+# Backup / dump artifacts (Postgres / S3)
+backups/
+*.dump
+*.sql
+*.sql.gz
+*.tar.gz
+
+# TLS / cert material
+*.pem
+*.key
+*.crt
+tls/
 
 # IDE
 .vscode/

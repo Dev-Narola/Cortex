@@ -13,7 +13,11 @@ services:
   app:
     build:
       context: ..
-      dockerfile: docker/Dockerfile
+      # The dev Dockerfile lives next to this compose file
+      # in ``Docker/`` (V5 directory-consolidation). The
+      # ``context: ..`` is the repo root so the image can
+      # COPY ``src/`` and ``pyproject.toml``.
+      dockerfile: Dockerfile.dev
     ports:
       - "8000:8000"
     environment:
@@ -55,7 +59,11 @@ services:
   worker:
     build:
       context: ..
-      dockerfile: docker/Dockerfile
+      # Same dev Dockerfile as the api service — the
+      # ``start.sh`` entrypoint from the production image is
+      # not used here; the dev compose runs the source
+      # directly via a volume mount.
+      dockerfile: Dockerfile.dev
     command: python -m arq src.ingestion.workers.worker.WorkerSettings
     environment:
       DATABASE_URL: postgresql+psycopg://postgres:postgres@db:5432/app

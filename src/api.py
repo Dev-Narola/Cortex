@@ -54,6 +54,15 @@ api_router.include_router(audit_router)
 # ``/api/v1/usage/events`` endpoint for owner/admin.
 api_router.include_router(billing_router)
 api_router.include_router(billing_admin_router)
+# V6: agents — CRUD + execute. The router's own prefix
+# is ``/agents``; mounted under the versioned API prefix
+# ``/api/v1`` via the app-level wiring in ``main.py``.
+from src.agents.interface.rest.routes import router as agents_router
+api_router.include_router(agents_router)
+
+# V7: Knowledge Graph REST endpoints (/api/v1/graph)
+from src.knowledge_graph.interface.rest.routes import router as graph_router
+api_router.include_router(graph_router)
 
 # WebSocket router is mounted at the top level (not under
 # ``/api/v1``) because WebSocket endpoints typically don't sit
@@ -62,3 +71,4 @@ ws_router = conversation_ws_router
 
 
 __all__ = ["api_router", "ws_router"]
+

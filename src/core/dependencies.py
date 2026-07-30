@@ -332,6 +332,7 @@ def require_api_key(
 
 __all__ = [
     "ApiKeyContext",
+    "get_agent_executor",
     "get_answer_query_service",
     "get_answer_query_service_async",
     "get_async_db",
@@ -339,10 +340,221 @@ __all__ = [
     "get_current_user",
     "get_db",
     "get_db_dependency",
+    "get_rate_limiter",
     "get_redis",
     "get_settings",
+    "get_tool_registry",
     "require_admin",
     "require_api_key",
     "require_member",
     "require_owner",
 ]
+
+
+# ---------------------------------------------------------------------------
+# V6 — Agentic layer factories
+# ---------------------------------------------------------------------------
+#
+# These factories are added in V6 to wire the new bounded
+# contexts (agents, tools, execution, limits) into the
+# FastAPI dependency-injection system. They follow the
+# same pattern as the V3 conversation factories
+# (e.g. ``get_answer_query_service``) and are intentionally
+# thin: the actual orchestration lives in the application
+# services and the executor, both of which are constructed
+# here from the request-scoped database session.
+#
+# The ``ToolRegistry`` and ``LLMProvider`` are *process-scoped*
+# (one per app boot, not one per request), so they are
+# created on first access and cached. This is what lets a
+# built-in tool like ``KnowledgeSearchTool`` be registered
+# exactly once at startup and reused for every request.
+_tool_registry_singleton = None
+_llm_provider_singleton = None
+_rate_limiter_singleton = None
+
+
+def get_tool_registry() -> "ToolRegistry":
+    """Return the process-wide tool registry.
+
+    The registry is a single object shared by every
+    request, so built-in tools (e.g. ``KnowledgeSearchTool``)
+    are registered once at app boot and reused for every
+    tenant. Tests can call :func:`reset_singletons` to
+    clear the cache between cases.
+    """
+    global _tool_registry_singleton
+    if _tool_registry_singleton is None:
+        from src.tools.application.registry import ToolRegistry
+
+        _tool_registry_singleton = ToolRegistry()
+    return _tool_registry_singleton
+
+
+def get_llm_provider() -> "LLMProvider":
+    """Return the process-wide LLM provider.
+
+    Defaults to the OpenAI adapter; the settings object
+    carries the model name + API key. The provider is
+    constructed lazily so tests can swap it out via
+    :func:`reset_singletons` before importing the routes.
+    """
+    global _llm_provider_singleton
+    if _llm_provider_singleton is None:
+        from src.agents.infrastructure.llm_provider import OpenAILLMProvider
+
+        _llm_provider_singleton = OpenAILLMProvider()
+    return _llm_provider_singleton
+
+
+def get_rate_limiter() -> "RateLimiter":
+    """Return the process-wide rate limiter, or ``None`` if Redis is unavailable.
+
+    The rate limiter is optional — when Redis is
+    unreachable (e.g. dev mode without a Redis
+    container) the agent executor still runs, with
+    rate limiting silently disabled. Production must
+    wire the limiter; the readiness probe
+    (``/health/ready``) returns 503 when Redis is
+    unreachable, so the rate limiter is unreachable
+    in lockstep.
+    """
+    global _rate_limiter_singleton
+    if _rate_limiter_singleton is not None:
+        return _rate_limiter_singleton
+    try:
+        redis = _get_redis_client()
+        from src.limits.application.service import RateLimiter
+
+        _rate_limiter_singleton = RateLimiter(redis)
+    except Exception:  # noqa: BLE001 - rate limiter is optional; rate limit can be disabled
+        _rate_limiter_singleton = None
+    return _rate_limiter_singleton
+
+
+def get_agent_executor(
+    db: Session = Depends(get_db),
+) -> "AgentExecutor":
+    """Construct an :class:`AgentExecutor` for the current request.
+
+    The executor owns the database session, the LLM
+    provider, the tool registry, and the rate limiter.
+    Constructing it on every request is cheap — the
+    process-scoped collaborators (LLM, registry,
+    rate limiter) are singletons.
+
+    V7: The ``GraphRetrievalService`` is also injected
+    so that agent runs receive Knowledge Graph context
+    prepended to the user message.
+    """
+    from src.agents.application.executor import AgentExecutor
+
+    # Best-effort graph retrieval — if the import or
+    # construction fails, the agent still works without
+    # graph augmentation.
+    graph_retrieval = None
+    try:
+        graph_retrieval = get_graph_retrieval_service(db)
+    except Exception:  # noqa: BLE001
+        pass
+
+    return AgentExecutor(
+        db,
+        llm=get_llm_provider(),
+        registry=get_tool_registry(),
+        rate_limiter=get_rate_limiter(),
+        graph_retrieval=graph_retrieval,
+    )
+
+
+def reset_singletons() -> None:
+    """Drop the process-scoped singletons. Test-only helper."""
+    global _tool_registry_singleton, _llm_provider_singleton, _rate_limiter_singleton
+    _tool_registry_singleton = None
+    _llm_provider_singleton = None
+    _rate_limiter_singleton = None
+
+
+# ---------------------------------------------------------------------------
+# V7 — Knowledge Graph dependency factories
+# ---------------------------------------------------------------------------
+
+
+def get_graph_database_client(db: Session = Depends(get_db)):
+    """Construct a PostgresGraphDatabaseClient for the current DB session."""
+    from src.knowledge_graph.infrastructure.graph_database import PostgresGraphDatabaseClient
+
+    return PostgresGraphDatabaseClient(db)
+
+
+def get_graph_entity_repository(db: Session = Depends(get_db)):
+    """Construct a GraphEntityRepository for the current DB session."""
+    from src.knowledge_graph.infrastructure.repositories import GraphEntityRepository
+
+    return GraphEntityRepository(db)
+
+
+def get_graph_relationship_repository(db: Session = Depends(get_db)):
+    """Construct a GraphRelationshipRepository for the current DB session."""
+    from src.knowledge_graph.infrastructure.repositories import GraphRelationshipRepository
+
+    return GraphRelationshipRepository(db)
+
+
+def get_entity_extraction_service():
+    """Construct an EntityExtractionService."""
+    from src.knowledge_graph.application.extraction import (
+        EntityExtractionService,
+        OpenAIExtractionProvider,
+    )
+
+    provider = OpenAIExtractionProvider(get_llm_provider())
+    return EntityExtractionService(provider)
+
+
+def get_relationship_extraction_service():
+    """Construct a RelationshipExtractionService."""
+    from src.knowledge_graph.application.extraction import (
+        OpenAIExtractionProvider,
+        RelationshipExtractionService,
+    )
+
+    provider = OpenAIExtractionProvider(get_llm_provider())
+    return RelationshipExtractionService(provider)
+
+
+def get_graph_extraction_pipeline(db: Session = Depends(get_db)):
+    """Construct a GraphExtractionPipeline for the current request."""
+    from src.knowledge_graph.application.extraction import GraphExtractionPipeline
+
+    return GraphExtractionPipeline(
+        db=db,
+        entity_service=get_entity_extraction_service(),
+        relationship_service=get_relationship_extraction_service(),
+    )
+
+
+def get_graph_traversal_service(db: Session = Depends(get_db)):
+    """Construct a GraphTraversalService for the current request."""
+    from src.knowledge_graph.application.traversal import GraphTraversalService
+
+    return GraphTraversalService(db)
+
+
+def get_graph_search_service(db: Session = Depends(get_db)):
+    """Construct a GraphSearchService for the current request."""
+    from src.knowledge_graph.application.traversal import GraphSearchService
+
+    return GraphSearchService(db)
+
+
+def get_graph_retrieval_service(db: Session = Depends(get_db)):
+    """Construct a GraphRetrievalService for the current request."""
+    from src.graph_retrieval.application.services import GraphRetrievalService
+
+    return GraphRetrievalService(
+        db=db,
+        graph_search_service=get_graph_search_service(db),
+        graph_traversal_service=get_graph_traversal_service(db),
+    )
+

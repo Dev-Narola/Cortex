@@ -44,9 +44,19 @@ logger = logging.getLogger(__name__)
 # every existing repo + test, which is out of scope for V3.
 # ---------------------------------------------------------------------------
 
+# V5 — pool sizing is now config-driven. The defaults are safe
+# for development; the production docker-compose pins larger
+# values appropriate to the EC2 instance type. ``pool_recycle``
+# caps connection lifetime so we do not hold connections that
+# have been silently closed by an intermediate proxy (ALB,
+# nginx, PgBouncer) longer than the recycle window.
 _sync_engine = create_engine(
     settings.DATABASE_URL,
     pool_pre_ping=True,
+    pool_size=settings.DB_POOL_SIZE,
+    max_overflow=settings.DB_MAX_OVERFLOW,
+    pool_timeout=settings.DB_POOL_TIMEOUT_SECONDS,
+    pool_recycle=settings.DB_POOL_RECYCLE_SECONDS,
 )
 SessionLocal = sessionmaker(
     autocommit=False,
@@ -121,6 +131,10 @@ def _derive_async_url(url: str) -> str:
 _async_engine = create_async_engine(
     _derive_async_url(settings.DATABASE_URL),
     pool_pre_ping=True,
+    pool_size=settings.DB_POOL_SIZE,
+    max_overflow=settings.DB_MAX_OVERFLOW,
+    pool_timeout=settings.DB_POOL_TIMEOUT_SECONDS,
+    pool_recycle=settings.DB_POOL_RECYCLE_SECONDS,
 )
 AsyncSessionLocal = async_sessionmaker(
     bind=_async_engine,

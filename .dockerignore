@@ -1,0 +1,119 @@
+# =============================================================================
+# .dockerignore — keep the build context small and free of secrets.
+# =============================================================================
+# Every line below is excluded from the Docker build context. A smaller
+# context = faster builds and, more importantly, a smaller surface for
+# accidental secret leaks into image layers.
+#
+# Anything that can be regenerated inside the image (``.pyc``,
+# ``__pycache__``, ``.pytest_cache``) is excluded so changes inside
+# those directories do not invalidate the dependency layer cache.
+# Anything sensitive (``.env``, ``*.pem``, ``id_rsa*``) is excluded
+# so a developer who accidentally runs ``docker build .`` from the
+# wrong directory cannot ship credentials to a registry.
+
+# --- Python build / cache noise ---------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+*.egg
+.installed.cfg
+*.egg-info
+
+# --- Test / dev artifacts ----------------------------------------------------
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+coverage.xml
+htmlcov/
+.tox/
+.nox/
+.cache
+.pytest_debug.log
+test_debug.log
+evals/results/
+
+# --- Secrets — must never enter the build context ---------------------------
+# The real ``.env`` is the single most common credential-leak vector
+# in a Python project. Excluding it by pattern means even a typo
+# (``docker build . -f-``) cannot include it.
+.env
+.env.*
+!.env.example
+# Local secret files (SSH keys, signing material).
+*.pem
+*.key
+*.crt
+*.p12
+id_rsa
+id_rsa.pub
+id_ed25519
+id_ed25519.pub
+.known_hosts
+
+# --- IDE / editor state ------------------------------------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# --- Virtualenvs and node modules (if any) ----------------------------------
+.venv/
+venv/
+env/
+ENV/
+node_modules/
+
+# --- VCS metadata ------------------------------------------------------------
+.git/
+.gitignore
+.gitattributes
+
+# --- Project docs (not needed inside the image) -----------------------------
+# Docs live at the repo root and inside ``Cortex/Docs``. The
+# image does not serve them, so we drop them from the context to
+# keep the COPY step small.
+docs/
+Docs/
+README.md
+LICENSE
+*.md
+# Keep pyproject.toml and the alembic config — see Dockerfile.
+
+# --- Local shell / process output -------------------------------------------
+_worker.log
+_api.log
+_worker_out.log
+_*.py
+_*.json
+_*.log
+nohup.out
+*.pid
+*.sock
+
+# --- Backup / dump artifacts -------------------------------------------------
+*.dump
+*.sql
+*.sql.gz
+*.tar
+*.tar.gz
+backups/
