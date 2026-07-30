@@ -196,4 +196,75 @@ def metrics() -> Response:
     return Response(content=payload, media_type=content_type)
 
 
-__all__ = ["health", "health_ready", "metrics", "router"]
+# --- /system/status (Operations status) ----------------------------------
+
+import os
+import time
+
+START_TIME = time.time()
+
+
+@router.get(
+    "/system/status",
+    summary="Operations status endpoint for monitoring dashboard",
+)
+async def system_status(request: Request) -> dict[str, Any]:
+    """Render operations status metadata for monitoring and operations dashboard."""
+    import asyncio
+
+    uptime_seconds = int(time.time() - START_TIME)
+    env = os.getenv("ENVIRONMENT", "development")
+    version = "0.7.0"
+    git_sha = os.getenv("CORTEX_IMAGE_TAG", os.getenv("GIT_COMMIT_SHA", "dev"))
+
+    checks: dict[str, str] = {}
+
+    def _check_postgres() -> None:
+        from src.core.dependencies import get_db
+
+        gen = get_db()
+        session = next(gen)
+        try:
+            session.execute(text("SELECT 1"))
+            checks["database"] = "ok"
+        finally:
+            try:
+                next(gen)
+            except StopIteration:
+                pass
+
+    try:
+        await asyncio.to_thread(_check_postgres)
+    except Exception as exc:  # noqa: BLE001
+        checks["database"] = f"error: {type(exc).__name__}"
+
+    try:
+        from src.core.redis_client import ping as redis_ping
+
+        if await redis_ping():
+            checks["redis"] = "ok"
+        else:
+            checks["redis"] = "error: ping_false"
+    except Exception as exc:  # noqa: BLE001
+        checks["redis"] = f"error: {type(exc).__name__}"
+
+    s3_bucket = os.getenv("S3_BUCKET_NAME")
+    if s3_bucket:
+        checks["s3_storage"] = f"configured: {s3_bucket}"
+    else:
+        checks["s3_storage"] = "local"
+
+    overall_status = "healthy" if all("error" not in v for v in checks.values()) else "degraded"
+
+    return {
+        "status": overall_status,
+        "version": version,
+        "environment": env,
+        "git_sha": git_sha,
+        "uptime_seconds": uptime_seconds,
+        "services": checks,
+    }
+
+
+__all__ = ["health", "health_ready", "metrics", "system_status", "router"]
+

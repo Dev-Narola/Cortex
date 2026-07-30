@@ -29,7 +29,7 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = "v6_create_agents_tools_runs_tenant_limits"
+revision = "v6_agentic_layer"
 down_revision = "a2b3c4d5e6f7"
 branch_labels = None
 depends_on = None

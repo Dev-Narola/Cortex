@@ -94,9 +94,12 @@ node_modules/
 # keep the COPY step small.
 docs/
 Docs/
-README.md
 LICENSE
 *.md
+# README.md is explicitly kept: the Dockerfile builder stage runs
+# ``pip install .`` which requires it because pyproject.toml declares
+# ``readme = "README.md"``. Excluding it causes the build to fail.
+!README.md
 # Keep pyproject.toml and the alembic config — see Dockerfile.
 
 # --- Local shell / process output -------------------------------------------

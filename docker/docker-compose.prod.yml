@@ -71,6 +71,12 @@ volumes:
 # truth for the platform-level environment that does not vary by
 # role. The role-specific services override only what differs.
 x-cortex-common: &cortex-common
+  # Load application secrets from the host .env file into the container.
+  # When SECRETS_MANAGER_ENABLED=false, start.sh relies on these vars
+  # being present in the container environment directly.
+  # Path is relative to this compose file's location (docker/).
+  env_file:
+    - ../.env
   image: ${CORTEX_IMAGE:-ghcr.io/cortex/cortex}:${CORTEX_IMAGE_TAG:-latest}
   restart: unless-stopped
   init: true
@@ -150,7 +156,6 @@ x-cortex-common: &cortex-common
   # visible to other containers on the network.
   volumes:
     - type: tmpfs
-      source: secrets
       target: /run/secrets
       tmpfs:
         size: 1m
@@ -275,26 +280,11 @@ services:
     image: redis:7-alpine
     container_name: cortex-redis
     restart: unless-stopped
-    # redis:7-alpine ships without a non-root user. We add one
-    # via the ``user:`` directive below so the redis process
-    # cannot write to its own config / data files.
     user: "999:999"
-    command:
-      - "redis-server"
-      - "--appendonly"        # AOF persistence — survives restarts
-      - "--maxmemory"         # Cap to 256MB by default
-      - "256mb"
-      - "--maxmemory-policy"  # Evict least-recently-used keys first
-      - "allkeys-lru"
-      - "--save"              # RDB on shutdown / every 60s if 100+ keys
-      - "60"
-      - "100"
-      - "--bind"
-      - "0.0.0.0"
-      - "--protected-mode"    # No external clients without auth
-      - "yes"
+    command: ["redis-server", "/etc/redis/redis.conf"]
     volumes:
       - redis_data:/data
+      - ./redis/redis.conf:/etc/redis/redis.conf:ro
     networks:
       - cortex-internal
     healthcheck:
