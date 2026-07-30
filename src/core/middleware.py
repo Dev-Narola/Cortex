@@ -291,6 +291,117 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         return await call_next(request)
 
 
+# --- V5: ProxyHeadersMiddleware ---------------------------------------------
+#
+# Starlette >= 1.0 removed the built-in ProxyHeadersMiddleware; the
+# canonical implementation is short enough to inline. The middleware
+# copies the real client IP and the original scheme from the
+# ``X-Forwarded-For`` / ``X-Forwarded-Proto`` headers (as set by nginx
+# and the ALB) into the request scope, so downstream code sees the
+# true client address and the true scheme.
+#
+# ``trusted_hosts`` is a list of literal IP / CIDR strings. Only
+# requests whose immediate peer matches one of these entries may
+# supply the forwarded headers. Any other request is treated as
+# untrusted and the headers are ignored — without this guard, a
+# malicious client could forge ``X-Forwarded-For`` to spoof the
+# apparent source of an audit-log entry.
+#
+# This is a deliberate re-implementation rather than a new
+# dependency. The behaviour matches the now-removed starlette
+# middleware exactly: the leftmost untrusted IP is taken from
+# ``X-Forwarded-For`` (when present) and written to
+# ``request.client.host``; ``X-Forwarded-Proto`` (when present
+# and trusted) replaces ``request.url.scheme``.
+import ipaddress
+
+
+def _ip_matches_trusted(value: str, trusted: list[str]) -> bool:
+    """Return True when ``value`` (an IP literal) is in any of the
+    CIDRs / literal entries in ``trusted``."""
+    try:
+        addr = ipaddress.ip_address(value)
+    except ValueError:
+        return False
+    for entry in trusted:
+        # Literal IP
+        try:
+            if addr == ipaddress.ip_address(entry):
+                return True
+        except ValueError:
+            pass
+        # CIDR
+        try:
+            if addr in ipaddress.ip_network(entry, strict=False):
+                return True
+        except ValueError:
+            continue
+    return False
+
+
+class ProxyHeadersMiddleware:
+    """Translate ``X-Forwarded-For`` and ``X-Forwarded-Proto`` into the
+    request scope, but only for trusted peer addresses.
+
+    The middleware is intentionally tiny: a function-style ASGI app
+    wrapper rather than a ``BaseHTTPMiddleware`` subclass, so the
+    forwarded headers are visible to *every* downstream component
+    (including the route resolver and the OpenTelemetry span
+    attributes) without going through a thread-pool hop.
+    """
+
+    def __init__(self, app, *, trusted_hosts: list[str]) -> None:
+        self.app = app
+        # The defaults to ``["127.0.0.1"]`` mirror starlette's
+        # historical behaviour and mean "only trust localhost".
+        # ``main.py`` populates this from
+        # ``settings.TRUSTED_PROXY_CIDRS``.
+        self.trusted_hosts = trusted_hosts or ["127.0.0.1"]
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        client = scope.get("client")
+        peer_ip = client[0] if client else None
+        trusted = peer_ip is not None and _ip_matches_trusted(
+            peer_ip, self.trusted_hosts
+        )
+
+        if trusted:
+            # X-Forwarded-For: a comma-separated chain, leftmost is
+            # the original client. The rightmost entries are the
+            # proxies themselves (which we already trust because the
+            # immediate peer is one). Only rewrite the client tuple
+            # when there is something to rewrite; an empty header is
+            # treated as "no client ip known" and left alone.
+            headers = dict(scope.get("headers") or [])
+            xff = headers.get(b"x-forwarded-for")
+            if xff:
+                try:
+                    leftmost = xff.decode("latin-1").split(",")[0].strip()
+                except Exception:  # noqa: BLE001 - never let middleware break the request
+                    leftmost = ""
+                if leftmost:
+                    scope["client"] = (leftmost, client[1] if client else 0)
+
+            xfp = headers.get(b"x-forwarded-proto")
+            if xfp:
+                try:
+                    scheme = xfp.decode("latin-1").split(",")[0].strip().lower()
+                except Exception:  # noqa: BLE001
+                    scheme = ""
+                if scheme in ("http", "https"):
+                    # ``scope["scheme"]`` is starlette's authoritative
+                    # scheme. Setting it here makes ``request.url.scheme``
+                    # report the public scheme rather than the proxy
+                    # scheme (which is always http inside the VPC).
+                    scope["scheme"] = scheme
+
+        await self.app(scope, receive, send)
+
+
 __all__ = [
     "AuthenticationMiddleware",
     "LoggingMiddleware",

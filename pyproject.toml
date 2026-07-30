@@ -60,7 +60,10 @@ dependencies = [
     "opentelemetry-semantic-conventions>=0.48b0",       # gen_ai.* attributes
     "prometheus-client>=0.20.0",        # /metrics exposition
     "structlog>=24.4.0",                # structured JSON logs
+    # --- V7: Knowledge Graph ---
+    "strawberry-graphql>=0.260.0",
 ]
+
 [project.optional-dependencies]
 dev = [
     "pytest>=8.4.0",

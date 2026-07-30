@@ -12,6 +12,13 @@ file. Every other module imports ``settings`` from here so that:
 
 V3 additions: HNSW parameters, LLM model + temperature, reranker
 configuration, embedding cache TTL, and tenant search version knobs.
+
+V5 additions: production deployment knobs — CORS, trusted hosts,
+SQLAlchemy connection pool, Gunicorn/Uvicorn worker counts, AWS
+region, ALB support, and ``SecretsManager`` toggles. Defaults are
+chosen so a freshly built container with the right env vars
+populated starts cleanly in production; nothing here is a hidden
+opinion.
 """
 
 from __future__ import annotations
@@ -26,6 +33,19 @@ class Settings(BaseSettings):
     # Core runtime
     # ------------------------------------------------------------------
     DATABASE_URL: str = "postgresql+psycopg://postgres:postgres@localhost:5432/app"
+    # The individual Postgres credential fields. In production
+    # they are fetched from AWS Secrets Manager and combined
+    # with ``POSTGRES_HOST`` / ``POSTGRES_PORT`` / ``POSTGRES_DB``
+    # to render ``DATABASE_URL`` if it is not provided directly.
+    # When ``DATABASE_URL`` is set, the individual fields are
+    # ignored. This split is the standard pattern for keeping
+    # secret material out of the connection string in env files
+    # and in CI logs.
+    POSTGRES_USER: str = "postgres"
+    POSTGRES_PASSWORD: str = "postgres"
+    POSTGRES_HOST: str = "localhost"
+    POSTGRES_PORT: int = 5432
+    POSTGRES_DB: str = "app"
     REDIS_URL: str = "redis://localhost:6379/0"
     APP_NAME: str = "Cortex"
     APP_VERSION: str = "0.1.0"
@@ -141,6 +161,127 @@ class Settings(BaseSettings):
     # delete, reindex) invalidates the whole tenant's cache namespace
     # without us having to walk keys.
     SEARCH_RESULT_CACHE_TTL_SECONDS: int = 60 * 5  # 5 minutes
+
+    # ------------------------------------------------------------------
+    # V5 — Production deployment
+    # ------------------------------------------------------------------
+    # Comma-separated list of origins allowed by CORS. ``*`` is
+    # supported for the dev convenience case, but production should
+    # pass a real list (e.g. ``https://cortex.example.com``). When
+    # ``ALLOWED_ORIGINS`` is empty, the ``*`` default is used.
+    CORS_ALLOWED_ORIGINS: str = "*"
+    CORS_ALLOW_CREDENTIALS: bool = True
+    CORS_ALLOW_METHODS: str = "*"
+    CORS_ALLOW_HEADERS: str = "*"
+
+    # Comma-separated list of trusted Host headers. ``*`` permits
+    # any host (matches the V0 dev convenience); production must
+    # restrict this to the real public hostname(s). ``main.py``
+    # consumes this list at startup.
+    TRUSTED_HOSTS: str = "*"
+
+    # SQLAlchemy connection pool sizing. The async engine shares
+    # one pool across all in-flight requests. ``pool_size`` is
+    # the number of connections held open; ``max_overflow`` is
+    # how many additional connections can open under burst. With
+    # WORKERS=2 and pool_size=10, the database may see up to
+    # 2 * (10 + 5) = 30 concurrent connections from the API.
+    DB_POOL_SIZE: int = 10
+    DB_MAX_OVERFLOW: int = 5
+    DB_POOL_TIMEOUT_SECONDS: int = 30
+    DB_POOL_RECYCLE_SECONDS: int = 1800  # 30 min — avoid stale conns
+
+    # Uvicorn/Gunicorn worker process count for the API. Each
+    # worker is a single uvicorn process; ``WORKERS=1`` is the
+    # dev default. Production should set this to ``(2 * CPU) + 1``
+    # per the Gunicorn guidance. The container entrypoint honours
+    # this value; the docker-compose service sets a sensible
+    # value of 2 for a t3.small EC2 host.
+    API_WORKERS: int = 1
+    # Worker timeout in seconds. uvicorn kills any worker that
+    # does not ping the process master within this window — the
+    # safety net for genuine hangs in the request path.
+    API_WORKER_TIMEOUT: int = 60
+
+    # Arq worker settings. The ingestion worker reads these in
+    # ``ingestion/workers/worker.py``. ``ARQ_MAX_JOBS`` is the
+    # per-process concurrency cap; tune down on memory-constrained
+    # hosts.
+    ARQ_MAX_JOBS: int = 10
+    ARQ_JOB_TIMEOUT_SECONDS: int = 300
+    ARQ_MAX_TRIES: int = 4
+    ARQ_KEEP_RESULT_SECONDS: int = 3600
+
+    # AWS region for any direct AWS SDK call (S3, Secrets Manager,
+    # etc.). boto3 resolves this from ``AWS_REGION`` / ``AWS_DEFAULT_REGION``
+    # automatically, but reading it from settings keeps the
+    # application-level config greppable.
+    AWS_REGION: str = "us-east-1"
+
+    # When True, the app will fetch any missing secret from AWS
+    # Secrets Manager. ``start.sh`` sets this to ``true`` on the
+    # production container; dev containers leave it ``false`` and
+    # rely on the in-repo ``.env`` file only.
+    SECRETS_MANAGER_ENABLED: bool = False
+
+    # Path on disk (inside the container) where ``start.sh`` writes
+    # the rendered secrets. Mounted as a tmpfs in production so the
+    # rendered values never reach the container layer.
+    SECRETS_RENDER_PATH: str = "/run/secrets/.env"
+
+    # ALB / proxy forwarded-header support. When the app sits behind
+    # nginx + ALB, the original client IP and the ``X-Forwarded-Proto``
+    # header must be honoured for HTTPS-aware redirects and correct
+    # audit logging. Starlette's ``ProxyHeadersMiddleware`` reads
+    # this; the trusted-proxy IP/CIDR list is comma-separated.
+    BEHIND_PROXY: bool = True
+    TRUSTED_PROXY_CIDRS: str = "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+
+    # Timezone. Every timestamp in the app is ``timestamptz`` and
+    # rendered in UTC, so this only affects log timestamps and
+    # any locale-aware code paths (currently none). Set to
+    # ``UTC`` in production; the docker-compose service pins it
+    # to keep logs consistent.
+    TIMEZONE: str = "UTC"
+
+    # Maximum upload size in bytes. Mirrored by the ``client_max_body_size``
+    # directive in nginx so the proxy and the app agree on the limit.
+    NGINX_MAX_BODY_SIZE: str = "12m"
+
+    # Container image tag for the current deploy. Injected by the
+    # CD pipeline (``scripts/deploy.sh``) so the running container
+    # can be cross-referenced with a specific build. When empty,
+    # the value is read from the ``CORTEX_IMAGE_TAG`` env var
+    # which the CD workflow sets explicitly.
+    CORTEX_IMAGE_TAG: str = ""
+
+    # ``RUN_DB_MIGRATIONS_ON_START`` controls whether the
+    # production entrypoint runs ``alembic upgrade head`` before
+    # booting the API / worker. Defaults to True so a fresh
+    # deploy is self-bootstrapping; set to False in a strict
+    # no-migrations-on-app-start policy.
+    RUN_DB_MIGRATIONS_ON_START: bool = True
+
+    # ------------------------------------------------------------------
+    # V7 — Knowledge graph (graph-database connection)
+    # ------------------------------------------------------------------
+    # The V1+V3 doc places the knowledge graph in Postgres
+    # (``kg_entities`` and ``kg_relations`` tables), and the
+    # V7 implementation keeps that — the ``GraphDatabaseClient``
+    # seam in ``infrastructure/graph_database.py`` abstracts
+    # the backend so a future V9 hardening can swap in Neo4j
+    # without changing the repositories. The settings below
+    # are kept in the spec's ``NEO4J_*`` shape for forward
+    # compatibility; the current implementation ignores them
+    # unless ``GRAPH_BACKEND=neo4j`` is set.
+    NEO4J_URL: str = ""
+    NEO4J_USERNAME: str = ""
+    NEO4J_PASSWORD: str = ""
+    GRAPH_DATABASE_NAME: str = "neo4j"
+    # ``postgres`` (default, current implementation) or
+    # ``neo4j`` (forward-compatible; requires the Neo4j
+    # driver which is not yet a project dependency).
+    GRAPH_BACKEND: str = "postgres"
 
 
 settings = Settings()

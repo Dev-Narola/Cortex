@@ -23,6 +23,7 @@ from .observability.infrastructure.otel import (
 from .shared.exceptions import (
     BaseAppException,
     ConflictException,
+    ForbiddenException,
     NotFoundException,
     UnauthorizedException,
     ValidationException,
@@ -75,14 +76,47 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
+# V5 — restrict CORS, trusted hosts, and proxy header trust to
+# values that come from the settings object. Production
+# deployments MUST set:
+#   TRUSTED_HOSTS  (comma-separated real hostnames, NOT "*")
+#   CORS_ALLOWED_ORIGINS (the public origin(s) allowed to call
+#                          the API, NOT "*" in production)
+# The dev defaults of "*" remain so the local docker-compose
+# stack keeps working without environment overrides.
+def _split_csv(value: str) -> list[str]:
+    return [item.strip() for item in value.split(",") if item.strip()]
 
+
+_trusted_hosts = _split_csv(settings.TRUSTED_HOSTS) or ["*"]
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=_trusted_hosts)
+
+# When the app sits behind nginx + ALB (the V5 layout), we need
+# to translate ``X-Forwarded-Proto`` and ``X-Forwarded-For``
+# into the request scope so downstream code sees the real client
+# IP / scheme. The middleware is restricted to the private-
+# network CIDRs in ``settings.TRUSTED_PROXY_CIDRS`` so a malicious
+# client cannot spoof forwarded headers by sending them itself.
+#
+# Starlette >= 1.0 removed the built-in ``ProxyHeadersMiddleware``;
+# the in-tree re-implementation in :mod:`src.core.middleware` is
+# the dependency-free replacement. Behaviour is identical to the
+# removed upstream version.
+if settings.BEHIND_PROXY:
+    from src.core.middleware import ProxyHeadersMiddleware
+
+    _trusted_proxies = _split_csv(settings.TRUSTED_PROXY_CIDRS) or ["127.0.0.1"]
+    app.add_middleware(ProxyHeadersMiddleware, trusted_hosts=_trusted_proxies)
+
+_cors_origins = _split_csv(settings.CORS_ALLOWED_ORIGINS) or ["*"]
+_cors_methods = _split_csv(settings.CORS_ALLOW_METHODS) or ["*"]
+_cors_headers = _split_csv(settings.CORS_ALLOW_HEADERS) or ["*"]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Adjust this for production
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=_cors_origins,
+    allow_credentials=settings.CORS_ALLOW_CREDENTIALS,
+    allow_methods=_cors_methods,
+    allow_headers=_cors_headers,
 )
 
 # --- V4: request-level observability middlewares ---
@@ -127,6 +161,11 @@ async def _unauthorized_handler(_: Request, exc: UnauthorizedException) -> JSONR
     return JSONResponse(status_code=exc.code, content=_error_payload(exc))
 
 
+@app.exception_handler(ForbiddenException)
+async def _forbidden_handler(_: Request, exc: ForbiddenException) -> JSONResponse:
+    return JSONResponse(status_code=exc.code, content=_error_payload(exc))
+
+
 @app.exception_handler(ConflictException)
 async def _conflict_handler(_: Request, exc: ConflictException) -> JSONResponse:
     return JSONResponse(status_code=exc.code, content=_error_payload(exc))
@@ -146,6 +185,10 @@ app.include_router(health_router)
 app.include_router(api_router, prefix=settings.API_V1_PREFIX, tags=["API"])
 app.include_router(ws_router)
 
+# V7: Knowledge Graph GraphQL endpoint (/graphql)
+from src.knowledge_graph.interface.graphql.schema import graphql_router
+app.include_router(graphql_router, prefix="/graphql", tags=["GraphQL"])
+
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):
@@ -154,3 +197,4 @@ async def global_exception_handler(request, exc):
         status_code=500,
         content={"code": 500, "message": "Internal Server Error", "data": None},
     )
+

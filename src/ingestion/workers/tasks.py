@@ -401,6 +401,34 @@ async def embed_chunks_task(
         await invalidate_cache(f"doc_status:{doc_id}")
         logger.info("Document %s → indexed ✓", doc_id)
 
+        # V7 — fan out to the graph extraction worker.
+        # The enqueue is best-effort: a failure to
+        # enqueue (Redis transient outage) does not
+        # roll back the document indexing. Operators
+        # can backfill the extraction by re-enqueuing
+        # from the admin tool. The graph worker is
+        # its own process; see
+        # ``src.knowledge_graph.infrastructure.worker``.
+        if "redis" in ctx:
+            try:
+                from src.knowledge_graph.infrastructure.workers import (
+                    enqueue_graph_extraction,
+                )
+                await enqueue_graph_extraction(
+                    ctx["redis"],
+                    document_id=doc_id,
+                    tenant_id=ten_id,
+                )
+            except Exception as exc:  # noqa: BLE001 - enqueue is best-effort
+                logger.warning(
+                    "graph_extraction.enqueue_failed",
+                    extra={
+                        "document_id": str(doc_id),
+                        "tenant_id": str(ten_id),
+                        "error": str(exc),
+                    },
+                )
+
         return {
             "status": "indexed",
             "document_id": document_id,

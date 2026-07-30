@@ -320,6 +320,81 @@ AUDIT_RECORDING_FAILURES_TOTAL = Counter(
 )
 
 
+# --- Knowledge Graph (V7) ---------------------------------------------------
+
+
+KG_ENTITIES_EXTRACTED_TOTAL = Counter(
+    "cortex_kg_entities_extracted_total",
+    "Total entities extracted for Knowledge Graph.",
+    registry=REGISTRY,
+)
+
+KG_RELATIONSHIPS_EXTRACTED_TOTAL = Counter(
+    "cortex_kg_relationships_extracted_total",
+    "Total relationships extracted for Knowledge Graph.",
+    registry=REGISTRY,
+)
+
+KG_EXTRACTION_FAILURES_TOTAL = Counter(
+    "cortex_kg_extraction_failures_total",
+    "Total Knowledge Graph extraction failures.",
+    registry=REGISTRY,
+)
+
+KG_PIPELINE_RUNS_TOTAL = Counter(
+    "cortex_kg_pipeline_runs_total",
+    "Total Knowledge Graph pipeline runs.",
+    registry=REGISTRY,
+)
+
+GRAPH_QUERIES_TOTAL = Counter(
+    "cortex_graph_queries_total",
+    "Total Knowledge Graph queries executed.",
+    registry=REGISTRY,
+)
+
+GRAPH_TRAVERSAL_DURATION_SECONDS = Histogram(
+    "cortex_graph_traversal_duration_seconds",
+    "Knowledge Graph traversal query latency in seconds.",
+    buckets=(0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0),
+    registry=REGISTRY,
+)
+
+GRAPH_RETRIEVAL_DURATION_SECONDS = Histogram(
+    "cortex_graph_retrieval_duration_seconds",
+    "Graph-aware retrieval latency in seconds.",
+    buckets=(0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0),
+    registry=REGISTRY,
+)
+
+GRAPH_LLM_EXTRACTION_TOKENS_TOTAL = Counter(
+    "cortex_graph_llm_extraction_tokens_total",
+    "Tokens consumed during Knowledge Graph LLM extractions.",
+    registry=REGISTRY,
+)
+
+# --- V7 Part 3: extra metrics called out by the Phase 11 spec ----
+
+GRAPH_EXTRACTION_DURATION_SECONDS = Histogram(
+    "cortex_graph_extraction_duration_seconds",
+    "End-to-end knowledge graph extraction latency, labelled by outcome.",
+    labelnames=("outcome",),  # outcome: success / failure
+    buckets=(
+        0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0, 60.0, 120.0, 300.0,
+    ),
+    registry=REGISTRY,
+)
+
+GRAPH_TRAVERSAL_DEPTH = Histogram(
+    "cortex_graph_traversal_depth",
+    "Distribution of BFS traversal depths, labelled by algorithm. "
+    "Used to spot tenants whose graphs have grown past the depth cap.",
+    labelnames=("algorithm",),  # algorithm: shortest_path / related_entities
+    buckets=(0, 1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 20),
+    registry=REGISTRY,
+)
+
+
 # --- Exposition ------------------------------------------------------------
 
 
@@ -353,6 +428,14 @@ __all__ = [
     "REDIS_CACHE_MISSES_TOTAL",
     "USAGE_RECORDING_FAILURES_TOTAL",
     "AUDIT_RECORDING_FAILURES_TOTAL",
+    "KG_ENTITIES_EXTRACTED_TOTAL",
+    "KG_RELATIONSHIPS_EXTRACTED_TOTAL",
+    "KG_EXTRACTION_FAILURES_TOTAL",
+    "KG_PIPELINE_RUNS_TOTAL",
+    "GRAPH_QUERIES_TOTAL",
+    "GRAPH_TRAVERSAL_DURATION_SECONDS",
+    "GRAPH_RETRIEVAL_DURATION_SECONDS",
+    "GRAPH_LLM_EXTRACTION_TOKENS_TOTAL",
     "REGISTRY",
     "RERANK_CALLS_TOTAL",
     "RERANK_CANDIDATES_TOTAL",
@@ -366,3 +449,4 @@ __all__ = [
     "WORKER_TASKS_TOTAL",
     "render_latest",
 ]
+

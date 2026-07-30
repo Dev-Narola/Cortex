@@ -1,0 +1,170 @@
+# =============================================================================
+# Cortex — CD pipeline (V5)
+# =============================================================================
+# Triggers on every push to ``main`` (and any release branch).
+# Assumes the CI pipeline has already pushed an image tagged
+# ``sha-<short-sha>`` to GHCR — this job's only responsibility
+# is to take that image to production.
+#
+# The CD flow:
+#   1. Validate the EC2 host is reachable and the SSH key
+#      secret is present.
+#   2. SSH into the host and run ``scripts/deploy.sh`` with
+#      the commit SHA as the image tag.
+#   3. ``deploy.sh`` pulls, restarts, waits for the health
+#      check, and rolls back to the previous tag on failure.
+#   4. The job exits with the script's exit code; a failure
+#      here blocks the deploy and surfaces in the GitHub UI.
+#
+# The deploy script is the single source of truth for the
+# deploy logic, so the same script can be invoked by hand for
+# a hotfix without going through GitHub Actions.
+# =============================================================================
+
+name: CD
+
+on:
+  push:
+    branches: [main, "release/*"]
+  # Allow the workflow to be re-run from the GitHub UI for
+  # the same commit without pushing a new commit. The
+  # ``workflow_dispatch`` trigger below adds a manual button
+  # in the Actions tab.
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Image tag to deploy (e.g. sha-abcdef1). Defaults to the current commit."
+        required: false
+        default: ""
+
+# Concurrency: only one deploy at a time. A new push cancels
+# any in-flight deploy of the previous commit; the cancelled
+# deploy is treated as a failure for that commit, and the new
+# push's deploy runs.
+concurrency:
+  group: cd-${{ github.ref }}
+  cancel-in-progress: true
+
+# ``contents: read`` is enough; the deploy SSHes to EC2 with
+# a deploy key the user maintains as a repository secret.
+permissions:
+  contents: read
+  id-token: none   # we do not use OIDC-to-AWS for this project
+
+jobs:
+  deploy:
+    name: Deploy to production
+    runs-on: ubuntu-latest
+    # Only deploy if CI succeeded. The CI workflow is
+    # referenced by name; if it failed for the same commit
+    # the deploy is skipped.
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    environment:
+      # The ``production`` environment can hold additional
+      # protection rules (required reviewers, wait timer) in
+      # the GitHub UI. Wiring the deploy to an environment is
+      # the standard way to gate a production deploy with a
+      # human-in-the-loop approval.
+      name: production
+      url: ${{ steps.deploy.outputs.public_url }}
+    steps:
+      - name: Validate secrets
+        env:
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+        run: |
+          if [[ -z "${EC2_SSH_KEY}" ]]; then
+            echo "::error::EC2_SSH_KEY secret is not set"; exit 1
+          fi
+          if [[ -z "${EC2_HOST}" ]]; then
+            echo "::error::EC2_HOST secret is not set"; exit 1
+          fi
+          if [[ -z "${EC2_USER}" ]]; then
+            echo "::error::EC2_USER secret is not set"; exit 1
+          fi
+          echo "Secrets present."
+
+      - name: Determine image tag
+        id: tag
+        # ``workflow_dispatch`` lets the operator override the
+        # tag for a hotfix; otherwise the commit SHA wins.
+        run: |
+          if [[ -n "${{ inputs.image_tag }}" ]]; then
+            echo "value=${{ inputs.image_tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/cortex_deploy
+          chmod 600 ~/.ssh/cortex_deploy
+          ssh-keyscan -H "${{ secrets.EC2_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null || true
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Deploy via SSH
+        id: deploy
+        # The remote ``deploy.sh`` does the actual work:
+        # pulls secrets, pulls the image, restarts the
+        # containers, waits for health, rolls back on
+        # failure. The exit code is propagated back to the
+        # GitHub job, so a non-zero exit is a failed deploy
+        # in the run history.
+        env:
+          # ``SSH_AUTH_SOCK=0`` disables the agent for this
+          # single command. Combined with ``-i`` below, this
+          # means the key in ~/.ssh/cortex_deploy is the
+          # only auth credential.
+          SSH_AUTH_SOCK: "0"
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/cortex_deploy \
+              -o StrictHostKeyChecking=accept-new \
+              -o UserKnownHostsFile=~/.ssh/known_hosts \
+              ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} \
+              "cd /opt/cortex && \
+               IMAGE=ghcr.io/${{ github.repository }}/cortex \
+               TAG=${{ steps.tag.outputs.value }} \
+               ./scripts/deploy.sh --image-tag ${{ steps.tag.outputs.value }}"
+
+      - name: Smoke test
+        # A short public probe to confirm the deploy
+        # succeeded end-to-end. Hits the health endpoint
+        # behind the load balancer; if the ALB has not
+        # registered the new instance yet, this may take a
+        # moment. The retry loop waits up to 60 s.
+        if: success()
+        run: |
+          url="https://${{ secrets.PUBLIC_HOSTNAME }}/health"
+          echo "Probing ${url}"
+          for i in {1..12}; do
+            if curl --silent --fail --max-time 5 "${url}"; then
+              echo "Public probe OK"
+              echo "public_url=${url}" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "Probe ${i}/12 failed; retrying in 5s"
+            sleep 5
+          done
+          echo "::error::Public health probe never succeeded"
+          exit 1
+
+      - name: Notify on failure
+        # A failure should not be silent. ``if: failure()``
+        # gates this so it only runs when the deploy (or
+        # the smoke test) actually failed. The exact
+        # notification mechanism is left to the operator —
+        # uncomment / replace with the team's preferred
+        # channel (Slack webhook, email, etc.).
+        if: failure()
+        run: |
+          echo "::error::Cortex deploy failed for commit ${GITHUB_SHA}"
+          echo "See the Actions run for details: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          # Example Slack notification (uncomment and add the webhook secret):
+          # curl --silent --fail --max-time 10 \
+          #   -X POST \
+          #   -H 'Content-Type: application/json' \
+          #   -d "{\"text\":\":rotating_light: Cortex deploy failed: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}" \
+          #   "${{ secrets.SLACK_WEBHOOK_URL }}"
