@@ -277,11 +277,20 @@ class Settings(BaseSettings):
     NEO4J_URL: str = ""
     NEO4J_USERNAME: str = ""
     NEO4J_PASSWORD: str = ""
-    GRAPH_DATABASE_NAME: str = "neo4j"
-    # ``postgres`` (default, current implementation) or
-    # ``neo4j`` (forward-compatible; requires the Neo4j
-    # driver which is not yet a project dependency).
-    GRAPH_BACKEND: str = "postgres"
+    # ------------------------------------------------------------------
+    # V8 — Model Context Protocol (MCP) Server Configuration
+    # ------------------------------------------------------------------
+    MCP_ENABLED: bool = True
+    MCP_SERVER_NAME: str = "Cortex"
+    MCP_SERVER_VERSION: str = "1.0.0"
+    MCP_DEFAULT_TRANSPORT: str = "websocket"
+    MCP_SESSION_TIMEOUT: int = 1800  # 30 minutes
+    MCP_MAX_SESSIONS_PER_TENANT: int = 100
+    MCP_MAX_MESSAGE_SIZE: int = 1048576  # 1 MB
+    MCP_ENABLE_WEBSOCKET: bool = True
+    MCP_ENABLE_HTTP: bool = True
+    MCP_ENABLE_STDIO: bool = True
 
 
 settings = Settings()
+

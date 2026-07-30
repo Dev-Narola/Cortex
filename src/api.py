@@ -64,6 +64,10 @@ api_router.include_router(agents_router)
 from src.knowledge_graph.interface.rest.routes import router as graph_router
 api_router.include_router(graph_router)
 
+# V8: MCP Server REST endpoint (/api/v1/mcp)
+from src.mcp.interface.rest.routes import router as mcp_router
+api_router.include_router(mcp_router)
+
 # WebSocket router is mounted at the top level (not under
 # ``/api/v1``) because WebSocket endpoints typically don't sit
 # behind a versioned API prefix.

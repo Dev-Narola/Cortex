@@ -189,6 +189,10 @@ app.include_router(ws_router)
 from src.knowledge_graph.interface.graphql.schema import graphql_router
 app.include_router(graphql_router, prefix="/graphql", tags=["GraphQL"])
 
+# V8: MCP WebSocket endpoint (/ws/mcp)
+from src.mcp.interface.websocket.routes import router as mcp_ws_router
+app.include_router(mcp_ws_router)
+
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):

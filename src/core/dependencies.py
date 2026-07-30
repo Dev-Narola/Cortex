@@ -558,3 +558,64 @@ def get_graph_retrieval_service(db: Session = Depends(get_db)):
         graph_traversal_service=get_graph_traversal_service(db),
     )
 
+
+# ---------------------------------------------------------------------------
+# V8 — MCP Server dependency factories
+# ---------------------------------------------------------------------------
+
+_mcp_tool_registry_singleton = None
+_mcp_resource_registry_singleton = None
+_mcp_prompt_registry_singleton = None
+
+
+def get_mcp_tool_registry() -> "MCPToolRegistry":
+    """Return the process-wide MCP tool registry."""
+    global _mcp_tool_registry_singleton
+    if _mcp_tool_registry_singleton is None:
+        from src.mcp.application.tool_registry import MCPToolRegistry
+
+        _mcp_tool_registry_singleton = MCPToolRegistry()
+    return _mcp_tool_registry_singleton
+
+
+def get_mcp_resource_registry() -> "ResourceRegistry":
+    """Return the process-wide MCP resource registry."""
+    global _mcp_resource_registry_singleton
+    if _mcp_resource_registry_singleton is None:
+        from src.mcp.application.resource_registry import ResourceRegistry
+
+        _mcp_resource_registry_singleton = ResourceRegistry()
+    return _mcp_resource_registry_singleton
+
+
+def get_mcp_prompt_registry() -> "PromptRegistry":
+    """Return the process-wide MCP prompt registry."""
+    global _mcp_prompt_registry_singleton
+    if _mcp_prompt_registry_singleton is None:
+        from src.mcp.application.prompt_registry import PromptRegistry
+
+        _mcp_prompt_registry_singleton = PromptRegistry()
+    return _mcp_prompt_registry_singleton
+
+
+def get_mcp_session_service(db: Session = Depends(get_db)):
+    """Construct an MCPSessionService for the current request."""
+    from src.mcp.application.session import MCPSessionService
+
+    return MCPSessionService(db)
+
+
+def get_mcp_message_router(
+    db: Session = Depends(get_db),
+) -> "MCPMessageRouter":
+    """Construct an MCPMessageRouter for the current request.
+
+    The router is request-scoped because it holds the DB session
+    and tenant context. The registries it uses are process-scoped
+    singletons.
+    """
+    from src.mcp.application.message_router import MCPMessageRouter
+
+    return MCPMessageRouter(db)
+
+
