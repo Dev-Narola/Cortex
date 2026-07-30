@@ -398,6 +398,51 @@ GRAPH_TRAVERSAL_DEPTH = Histogram(
 # --- Exposition ------------------------------------------------------------
 
 
+# --- MCP Server -------------------------------------------------------------
+
+
+MCP_REQUESTS_TOTAL = Counter(
+    "cortex_mcp_requests_total",
+    "Total MCP JSON-RPC requests, labelled by method and outcome.",
+    labelnames=("method", "outcome"),
+    registry=REGISTRY,
+)
+
+MCP_ACTIVE_SESSIONS = Gauge(
+    "cortex_mcp_active_sessions",
+    "Current active MCP client sessions, labelled by transport.",
+    labelnames=("transport",),
+    registry=REGISTRY,
+)
+
+MCP_TOOL_CALLS_TOTAL = Counter(
+    "cortex_mcp_tool_calls_total",
+    "Total MCP tool invocations, labelled by tool_name and outcome.",
+    labelnames=("tool_name", "outcome"),
+    registry=REGISTRY,
+)
+
+MCP_RESOURCE_READS_TOTAL = Counter(
+    "cortex_mcp_resource_reads_total",
+    "Total MCP resource reads, labelled by category and outcome.",
+    labelnames=("category", "outcome"),
+    registry=REGISTRY,
+)
+
+MCP_PROMPT_REQUESTS_TOTAL = Counter(
+    "cortex_mcp_prompt_requests_total",
+    "Total MCP prompt renders, labelled by prompt_name.",
+    labelnames=("prompt_name",),
+    registry=REGISTRY,
+)
+
+MCP_CANCELLED_REQUESTS_TOTAL = Counter(
+    "cortex_mcp_cancelled_requests_total",
+    "Total cancelled MCP requests.",
+    registry=REGISTRY,
+)
+
+
 def render_latest() -> tuple[bytes, str]:
     """Return the Prometheus exposition payload.
 
@@ -436,6 +481,12 @@ __all__ = [
     "GRAPH_TRAVERSAL_DURATION_SECONDS",
     "GRAPH_RETRIEVAL_DURATION_SECONDS",
     "GRAPH_LLM_EXTRACTION_TOKENS_TOTAL",
+    "MCP_ACTIVE_SESSIONS",
+    "MCP_CANCELLED_REQUESTS_TOTAL",
+    "MCP_PROMPT_REQUESTS_TOTAL",
+    "MCP_REQUESTS_TOTAL",
+    "MCP_RESOURCE_READS_TOTAL",
+    "MCP_TOOL_CALLS_TOTAL",
     "REGISTRY",
     "RERANK_CALLS_TOTAL",
     "RERANK_CANDIDATES_TOTAL",

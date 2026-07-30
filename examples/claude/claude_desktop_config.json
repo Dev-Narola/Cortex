@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "cortex": {
+      "command": "python",
+      "args": [
+        "-m",
+        "cortex_mcp.stdio_server"
+      ],
+      "env": {
+        "CORTEX_API_KEY": "ctx_your_api_key_here",
+        "CORTEX_URL": "http://localhost:8000/api/v1/mcp"
+      }
+    }
+  }
+}
