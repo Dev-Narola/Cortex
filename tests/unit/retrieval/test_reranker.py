@@ -14,7 +14,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from src.retrieval.application.rerank_service import RerankerService
+from src.retrieval.application.query.rerank_service import RerankerService
 from src.retrieval.domain.entities import SearchResult
 
 
@@ -91,3 +91,4 @@ async def test_reranker_handles_empty_input():
     result = await reranker.rerank("query", [])
     assert result == []
     mock_provider.rerank.assert_not_called()
+

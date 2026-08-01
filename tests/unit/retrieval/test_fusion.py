@@ -1,6 +1,6 @@
 import uuid
 import pytest
-from src.retrieval.application.fusion import ReciprocalRankFusion
+from src.retrieval.application.query.reciprocal_rank_fusion import ReciprocalRankFusion
 from src.retrieval.domain.entities import SearchResult
 
 def test_rrf_ordering():
@@ -32,3 +32,4 @@ def test_rrf_ordering():
     # Assert top two are B and A
     assert fused[0].chunk_id == chunk_b
     assert fused[1].chunk_id == chunk_a
+

@@ -8,7 +8,7 @@ import uuid
 
 import pytest
 
-from src.knowledge_graph.application.traversal import GraphSearchService, GraphTraversalService
+from src.knowledge_graph.application.query.traversal import GraphSearchService, GraphTraversalService
 from src.knowledge_graph.domain.entities import GraphEntity, GraphRelationship
 from src.knowledge_graph.domain.value_objects import EntityType, RelationshipType
 from src.knowledge_graph.infrastructure.repositories import (

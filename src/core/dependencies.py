@@ -223,13 +223,13 @@ def get_answer_query_service(db: Session = Depends(get_db)):
     from src.conversation.application.services import AnswerQueryService
     from src.conversation.infrastructure.llm.openai import OpenAIProvider
     from src.embedding.infrastructure.providers.openai import OpenAIEmbeddingProvider
-    from src.retrieval.application.fusion import ReciprocalRankFusion
-    from src.retrieval.application.query_embedding import QueryEmbeddingService
-    from src.retrieval.application.rerank_service import RerankerService
-    from src.retrieval.application.search_service import HybridSearchService
-    from src.retrieval.infrastructure.full_text_search import FullTextSearchRepository
+    from src.retrieval.application.query.reciprocal_rank_fusion import ReciprocalRankFusion
+    from src.retrieval.application.query.query_embedding import QueryEmbeddingService
+    from src.retrieval.application.query.rerank_service import RerankerService
+    from src.retrieval.application.search_service import HybridSearchService  # V9: shim re-export from query/
+    from src.retrieval.infrastructure.query.full_text_search_repository import FullTextSearchRepository
     from src.retrieval.infrastructure.reranker import IdentityReranker
-    from src.retrieval.infrastructure.vector_search import VectorSearchRepository
+    from src.retrieval.infrastructure.query.vector_search_repository import VectorSearchRepository
 
     llm = OpenAIProvider(api_key=settings.OPENAI_API_KEY)
     embed = QueryEmbeddingService(provider=OpenAIEmbeddingProvider())
@@ -252,13 +252,13 @@ async def get_answer_query_service_async(db: AsyncSession = Depends(get_async_db
     from src.conversation.application.services import AnswerQueryService
     from src.conversation.infrastructure.llm.openai import OpenAIProvider
     from src.embedding.infrastructure.providers.openai import OpenAIEmbeddingProvider
-    from src.retrieval.application.fusion import ReciprocalRankFusion
-    from src.retrieval.application.query_embedding import QueryEmbeddingService
-    from src.retrieval.application.rerank_service import RerankerService
-    from src.retrieval.application.search_service import HybridSearchService
-    from src.retrieval.infrastructure.full_text_search import FullTextSearchRepository
+    from src.retrieval.application.query.reciprocal_rank_fusion import ReciprocalRankFusion
+    from src.retrieval.application.query.query_embedding import QueryEmbeddingService
+    from src.retrieval.application.query.rerank_service import RerankerService
+    from src.retrieval.application.search_service import HybridSearchService  # V9: shim re-export from query/
+    from src.retrieval.infrastructure.query.full_text_search_repository import FullTextSearchRepository
     from src.retrieval.infrastructure.reranker import IdentityReranker
-    from src.retrieval.infrastructure.vector_search import VectorSearchRepository
+    from src.retrieval.infrastructure.query.vector_search_repository import VectorSearchRepository
 
     llm = OpenAIProvider(api_key=settings.OPENAI_API_KEY)
     embed = QueryEmbeddingService(provider=OpenAIEmbeddingProvider())
@@ -536,14 +536,14 @@ def get_graph_extraction_pipeline(db: Session = Depends(get_db)):
 
 def get_graph_traversal_service(db: Session = Depends(get_db)):
     """Construct a GraphTraversalService for the current request."""
-    from src.knowledge_graph.application.traversal import GraphTraversalService
+    from src.knowledge_graph.application.query.traversal import GraphTraversalService
 
     return GraphTraversalService(db)
 
 
 def get_graph_search_service(db: Session = Depends(get_db)):
     """Construct a GraphSearchService for the current request."""
-    from src.knowledge_graph.application.traversal import GraphSearchService
+    from src.knowledge_graph.application.query.traversal import GraphSearchService
 
     return GraphSearchService(db)
 
@@ -617,5 +617,9 @@ def get_mcp_message_router(
     from src.mcp.application.message_router import MCPMessageRouter
 
     return MCPMessageRouter(db)
+
+
+
+
 
 

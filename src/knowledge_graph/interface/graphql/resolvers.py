@@ -18,7 +18,7 @@ from strawberry.types import Info
 
 from src.core.database import SessionLocal, get_db
 from src.core.dependencies import _bearer_token, _resolve_jwt_user
-from src.knowledge_graph.application.traversal import (
+from src.knowledge_graph.application.query.traversal import (
     GraphSearchService,
     GraphTraversalService,
 )
@@ -343,3 +343,4 @@ async def mutate_create_relationship(
     except Exception:
         db.rollback()
         raise
+

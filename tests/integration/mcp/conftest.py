@@ -16,9 +16,15 @@ from src.identity.infrastructure import models as _identity_models  # noqa: F401
 from src.mcp.infrastructure import models as _mcp_models  # noqa: F401
 
 
+from sqlalchemy.pool import StaticPool
+
 @pytest.fixture
 def engine():
-    eng = create_engine("sqlite:///:memory:")
+    eng = create_engine(
+        "sqlite:///:memory:",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
     Base.metadata.create_all(eng)
     yield eng
     Base.metadata.drop_all(eng)

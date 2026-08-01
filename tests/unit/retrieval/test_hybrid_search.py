@@ -14,15 +14,15 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from src.retrieval.application.fusion import ReciprocalRankFusion
-from src.retrieval.application.query_embedding import QueryEmbeddingService
-from src.retrieval.application.rerank_service import RerankerService
+from src.retrieval.application.query.reciprocal_rank_fusion import ReciprocalRankFusion
+from src.retrieval.application.query.query_embedding import QueryEmbeddingService
+from src.retrieval.application.query.rerank_service import RerankerService
 from src.retrieval.application.search_service import HybridSearchService
 from src.retrieval.domain.entities import SearchResult
 from src.retrieval.domain.ports import RerankerPort
-from src.retrieval.infrastructure.full_text_search import FullTextSearchRepository
+from src.retrieval.infrastructure.query.full_text_search_repository import FullTextSearchRepository
 from src.retrieval.infrastructure.reranker import IdentityReranker
-from src.retrieval.infrastructure.vector_search import VectorSearchRepository
+from src.retrieval.infrastructure.query.vector_search_repository import VectorSearchRepository
 
 
 # ---------------------------------------------------------------------------
@@ -146,3 +146,4 @@ class TestHybridSearchFlow:
 
 
 __all__ = []
+

@@ -42,7 +42,7 @@ Each version ships a working, demoable slice before the next one begins.
 | **V6 — Agentic Layer** | Agent loop, tool calling, tool registry, safeguards against runaway agents |
 | **V7 — Knowledge Graph** | Entity/relation extraction, graph traversal, GraphQL endpoint |
 | **V8 — MCP Server** | Tenant-scoped MCP exposure, tested against a real MCP client |
-| **V9 — Hardening** | CQRS where justified, load/chaos testing, security audit — ongoing |
+| **V9 — Production Hardening & Enterprise Readiness** | CQRS, read models, distributed locking, multi-level cache, resilience (retry/CB/fallback), OWASP review, secret rotation, chaos tests, backup/DR, 10 runbooks, contract + performance regression + architecture validation, CI quality gates, governance docs, **v1.0.0 release** |
 
 ---
 

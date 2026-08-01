@@ -291,6 +291,89 @@ class Settings(BaseSettings):
     MCP_ENABLE_HTTP: bool = True
     MCP_ENABLE_STDIO: bool = True
 
+    # ------------------------------------------------------------------
+    # V9 Part 1 — CQRS / read models / performance engineering
+    # ------------------------------------------------------------------
+    # Toggle the dedicated query-service + read-model code paths.
+    # When False, the application falls back to the unified
+    # command/query services (the V8 behaviour). Used by the
+    # smoke + benchmark scripts to A/B-test the split.
+    ENABLE_QUERY_SERVICES: bool = True
+    ENABLE_READ_MODELS: bool = True
+    # When True, the application records benchmark-shaped timings
+    # for every hot path (search, fusion, agent, MCP, KG traversal).
+    BENCHMARK_MODE: bool = False
+    # When True, cProfile-style traces are captured for the same
+    # hot paths. Off by default because profiling adds measurable
+    # CPU overhead in production; the benchmark harness flips it on.
+    PROFILING_ENABLED: bool = False
+    # Application-level query result cache. Distinct from
+    # ``SEARCH_RESULT_CACHE_TTL_SECONDS`` (which is per-tenant
+    # search cache); this is a generic toggle for the
+    # platform-level L1/L2 cache abstraction in V9 Part 2.
+    QUERY_CACHE_ENABLED: bool = True
+    # Expose the SQLAlchemy pool stats endpoint for Prometheus.
+    DATABASE_POOL_MONITORING: bool = True
+
+    # Connection pool tuning (per-host). ``POSTGRES_POOL_SIZE`` is
+    # the steady-state connection count per API process;
+    # ``POSTGRES_MAX_OVERFLOW`` is the burst capacity. Production
+    # target = 2 * CPU + 1 API processes × (size + overflow).
+    POSTGRES_POOL_SIZE: int = 10
+    POSTGRES_MAX_OVERFLOW: int = 5
+    POSTGRES_POOL_TIMEOUT_SECONDS: int = 30
+    # Redis pool. ``REDIS_POOL_SIZE`` caps the connections
+    # borrowed from the async redis client per process.
+    REDIS_POOL_SIZE: int = 20
+    # Neo4j driver pool (forward-compat — currently unused; the
+    # V7 implementation runs on Postgres). Kept as ``NEO4J_*``
+    # per ADR-0004.
+    NEO4J_POOL_SIZE: int = 50
+    # Generic HTTP client pool used for outbound calls (LLM
+    # providers, webhooks, MCP relays). ``HTTP_KEEPALIVE``
+    # controls how long idle keepalive sockets stay open.
+    HTTP_POOL_SIZE: int = 50
+    HTTP_KEEPALIVE_SECONDS: int = 30
+
+    # ------------------------------------------------------------------
+    # V9 Part 2 — Scalability, locking, cache, resilience, health
+    # ------------------------------------------------------------------
+    ENABLE_DISTRIBUTED_LOCKS: bool = True
+    CACHE_DEFAULT_TTL: int = 300  # 5 minutes
+    CACHE_WARMUP_ENABLED: bool = False
+    MAX_WORKER_CONCURRENCY: int = 16
+    QUEUE_BATCH_SIZE: int = 32
+    CIRCUIT_BREAKER_ENABLED: bool = True
+    RETRY_MAX_ATTEMPTS: int = 3
+    HEALTH_CHECK_TIMEOUT: float = 5.0
+    LOAD_TEST_MODE: bool = False
+
+    # ------------------------------------------------------------------
+    # V9 Part 3 — Security, secrets, chaos, DR, audit
+    # ------------------------------------------------------------------
+    SECURITY_HEADERS_ENABLED: bool = True
+    # ``env`` reads from environment / .env; ``docker_secret``
+    # reads from ``/run/secrets/...``; ``aws`` uses AWS Secrets
+    # Manager; ``vault`` is reserved for a future HashiCorp Vault
+    # integration. ``env`` is the dev default.
+    SECRET_PROVIDER: str = "env"
+    SECRET_ROTATION_ENABLED: bool = False
+    AUDIT_RETENTION_DAYS: int = 365
+    BACKUP_ENABLED: bool = False
+    # 6-digit crontab expression; default = daily at 02:00 UTC.
+    BACKUP_SCHEDULE: str = "0 2 * * *"
+    CHAOS_TESTING_ENABLED: bool = False
+    RECOVERY_VALIDATION_ENABLED: bool = False
+
+    # ------------------------------------------------------------------
+    # V9 Part 4 — Quality engineering, CI, governance, release
+    # ------------------------------------------------------------------
+    ENABLE_ARCHITECTURE_VALIDATION: bool = True
+    ENABLE_CONTRACT_TESTS: bool = True
+    ENABLE_PERFORMANCE_REGRESSION: bool = True
+    ENABLE_RELEASE_VALIDATION: bool = True
+    CI_ENVIRONMENT: str = "local"
+
 
 settings = Settings()
 

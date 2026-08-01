@@ -15,7 +15,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from src.retrieval.infrastructure.full_text_search import FullTextSearchRepository
+from src.retrieval.infrastructure.query.full_text_search_repository import FullTextSearchRepository
 
 
 def _row(
@@ -96,3 +96,4 @@ class TestFullTextSearchRepository:
         repo = FullTextSearchRepository(session)
         await repo.search_by_keyword(uuid.uuid4(), "hello", limit=5)
         session.execute.assert_awaited_once()
+

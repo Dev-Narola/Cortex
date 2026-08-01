@@ -18,7 +18,7 @@ from src.knowledge_graph.application.extraction import (
     RelationshipExtractionService,
     RuleBasedExtractionProvider,
 )
-from src.knowledge_graph.application.traversal import GraphTraversalService
+from src.knowledge_graph.application.query.traversal import GraphTraversalService
 from src.graph_retrieval.application.services import GraphRetrievalService
 from src.knowledge_graph.infrastructure.repositories import (
     GraphEntityRepository,

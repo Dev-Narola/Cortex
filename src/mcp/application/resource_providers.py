@@ -74,7 +74,7 @@ class GraphResourceProvider:
         }
 
     def read_path(self, tenant_id: uuid.UUID, entity_id: uuid.UUID) -> dict[str, Any]:
-        from src.knowledge_graph.application.traversal import GraphTraversalService
+        from src.knowledge_graph.application.query.traversal import GraphTraversalService
 
         svc = GraphTraversalService(self._db)
         neighbors = svc.find_neighbors(tenant_id=tenant_id, entity_id=entity_id, limit=20)

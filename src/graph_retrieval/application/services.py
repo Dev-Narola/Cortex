@@ -45,7 +45,7 @@ from src.graph_retrieval.application.fusion import (
     FusedContext,
     GraphVectorFusionService,
 )
-from src.knowledge_graph.application.traversal import (
+from src.knowledge_graph.application.query.traversal import (
     GraphSearchService,
     GraphTraversalService,
 )

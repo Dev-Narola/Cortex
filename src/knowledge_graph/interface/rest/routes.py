@@ -20,7 +20,7 @@ from src.knowledge_graph.application.extraction import (
     RelationshipExtractionService,
 )
 from src.knowledge_graph.application.security import require_extraction_role
-from src.knowledge_graph.application.traversal import (
+from src.knowledge_graph.application.query.traversal import (
     GraphSearchService,
     GraphTraversalService,
 )
@@ -289,3 +289,4 @@ def search_graph(
 
 
 __all__ = ["router"]
+

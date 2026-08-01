@@ -25,13 +25,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.embedding.infrastructure.providers.openai import OpenAIEmbeddingProvider
 from src.core.dependencies import get_async_db
-from src.retrieval.application.fusion import ReciprocalRankFusion
-from src.retrieval.application.query_embedding import QueryEmbeddingService
-from src.retrieval.application.rerank_service import RerankerService
+from src.retrieval.application.query.reciprocal_rank_fusion import ReciprocalRankFusion
+from src.retrieval.application.query.query_embedding import QueryEmbeddingService
+from src.retrieval.application.query.rerank_service import RerankerService
 from src.retrieval.application.search_service import HybridSearchService
-from src.retrieval.infrastructure.full_text_search import FullTextSearchRepository
+from src.retrieval.infrastructure.query.full_text_search_repository import FullTextSearchRepository
 from src.retrieval.infrastructure.reranker import IdentityReranker
-from src.retrieval.infrastructure.vector_search import VectorSearchRepository
+from src.retrieval.infrastructure.query.vector_search_repository import VectorSearchRepository
 
 
 def get_embedding_provider() -> OpenAIEmbeddingProvider:
@@ -76,3 +76,4 @@ __all__ = [
     "get_query_embedding_service",
     "get_reranker_service",
 ]
+

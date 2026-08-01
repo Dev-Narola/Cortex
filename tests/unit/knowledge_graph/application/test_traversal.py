@@ -8,7 +8,7 @@ import uuid
 
 import pytest
 
-from src.knowledge_graph.application.traversal import (
+from src.knowledge_graph.application.query.traversal import (
     GraphSearchService,
     GraphTraversalService,
 )

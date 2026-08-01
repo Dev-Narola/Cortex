@@ -1,0 +1,35 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: |
+          pip install -e .[dev]
+      - name: Full validation
+        run: |
+          pytest tests/unit tests/integration tests/contracts tests/architecture tests/chaos --cov=src
+          python scripts/architecture_check.py
+      - name: Build
+        run: |
+          python -m build
+      - name: Container build
+        run: |
+          docker build -t cortex:${{ github.ref_name }} .
+      - name: Publish
+        env:
+          REGISTRY_TOKEN: ${{ secrets.REGISTRY_TOKEN }}
+        run: |
+          docker push cortex:${{ github.ref_name }}
+      - name: Post-deploy validation
+        run: |
+          pytest tests/load -m smoke

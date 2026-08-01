@@ -15,7 +15,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from src.retrieval.domain.entities import SearchResult
-from src.retrieval.infrastructure.vector_search import VectorSearchRepository
+from src.retrieval.infrastructure.query.vector_search_repository import VectorSearchRepository
 
 
 # V4 Phase 30 — these tests were written against the

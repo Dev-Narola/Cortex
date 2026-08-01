@@ -119,7 +119,7 @@ class ToolExecutionEngine:
         return {"items": items}
 
     def _execute_graph_search(self, tenant_id: uuid.UUID, args: dict[str, Any]) -> dict[str, Any]:
-        from src.knowledge_graph.application.traversal import GraphSearchService
+        from src.knowledge_graph.application.query.traversal import GraphSearchService
 
         svc = GraphSearchService(self._db)
         res = svc.search_graph(tenant_id=tenant_id, query=args["query"])

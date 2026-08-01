@@ -10,7 +10,7 @@ import uuid
 import pytest
 from fastapi.testclient import TestClient
 
-from src.core.database import Base
+from src.core.dependencies import get_db
 from src.identity.infrastructure.security import create_access_token
 from src.main import app
 
@@ -19,6 +19,7 @@ class TestMCPIntegration:
     """Integration test suite for MCP server endpoints."""
 
     def test_full_mcp_lifecycle_over_http(self, db_session, tenant_id, user_id):
+        app.dependency_overrides[get_db] = lambda: db_session
         client = TestClient(app)
 
         token = create_access_token(

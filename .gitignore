@@ -47,3 +47,21 @@ tls/
 .vscode/
 .idea/
 *.swp
+
+
+# V9 benchmark artefacts
+benchmarks/baselines/
+benchmarks/datasets/
+benchmarks/results/
+benchmarks/load/results/
+
+# V9 reports (regenerated at release time)
+reports/load/
+reports/benchmarks/
+reports/security/recovery/
+
+# Trash / debug backups
+_*.py.bak
+_*.txt
+_*.bak
+_*.log
