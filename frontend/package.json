@@ -1,0 +1,26 @@
+{
+  "name": "cortex-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cortex frontend monorepo (pnpm workspace)",
+  "packageManager": "pnpm@10.30.3",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=10.0.0"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @cortex/web dev",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "test:unit": "pnpm --filter @cortex/web test:unit",
+    "test:e2e": "pnpm --filter @cortex/web test:e2e",
+    "lint": "pnpm -r lint",
+    "format": "pnpm -r format",
+    "typecheck": "pnpm -r typecheck",
+    "codegen": "pnpm --filter @cortex/api-client generate",
+    "clean": "pnpm -r exec rm -rf .next dist node_modules/.cache"
+  },
+  "devDependencies": {
+    "typescript": "5.6.3"
+  }
+}

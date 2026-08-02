@@ -1,0 +1,34 @@
+{
+  "suite": "faithfulness",
+  "generated_at": "2026-07-27T04:36:32.466033+00:00",
+  "git_commit": "c7c3b51",
+  "reports": [
+    {
+      "suite": "faithfulness",
+      "dataset_path": "D:\\Projects\\Cortex\\Cortex\\tests\\evals\\datasets\\faithfulness_v1.jsonl",
+      "dataset_version": "2adf0d9714303499",
+      "strategy": "deterministic",
+      "k": 0,
+      "cases": 20,
+      "metrics": {
+        "faithfulness": 1.0,
+        "supported_claims": 63,
+        "total_claims": 63
+      },
+      "config": {
+        "embedding_model": "text-embedding-3-small",
+        "llm_model": "gpt-4o-mini",
+        "reranker": "identity",
+        "rrf_k": 60,
+        "vector_top_k": 50,
+        "keyword_top_k": 50,
+        "fusion_top_k": 30,
+        "rerank_top_k": 20,
+        "final_top_k": 5,
+        "k": 5
+      },
+      "git_commit": "c7c3b51",
+      "timestamp": "2026-07-27T04:36:32.406879+00:00"
+    }
+  ]
+}

@@ -1,0 +1,149 @@
+/**
+ * Design tokens — single source of truth.
+ *
+ * V9 Frontend: OKLCH color tables for the "Spark / Cloud / Ink"
+ * palette. Dark mode is the default; light is a class-toggle.
+ *
+ * These tokens are consumed by the Tailwind v4 @theme block in
+ * `globals.css`; components reference them via Tailwind utilities
+ * (e.g. `bg-spark-500`, `text-ink-900`) — never hard-coded.
+ */
+
+:root {
+  /* Light theme — Cloud / Ink / Ember / Volt (the marketing palette). */
+  --cloud-50: oklch(0.985 0.005 240);
+  --cloud-100: oklch(0.97 0.008 240);
+  --cloud-200: oklch(0.93 0.012 240);
+  --cloud-300: oklch(0.86 0.018 240);
+  --cloud-400: oklch(0.74 0.025 240);
+  --cloud-500: oklch(0.6 0.03 240);
+  --cloud-600: oklch(0.48 0.035 240);
+  --cloud-700: oklch(0.38 0.04 240);
+  --cloud-800: oklch(0.28 0.045 240);
+  --cloud-900: oklch(0.18 0.05 240);
+  --cloud-950: oklch(0.1 0.05 240);
+
+  --ink-50: oklch(0.99 0 0);
+  --ink-100: oklch(0.96 0 0);
+  --ink-200: oklch(0.9 0 0);
+  --ink-300: oklch(0.8 0 0);
+  --ink-400: oklch(0.65 0 0);
+  --ink-500: oklch(0.5 0 0);
+  --ink-600: oklch(0.38 0 0);
+  --ink-700: oklch(0.28 0 0);
+  --ink-800: oklch(0.18 0 0);
+  --ink-900: oklch(0.1 0 0);
+  --ink-950: oklch(0.05 0 0);
+
+  --ember-50: oklch(0.98 0.015 50);
+  --ember-100: oklch(0.95 0.04 50);
+  --ember-200: oklch(0.9 0.07 50);
+  --ember-300: oklch(0.84 0.1 50);
+  --ember-400: oklch(0.76 0.13 50);
+  --ember-500: oklch(0.68 0.16 50);
+  --ember-600: oklch(0.6 0.18 50);
+  --ember-700: oklch(0.5 0.18 50);
+  --ember-800: oklch(0.4 0.16 50);
+  --ember-900: oklch(0.3 0.12 50);
+
+  --volt-50: oklch(0.98 0.025 145);
+  --volt-100: oklch(0.95 0.05 145);
+  --volt-200: oklch(0.9 0.08 145);
+  --volt-300: oklch(0.85 0.12 145);
+  --volt-400: oklch(0.78 0.16 145);
+  --volt-500: oklch(0.7 0.19 145);
+  --volt-600: oklch(0.6 0.2 145);
+  --volt-700: oklch(0.5 0.18 145);
+  --volt-800: oklch(0.4 0.15 145);
+  --volt-900: oklch(0.3 0.12 145);
+
+  /* Spark — the brand gradient (defined in components, referenced here). */
+  --spark-from: var(--ember-500);
+  --spark-via: var(--ember-300);
+  --spark-to: var(--volt-500);
+
+  /* Dark theme — Void / Slate / Paper. */
+  --void-50: oklch(0.18 0.005 260);
+  --void-100: oklch(0.15 0.008 260);
+  --void-200: oklch(0.13 0.01 260);
+  --void-300: oklch(0.11 0.012 260);
+  --void-400: oklch(0.09 0.014 260);
+  --void-500: oklch(0.07 0.016 260);
+  --void-600: oklch(0.05 0.018 260);
+  --void-700: oklch(0.04 0.02 260);
+  --void-800: oklch(0.03 0.022 260);
+  --void-900: oklch(0.02 0.024 260);
+  --void-950: oklch(0.01 0.026 260);
+
+  --slate-50: oklch(0.3 0.01 260);
+  --slate-100: oklch(0.35 0.012 260);
+  --slate-200: oklch(0.4 0.014 260);
+  --slate-300: oklch(0.5 0.016 260);
+  --slate-400: oklch(0.6 0.018 260);
+  --slate-500: oklch(0.65 0.02 260);
+  --slate-600: oklch(0.7 0.022 260);
+  --slate-700: oklch(0.75 0.024 260);
+  --slate-800: oklch(0.8 0.026 260);
+  --slate-900: oklch(0.85 0.028 260);
+
+  --paper-50: oklch(0.97 0.003 80);
+  --paper-100: oklch(0.94 0.005 80);
+  --paper-200: oklch(0.9 0.007 80);
+  --paper-300: oklch(0.85 0.009 80);
+  --paper-400: oklch(0.75 0.011 80);
+  --paper-500: oklch(0.65 0.013 80);
+  --paper-600: oklch(0.5 0.015 80);
+  --paper-700: oklch(0.4 0.017 80);
+  --paper-800: oklch(0.3 0.019 80);
+  --paper-900: oklch(0.2 0.021 80);
+
+  /* Semantic */
+  --background: var(--cloud-50);
+  --foreground: var(--ink-900);
+  --muted: var(--cloud-100);
+  --muted-foreground: var(--ink-500);
+  --border: var(--cloud-200);
+  --input: var(--cloud-200);
+  --ring: var(--ember-500);
+  --destructive: oklch(0.55 0.22 25);
+  --success: var(--volt-600);
+  --warning: oklch(0.75 0.16 75);
+
+  /* Type scale */
+  --font-display: "Bricolage Grotesque", "Inter", system-ui, sans-serif;
+  --font-sans:
+    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", monospace;
+
+  /* Motion */
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out-quart: cubic-bezier(0.76, 0, 0.24, 1);
+  --duration-fast: 150ms;
+  --duration-base: 250ms;
+  --duration-slow: 400ms;
+  --duration-stage: 1400ms;
+}
+
+/* Dark mode — toggled by next-themes via the `dark` class. */
+.dark {
+  --background: var(--void-50);
+  --foreground: var(--paper-100);
+  --muted: var(--void-100);
+  --muted-foreground: var(--slate-300);
+  --border: var(--void-200);
+  --input: var(--void-200);
+  --ring: var(--ember-400);
+  --destructive: oklch(0.65 0.22 25);
+  --success: var(--volt-400);
+  --warning: oklch(0.8 0.16 75);
+}
+
+/* Honour reduced-motion globally. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+    --duration-base: 0ms;
+    --duration-slow: 0ms;
+    --duration-stage: 0ms;
+  }
+}

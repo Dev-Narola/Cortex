@@ -1,0 +1,165 @@
+/**
+ * Global stylesheet — Tailwind v4 @theme + base reset.
+ *
+ * The web app imports this once at the root layout. The OKLCH
+ * token table is the single source of truth; Tailwind utilities
+ * like `bg-ember-500` are generated automatically from the
+ * `--color-*` entries below.
+ */
+
+@import "./tokens.css";
+@import "tailwindcss";
+
+@theme {
+  /* Map the CSS custom properties into Tailwind's color namespace. */
+  --color-cloud-50: var(--cloud-50);
+  --color-cloud-100: var(--cloud-100);
+  --color-cloud-200: var(--cloud-200);
+  --color-cloud-300: var(--cloud-300);
+  --color-cloud-400: var(--cloud-400);
+  --color-cloud-500: var(--cloud-500);
+  --color-cloud-600: var(--cloud-600);
+  --color-cloud-700: var(--cloud-700);
+  --color-cloud-800: var(--cloud-800);
+  --color-cloud-900: var(--cloud-900);
+  --color-cloud-950: var(--cloud-950);
+
+  --color-ink-50: var(--ink-50);
+  --color-ink-100: var(--ink-100);
+  --color-ink-200: var(--ink-200);
+  --color-ink-300: var(--ink-300);
+  --color-ink-400: var(--ink-400);
+  --color-ink-500: var(--ink-500);
+  --color-ink-600: var(--ink-600);
+  --color-ink-700: var(--ink-700);
+  --color-ink-800: var(--ink-800);
+  --color-ink-900: var(--ink-900);
+  --color-ink-950: var(--ink-950);
+
+  --color-ember-50: var(--ember-50);
+  --color-ember-100: var(--ember-100);
+  --color-ember-200: var(--ember-200);
+  --color-ember-300: var(--ember-300);
+  --color-ember-400: var(--ember-400);
+  --color-ember-500: var(--ember-500);
+  --color-ember-600: var(--ember-600);
+  --color-ember-700: var(--ember-700);
+  --color-ember-800: var(--ember-800);
+  --color-ember-900: var(--ember-900);
+
+  --color-volt-50: var(--volt-50);
+  --color-volt-100: var(--volt-100);
+  --color-volt-200: var(--volt-200);
+  --color-volt-300: var(--volt-300);
+  --color-volt-400: var(--volt-400);
+  --color-volt-500: var(--volt-500);
+  --color-volt-600: var(--volt-600);
+  --color-volt-700: var(--volt-700);
+  --color-volt-800: var(--volt-800);
+  --color-volt-900: var(--volt-900);
+
+  --color-void-50: var(--void-50);
+  --color-void-100: var(--void-100);
+  --color-void-200: var(--void-200);
+  --color-void-300: var(--void-300);
+  --color-void-400: var(--void-400);
+  --color-void-500: var(--void-500);
+  --color-void-600: var(--void-600);
+  --color-void-700: var(--void-700);
+  --color-void-800: var(--void-800);
+  --color-void-900: var(--void-900);
+  --color-void-950: var(--void-950);
+
+  --color-slate-50: var(--slate-50);
+  --color-slate-100: var(--slate-100);
+  --color-slate-200: var(--slate-200);
+  --color-slate-300: var(--slate-300);
+  --color-slate-400: var(--slate-400);
+  --color-slate-500: var(--slate-500);
+  --color-slate-600: var(--slate-600);
+  --color-slate-700: var(--slate-700);
+  --color-slate-800: var(--slate-800);
+  --color-slate-900: var(--slate-900);
+
+  --color-paper-50: var(--paper-50);
+  --color-paper-100: var(--paper-100);
+  --color-paper-200: var(--paper-200);
+  --color-paper-300: var(--paper-300);
+  --color-paper-400: var(--paper-400);
+  --color-paper-500: var(--paper-500);
+  --color-paper-600: var(--paper-600);
+  --color-paper-700: var(--paper-700);
+  --color-paper-800: var(--paper-800);
+  --color-paper-900: var(--paper-900);
+
+  /* Semantic */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-destructive: var(--destructive);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+
+  /* Fonts */
+  --font-display: var(--font-display);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+
+  /* Easings */
+  --ease-out-quint: var(--ease-out-quint);
+  --ease-in-out-quart: var(--ease-in-out-quart);
+}
+
+/* Base reset. */
+*,
+*::before,
+*::after {
+  border-color: var(--border);
+}
+
+html,
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Spark gradient utility (used by hero, CTA, graph edge-pulse). */
+.bg-spark {
+  background-image: linear-gradient(
+    135deg,
+    var(--ember-500) 0%,
+    var(--ember-300) 50%,
+    var(--volt-500) 100%
+  );
+}
+
+.text-spark {
+  background-image: linear-gradient(
+    135deg,
+    var(--ember-500) 0%,
+    var(--ember-300) 50%,
+    var(--volt-500) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Honour reduced-motion for transitions + animations. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

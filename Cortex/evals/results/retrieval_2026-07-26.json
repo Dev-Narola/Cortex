@@ -1,0 +1,123 @@
+{
+  "suite": "retrieval",
+  "generated_at": "2026-07-26T02:49:25.885968+00:00",
+  "git_commit": "c7c3b51",
+  "reports": [
+    {
+      "suite": "retrieval",
+      "dataset_path": "D:\\Projects\\Cortex\\Cortex\\tests\\evals\\datasets\\retrieval_v1.jsonl",
+      "dataset_version": "f866a79a3afa2d3b",
+      "strategy": "vector",
+      "k": 5,
+      "cases": 25,
+      "metrics": {
+        "recall_at_k": 0.56,
+        "precision_at_k": 0.84,
+        "hit_rate_at_k": 0.84,
+        "mrr": 0.84,
+        "keyword_hit_rate": 0.04
+      },
+      "config": {
+        "embedding_model": "text-embedding-3-small",
+        "llm_model": "gpt-4o-mini",
+        "reranker": "identity",
+        "rrf_k": 60,
+        "vector_top_k": 50,
+        "keyword_top_k": 50,
+        "fusion_top_k": 30,
+        "rerank_top_k": 20,
+        "final_top_k": 5,
+        "k": 5
+      },
+      "git_commit": "",
+      "timestamp": "2026-07-26T02:49:25.872960+00:00"
+    },
+    {
+      "suite": "retrieval",
+      "dataset_path": "D:\\Projects\\Cortex\\Cortex\\tests\\evals\\datasets\\retrieval_v1.jsonl",
+      "dataset_version": "f866a79a3afa2d3b",
+      "strategy": "keyword",
+      "k": 5,
+      "cases": 25,
+      "metrics": {
+        "recall_at_k": 0.56,
+        "precision_at_k": 0.84,
+        "hit_rate_at_k": 0.84,
+        "mrr": 0.84,
+        "keyword_hit_rate": 0.04
+      },
+      "config": {
+        "embedding_model": "text-embedding-3-small",
+        "llm_model": "gpt-4o-mini",
+        "reranker": "identity",
+        "rrf_k": 60,
+        "vector_top_k": 50,
+        "keyword_top_k": 50,
+        "fusion_top_k": 30,
+        "rerank_top_k": 20,
+        "final_top_k": 5,
+        "k": 5
+      },
+      "git_commit": "",
+      "timestamp": "2026-07-26T02:49:25.872960+00:00"
+    },
+    {
+      "suite": "retrieval",
+      "dataset_path": "D:\\Projects\\Cortex\\Cortex\\tests\\evals\\datasets\\retrieval_v1.jsonl",
+      "dataset_version": "f866a79a3afa2d3b",
+      "strategy": "hybrid",
+      "k": 5,
+      "cases": 25,
+      "metrics": {
+        "recall_at_k": 0.56,
+        "precision_at_k": 0.84,
+        "hit_rate_at_k": 0.84,
+        "mrr": 0.84,
+        "keyword_hit_rate": 0.04
+      },
+      "config": {
+        "embedding_model": "text-embedding-3-small",
+        "llm_model": "gpt-4o-mini",
+        "reranker": "identity",
+        "rrf_k": 60,
+        "vector_top_k": 50,
+        "keyword_top_k": 50,
+        "fusion_top_k": 30,
+        "rerank_top_k": 20,
+        "final_top_k": 5,
+        "k": 5
+      },
+      "git_commit": "",
+      "timestamp": "2026-07-26T02:49:25.873963+00:00"
+    },
+    {
+      "suite": "retrieval",
+      "dataset_path": "D:\\Projects\\Cortex\\Cortex\\tests\\evals\\datasets\\retrieval_v1.jsonl",
+      "dataset_version": "f866a79a3afa2d3b",
+      "strategy": "hybrid_rerank",
+      "k": 5,
+      "cases": 25,
+      "metrics": {
+        "recall_at_k": 0.56,
+        "precision_at_k": 0.84,
+        "hit_rate_at_k": 0.84,
+        "mrr": 0.84,
+        "keyword_hit_rate": 0.04
+      },
+      "config": {
+        "embedding_model": "text-embedding-3-small",
+        "llm_model": "gpt-4o-mini",
+        "reranker": "identity",
+        "rrf_k": 60,
+        "vector_top_k": 50,
+        "keyword_top_k": 50,
+        "fusion_top_k": 30,
+        "rerank_top_k": 20,
+        "final_top_k": 5,
+        "k": 5
+      },
+      "git_commit": "",
+      "timestamp": "2026-07-26T02:49:25.874966+00:00"
+    }
+  ]
+}

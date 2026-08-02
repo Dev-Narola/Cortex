@@ -1,0 +1,5 @@
+/**
+ * App-level stylesheet — imports the @cortex/ui tokens and
+ * adds app-specific layout primitives only.
+ */
+@import "@cortex/ui/globals.css";

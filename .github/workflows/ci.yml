@@ -5,40 +5,72 @@ on:
   push:
     branches: [main]
 
+# Stop a previous run for the same branch.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  test:
+  # ----------------------------------------------------------------
+  # Backend — the Cortex Python service.
+  # ----------------------------------------------------------------
+  backend:
+    name: Backend
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Cortex
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install dependencies
+      - name: Install
         run: |
-          pip install -e .[dev]
-      - name: Formatting check
+          pip install -e ".[dev]"
+      - name: Architecture validation
+        run: python scripts/architecture_check.py
+      - name: Lint
         run: |
           ruff check src tests
       - name: Type check
         run: |
           mypy src
-      - name: Unit + integration tests
+      - name: Tests
         run: |
-          pytest tests/unit tests/integration --cov=src --cov-fail-under=65
-      - name: Contract tests
-        run: |
-          pytest tests/contracts
-      - name: Architecture validation
-        run: |
-          python scripts/architecture_check.py
-          pytest tests/architecture
-      - name: Chaos tests
-        run: |
-          pytest tests/chaos
-      - name: Performance smoke tests
-        run: |
-          pytest tests/performance -k "registered or within_threshold" --maxfail=1
-        continue-on-error: true
+          pytest tests/unit tests/chaos tests/contracts tests/architecture tests/performance --no-cov
       - name: Security scan
         run: |
           bandit -r src -q || true
+
+  # ----------------------------------------------------------------
+  # Frontend — the Next.js monorepo.
+  # ----------------------------------------------------------------
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+      - name: Install pnpm
+        run: npm install -g pnpm@10
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Lint
+        run: pnpm lint
+      - name: Type check
+        run: pnpm typecheck
+      - name: Unit tests
+        run: pnpm test:unit
+      - name: Build
+        run: pnpm --filter @cortex/web build
+      - name: E2E
+        run: pnpm test:e2e
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:8000

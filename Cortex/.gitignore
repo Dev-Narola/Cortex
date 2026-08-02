@@ -1,4 +1,4 @@
-# Node / Next.js (frontend)
+# Node / Next.js
 node_modules/
 .pnpm-store/
 .pnp
@@ -26,7 +26,6 @@ test-results/
 .stylelintcache
 .ruff_cache/
 .mypy_cache/
-.pytest_cache/
 
 # Environment files (never commit secrets)
 .env
@@ -45,7 +44,6 @@ test-results/
 *~
 .DS_Store
 Thumbs.db
-.zcode
 
 # Logs
 *.log
@@ -53,9 +51,6 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-_worker.log
-_api.log
-_worker_out.log
 
 # TLS / cert material (never commit)
 *.pem
@@ -78,9 +73,9 @@ _*.log
 _*.py
 _*.json
 
-# Python (backend) — applied at the repo root because
-# gitignore doesn't walk subdirs that have their own .git.
-# The backend's inner .gitignore covers additional patterns.
+# Co-authored-by header (used by helper commits, never for the author line)
+
+# Python (backend)
 __pycache__/
 *.py[cod]
 *$py.class
@@ -88,9 +83,15 @@ __pycache__/
 *.egg
 .venv/
 venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 .coverage
 coverage.xml
 htmlcov/
+*.dump
+*.sql
+*.sql.gz
 
 # OS / editors
 .DS_Store

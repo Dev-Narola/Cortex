@@ -1,0 +1,14 @@
+{
+  "p50_ms": 50.0,
+  "p95_ms": 100.0,
+  "p99_ms": 200.0,
+  "throughput_per_sec": 1.0,
+  "average_ms": 50.0,
+  "min_ms": 1.0,
+  "max_ms": 400.0,
+  "memory_peak_mb": 256.0,
+  "cpu_peak_pct": 50.0,
+  "timestamp": "2026-08-01T00:00:00+00:00",
+  "host": "local-dev-placeholder",
+  "note": "placeholder baseline; real value recorded after 7 days of production traffic"
+}
