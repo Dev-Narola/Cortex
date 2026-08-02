@@ -2,7 +2,7 @@
   "name": "cortex-frontend",
   "version": "1.0.0",
   "private": true,
-  "description": "Cortex frontend monorepo (pnpm workspace)",
+  "description": "Cortex frontend monorepo (pnpm workspace) — F0 foundation",
   "packageManager": "pnpm@10.30.3",
   "engines": {
     "node": ">=20.0.0",
@@ -14,16 +14,16 @@
     "test": "pnpm -r test",
     "test:unit": "pnpm --filter @cortex/web test:unit",
     "test:e2e": "pnpm --filter @cortex/web test:e2e",
-    "lint": "pnpm -r lint",
-    "format": "pnpm -r format",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write .",
     "typecheck": "pnpm -r typecheck",
     "codegen": "pnpm --filter @cortex/api-client generate",
     "clean": "pnpm -r exec rm -rf .next dist node_modules/.cache"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "4.0.0-beta.4",
-    "@testing-library/dom": "10.4.0",
-    "@testing-library/react": "16.1.0",
-    "typescript": "5.6.3"
+    "@biomejs/biome": "1.9.4",
+    "typescript": "5.6.3",
+    "vitest": "2.1.5"
   }
 }

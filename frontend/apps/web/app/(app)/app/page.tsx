@@ -11,32 +11,18 @@ export default function DashboardPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <div>
-        <h1 className="font-display text-3xl font-semibold tracking-tight">
-          Welcome back
-        </h1>
+        <h1 className="font-display text-3xl font-semibold tracking-tight">Welcome back</h1>
         <p className="text-sm text-muted-foreground">
           Here&apos;s what&apos;s happening across your knowledge base.
         </p>
       </div>
       <div className="grid gap-4 md:grid-cols-3">
-        <DashboardTile
-          label="Documents"
-          value="—"
-          hint="Total documents in your tenant"
-        />
-        <DashboardTile
-          label="Agent runs (24h)"
-          value="—"
-          hint="Across all agents"
-        />
-        <DashboardTile
-          label="Storage used"
-          value="—"
-          hint="Documents + chunks + embeddings"
-        />
+        <DashboardTile label="Documents" value="—" hint="Total documents in your tenant" />
+        <DashboardTile label="Agent runs (24h)" value="—" hint="Across all agents" />
+        <DashboardTile label="Storage used" value="—" hint="Documents + chunks + embeddings" />
       </div>
     </div>
-  );
+  )
 }
 
 function DashboardTile({
@@ -44,9 +30,9 @@ function DashboardTile({
   value,
   hint,
 }: {
-  label: string;
-  value: string;
-  hint: string;
+  label: string
+  value: string
+  hint: string
 }) {
   return (
     <div className="rounded-xl border border-border bg-background p-6">
@@ -54,5 +40,5 @@ function DashboardTile({
       <div className="mt-2 text-3xl font-semibold">{value}</div>
       <div className="mt-1 text-xs text-muted-foreground">{hint}</div>
     </div>
-  );
+  )
 }

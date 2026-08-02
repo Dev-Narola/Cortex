@@ -10,20 +10,20 @@
  * without throwing.
  */
 
-"use client";
+"use client"
 
-import { useEffect } from "react";
+import { useEffect } from "react"
 
-import { usePrefersReducedMotion } from "../motion/reduced-motion";
+import { usePrefersReducedMotion } from "../motion/reduced-motion"
 
 /**
  * Helper: import GSAP lazily. Returns the module once it has
  * loaded; subsequent calls return the cached module.
  */
-let cached: Promise<typeof import("gsap")> | null = null;
+let cached: Promise<typeof import("gsap")> | null = null
 export function loadGsap() {
-  if (!cached) cached = import("gsap");
-  return cached;
+  if (!cached) cached = import("gsap")
+  return cached
 }
 
 /**
@@ -35,19 +35,18 @@ export function GsapTimeline({
   setup,
   deps = [],
 }: {
-  setup: (gsap: typeof import("gsap")) => void | (() => void);
-  deps?: ReadonlyArray<unknown>;
+  setup: (gsap: typeof import("gsap")) => undefined | (() => void)
+  deps?: ReadonlyArray<unknown>
 }) {
-  const reduce = usePrefersReducedMotion();
+  const reduce = usePrefersReducedMotion()
   useEffect(() => {
-    if (reduce) return;
-    let cleanup: (() => void) | undefined;
+    if (reduce) return
+    let cleanup: (() => void) | undefined
     loadGsap().then((gsap) => {
-      const ret = setup(gsap);
-      if (typeof ret === "function") cleanup = ret;
-    });
-    return () => cleanup?.();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reduce, ...deps]);
-  return null;
+      const ret = setup(gsap)
+      if (typeof ret === "function") cleanup = ret
+    })
+    return () => cleanup?.()
+  }, [reduce, setup, ...deps])
+  return null
 }

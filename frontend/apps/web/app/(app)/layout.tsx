@@ -6,40 +6,40 @@
  * persistent sidebar + topbar; route content fills the
  * remaining space.
  */
-"use client";
+"use client"
 
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import Link from "next/link";
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
 
-import { Button } from "@cortex/ui";
+import { Button } from "@cortex/ui"
 
-import { ThemeToggle } from "@/components/theme-toggle";
-import { useAuthStore } from "@/lib/auth/store";
+import { ThemeToggle } from "@/components/theme-toggle"
+import { useAuthStore } from "@/lib/auth/store"
 
 export default function AppLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: React.ReactNode
 }) {
-  const router = useRouter();
-  const [hydrated, setHydrated] = useState(false);
-  const { user, signOut } = useAuthStore();
+  const router = useRouter()
+  const [hydrated, setHydrated] = useState(false)
+  const { user, signOut } = useAuthStore()
 
   useEffect(() => {
-    setHydrated(true);
-  }, []);
+    setHydrated(true)
+  }, [])
 
   useEffect(() => {
-    if (!hydrated) return;
-    const token = sessionStorage.getItem("cortex_access_token");
+    if (!hydrated) return
+    const token = sessionStorage.getItem("cortex_access_token")
     if (!token) {
-      router.replace("/login");
+      router.replace("/login")
     }
-  }, [hydrated, router]);
+  }, [hydrated, router])
 
   if (!hydrated) {
-    return <div className="flex min-h-screen items-center justify-center" />;
+    return <div className="flex min-h-screen items-center justify-center" />
   }
 
   return (
@@ -66,8 +66,8 @@ export default function AppLayout({
             size="sm"
             className="mt-2 w-full justify-start"
             onClick={() => {
-              signOut();
-              router.push("/login");
+              signOut()
+              router.push("/login")
             }}
           >
             Sign out
@@ -81,15 +81,15 @@ export default function AppLayout({
         <main className="flex-1 overflow-y-auto p-6">{children}</main>
       </div>
     </div>
-  );
+  )
 }
 
 function SidebarLink({
   href,
   children,
 }: {
-  href: string;
-  children: React.ReactNode;
+  href: string
+  children: React.ReactNode
 }) {
   return (
     <Link
@@ -98,5 +98,5 @@ function SidebarLink({
     >
       {children}
     </Link>
-  );
+  )
 }

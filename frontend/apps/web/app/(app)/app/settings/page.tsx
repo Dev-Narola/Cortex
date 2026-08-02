@@ -4,16 +4,14 @@
  * Tabbed: General / Team / API Keys / Billing. The Tabs
  * primitive is from @cortex/ui (Radix-based).
  */
-"use client";
+"use client"
 
-import { Card, CardContent, Tabs, TabsContent, TabsList, TabsTrigger } from "@cortex/ui";
+import { Card, CardContent, Tabs, TabsContent, TabsList, TabsTrigger } from "@cortex/ui"
 
 export default function SettingsPage() {
   return (
     <div className="mx-auto max-w-4xl space-y-6">
-      <h1 className="font-display text-3xl font-semibold tracking-tight">
-        Settings
-      </h1>
+      <h1 className="font-display text-3xl font-semibold tracking-tight">Settings</h1>
       <Tabs defaultValue="general" className="w-full">
         <TabsList>
           <TabsTrigger value="general">General</TabsTrigger>
@@ -51,5 +49,5 @@ export default function SettingsPage() {
         </TabsContent>
       </Tabs>
     </div>
-  );
+  )
 }

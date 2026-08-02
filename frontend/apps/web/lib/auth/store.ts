@@ -12,30 +12,30 @@
  * to `/login` with a `next=` query param.
  */
 
-"use client";
+"use client"
 
-import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
+import { create } from "zustand"
+import { createJSONStorage, persist } from "zustand/middleware"
 
-import { apiConfig } from "@cortex/config";
+import { apiConfig } from "@cortex/config"
 
 export interface AuthUser {
-  id: string;
-  email: string;
-  role: "owner" | "admin" | "member" | "viewer";
-  tenantId: string;
+  id: string
+  email: string
+  role: "owner" | "admin" | "member" | "viewer"
+  tenantId: string
 }
 
 interface AuthState {
-  user: AuthUser | null;
+  user: AuthUser | null
   // The access token is mirrored in sessionStorage ONLY so a
   // hard refresh can rehydrate it without a silent re-fetch.
   // sessionStorage is cleared on tab close — better than
   // localStorage for an XSS-prone surface like a token.
-  accessToken: string | null;
-  setSession: (input: { user: AuthUser; accessToken: string }) => void;
-  setAccessToken: (token: string | null) => void;
-  signOut: () => void;
+  accessToken: string | null
+  setSession: (input: { user: AuthUser; accessToken: string }) => void
+  setAccessToken: (token: string | null) => void
+  signOut: () => void
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -43,8 +43,7 @@ export const useAuthStore = create<AuthState>()(
     (set) => ({
       user: null,
       accessToken: null,
-      setSession: ({ user, accessToken }) =>
-        set({ user, accessToken }),
+      setSession: ({ user, accessToken }) => set({ user, accessToken }),
       setAccessToken: (token) => set({ accessToken: token }),
       signOut: () => {
         // Best-effort: tell the backend to invalidate the
@@ -54,9 +53,9 @@ export const useAuthStore = create<AuthState>()(
           fetch(`${apiConfig.baseUrl}/api/v1/auth/logout`, {
             method: "POST",
             credentials: "include",
-          }).catch(() => {});
+          }).catch(() => {})
         }
-        set({ user: null, accessToken: null });
+        set({ user: null, accessToken: null })
       },
     }),
     {
@@ -68,4 +67,4 @@ export const useAuthStore = create<AuthState>()(
       }),
     },
   ),
-);
+)

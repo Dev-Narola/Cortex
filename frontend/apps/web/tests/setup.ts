@@ -5,7 +5,7 @@
  * and the platform APIs the auth / socket hooks touch. We do
  * not need the full DOM for unit tests; happy-dom is enough.
  */
-import { vi } from "vitest";
+import { vi } from "vitest"
 
 // matchMedia is not implemented in happy-dom by default.
 if (typeof window !== "undefined" && !window.matchMedia) {
@@ -18,5 +18,5 @@ if (typeof window !== "undefined" && !window.matchMedia) {
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
     dispatchEvent: vi.fn(),
-  }));
+  }))
 }

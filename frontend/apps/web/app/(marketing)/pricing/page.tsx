@@ -25,7 +25,7 @@ export default function PricingPage() {
       blurb: "Unlimited everything, multi-region, dedicated support.",
       cta: "Talk to sales",
     },
-  ];
+  ]
   return (
     <div className="mx-auto max-w-6xl px-6 py-24">
       <h1 className="font-display text-4xl font-semibold">Pricing</h1>
@@ -37,9 +37,7 @@ export default function PricingPage() {
           <div
             key={tier.name}
             className={`rounded-xl border p-6 ${
-              tier.featured
-                ? "border-ember-500 bg-ember-500/5"
-                : "border-border bg-background"
+              tier.featured ? "border-ember-500 bg-ember-500/5" : "border-border bg-background"
             }`}
           >
             <h2 className="font-display text-2xl font-semibold">{tier.name}</h2>
@@ -55,5 +53,5 @@ export default function PricingPage() {
         ))}
       </div>
     </div>
-  );
+  )
 }

@@ -1,4 +1,4 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from "next"
 
 /**
  * Next.js configuration.
@@ -31,8 +31,8 @@ const nextConfig: NextConfig = {
           { key: "Permissions-Policy", value: "geolocation=(), microphone=(), camera=()" },
         ],
       },
-    ];
+    ]
   },
-};
+}
 
-export default nextConfig;
+export default nextConfig

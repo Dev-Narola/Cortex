@@ -7,18 +7,18 @@
  * `setAnimatedTheme()`.
  */
 
-"use client";
+"use client"
 
-import { Moon, Sun } from "lucide-react";
-import { useTheme } from "next-themes";
+import { Moon, Sun } from "lucide-react"
+import { useTheme } from "next-themes"
 
-import { Button } from "@cortex/ui";
-import { useViewTransitions } from "@/lib/theme/view-transitions";
+import { useViewTransitions } from "@/lib/theme/view-transitions"
+import { Button } from "@cortex/ui"
 
 export function ThemeToggle() {
-  const { resolvedTheme } = useTheme();
-  const { setAnimatedTheme } = useViewTransitions();
-  const isDark = resolvedTheme === "dark";
+  const { resolvedTheme } = useTheme()
+  const { setAnimatedTheme } = useViewTransitions()
+  const isDark = resolvedTheme === "dark"
   return (
     <Button
       variant="ghost"
@@ -28,5 +28,5 @@ export function ThemeToggle() {
     >
       {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
     </Button>
-  );
+  )
 }

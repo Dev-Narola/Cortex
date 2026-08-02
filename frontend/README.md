@@ -22,16 +22,19 @@ Cortex backend API.
 ```
 frontend/
 ├── apps/
-│   └── web/             # the Next.js application
+│   └── web/             # the Next.js application (only deployable)
 ├── packages/
-│   ├── api-client/      # generated from the backend OpenAPI spec
-│   ├── ui/              # shadcn primitives + design tokens
-│   ├── config/          # env validation + shared constants
-│   └── eslint-config/   # shared lint / TS configs
+│   ├── api-client/      # typed REST client (generated types + hand-written runtime)
+│   ├── ui/              # shadcn primitives + OKLCH design tokens
+│   └── config/          # Zod env validation + endpoint registry
+├── biome.json           # workspace-level lint/format config
 ├── pnpm-workspace.yaml
-├── tsconfig.base.json
-└── package.json
+├── tsconfig.base.json   # shared TS config; every package extends it
+└── package.json         # only Biome + Vitest + TypeScript at the root
 ```
+
+**Rule of thumb:** the root `package.json` never holds React deps.
+Every shared package is consumed via `workspace:*`.
 
 ## Quick start
 

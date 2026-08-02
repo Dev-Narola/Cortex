@@ -7,9 +7,9 @@
  * WebSocket (see `lib/socket/use-socket.ts`).
  */
 
-"use client";
+"use client"
 
-import { useState } from "react";
+import { useState } from "react"
 
 import {
   Button,
@@ -21,26 +21,26 @@ import {
   DialogTitle,
   Input,
   Label,
-} from "@cortex/ui";
+} from "@cortex/ui"
 
 export function DocumentUploadModal({
   open,
   onOpenChange,
 }: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  open: boolean
+  onOpenChange: (open: boolean) => void
 }) {
-  const [files, setFiles] = useState<FileList | null>(null);
-  const [uploading, setUploading] = useState(false);
+  const [files, setFiles] = useState<FileList | null>(null)
+  const [uploading, setUploading] = useState(false)
 
   async function onSubmit() {
-    if (!files || files.length === 0) return;
-    setUploading(true);
+    if (!files || files.length === 0) return
+    setUploading(true)
     // TODO: wire to /api/v1/documents/upload via getApiClient().
-    await new Promise((r) => setTimeout(r, 200));
-    setUploading(false);
-    onOpenChange(false);
-    setFiles(null);
+    await new Promise((r) => setTimeout(r, 200))
+    setUploading(false)
+    onOpenChange(false)
+    setFiles(null)
   }
 
   return (
@@ -80,5 +80,5 @@ export function DocumentUploadModal({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  );
+  )
 }

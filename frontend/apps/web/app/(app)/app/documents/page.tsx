@@ -6,23 +6,21 @@
  * uploads, status changes, and live ingestion badges can update
  * without a full page reload.
  */
-"use client";
+"use client"
 
-import { useState } from "react";
+import { useState } from "react"
 
-import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from "@cortex/ui";
-import { DocumentUploadModal } from "@/components/documents/upload-modal";
+import { DocumentUploadModal } from "@/components/documents/upload-modal"
+import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from "@cortex/ui"
 
 export default function DocumentsPage() {
-  const [uploadOpen, setUploadOpen] = useState(false);
+  const [uploadOpen, setUploadOpen] = useState(false)
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-display text-3xl font-semibold tracking-tight">
-            Documents
-          </h1>
+          <h1 className="font-display text-3xl font-semibold tracking-tight">Documents</h1>
           <p className="text-sm text-muted-foreground">
             Upload, search, and inspect every document in your tenant.
           </p>
@@ -37,8 +35,8 @@ export default function DocumentsPage() {
         </CardHeader>
         <CardContent>
           <div className="rounded-md border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-            Document list will render here once the API client is generated
-            via <code className="font-mono">pnpm codegen</code>.
+            Document list will render here once the API client is generated via{" "}
+            <code className="font-mono">pnpm codegen</code>.
             <div className="mt-4 flex justify-center gap-2">
               <Badge variant="pending">pending</Badge>
               <Badge variant="processing">processing</Badge>
@@ -50,5 +48,5 @@ export default function DocumentsPage() {
       </Card>
       <DocumentUploadModal open={uploadOpen} onOpenChange={setUploadOpen} />
     </div>
-  );
+  )
 }

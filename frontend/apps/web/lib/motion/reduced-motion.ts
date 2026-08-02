@@ -7,28 +7,28 @@
  * should use this hook and read the boolean synchronously.
  */
 
-"use client";
+"use client"
 
-import { useSyncExternalStore } from "react";
+import { useSyncExternalStore } from "react"
 
-const QUERY = "(prefers-reduced-motion: reduce)";
+const QUERY = "(prefers-reduced-motion: reduce)"
 
 function subscribe(callback: () => void) {
-  if (typeof window === "undefined") return () => {};
-  const mql = window.matchMedia(QUERY);
-  mql.addEventListener("change", callback);
-  return () => mql.removeEventListener("change", callback);
+  if (typeof window === "undefined") return () => {}
+  const mql = window.matchMedia(QUERY)
+  mql.addEventListener("change", callback)
+  return () => mql.removeEventListener("change", callback)
 }
 
 function getSnapshot() {
-  if (typeof window === "undefined") return false;
-  return window.matchMedia(QUERY).matches;
+  if (typeof window === "undefined") return false
+  return window.matchMedia(QUERY).matches
 }
 
 function getServerSnapshot() {
-  return false;
+  return false
 }
 
 export function usePrefersReducedMotion(): boolean {
-  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
 }

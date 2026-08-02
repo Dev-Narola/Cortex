@@ -13,44 +13,43 @@
  * runtime — keep it lean, do not import the API client here.
  */
 
-import { NextResponse, type NextRequest } from "next/server";
+import { type NextRequest, NextResponse } from "next/server"
 
-const PUBLIC_PATHS = new Set(["/", "/pricing", "/docs", "/login", "/register"]);
-const APP_PREFIX = "/app";
-const AUTH_PREFIXES = ["/login", "/register", "/accept-invite"];
+const APP_PREFIX = "/app"
+const AUTH_PREFIXES = ["/login", "/register", "/accept-invite"]
 
-const ACCESS_COOKIE = "cortex_access";
-const REFRESH_COOKIE = "cortex_refresh";
+const ACCESS_COOKIE = "cortex_access"
+const REFRESH_COOKIE = "cortex_refresh"
 
 export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-  const access = request.cookies.get(ACCESS_COOKIE)?.value;
-  const refresh = request.cookies.get(REFRESH_COOKIE)?.value;
+  const { pathname } = request.nextUrl
+  const access = request.cookies.get(ACCESS_COOKIE)?.value
+  const refresh = request.cookies.get(REFRESH_COOKIE)?.value
 
-  const isAppRoute = pathname.startsWith(APP_PREFIX);
-  const isAuthRoute = AUTH_PREFIXES.some((p) => pathname.startsWith(p));
+  const isAppRoute = pathname.startsWith(APP_PREFIX)
+  const isAuthRoute = AUTH_PREFIXES.some((p) => pathname.startsWith(p))
 
   // (1) Unauthenticated → /login (preserving the destination).
   if (isAppRoute && !access) {
     if (refresh) {
       // Token expired but refresh is valid — let the page load
       // and the in-page auth store will silently refresh.
-      return NextResponse.next();
+      return NextResponse.next()
     }
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    url.searchParams.set("next", pathname);
-    return NextResponse.redirect(url);
+    const url = request.nextUrl.clone()
+    url.pathname = "/login"
+    url.searchParams.set("next", pathname)
+    return NextResponse.redirect(url)
   }
 
   // (2) Authenticated user lands on /login|/register — bounce to /app.
   if (isAuthRoute && access) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/app";
-    return NextResponse.redirect(url);
+    const url = request.nextUrl.clone()
+    url.pathname = "/app"
+    return NextResponse.redirect(url)
   }
 
-  return NextResponse.next();
+  return NextResponse.next()
 }
 
 export const config = {
@@ -59,4 +58,4 @@ export const config = {
     // the codegen output (which is app-internal anyway).
     "/((?!_next/static|_next/image|favicon.ico|openapi.json|.*\\..*).*)",
   ],
-};
+}

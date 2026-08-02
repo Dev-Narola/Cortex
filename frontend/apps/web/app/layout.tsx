@@ -7,31 +7,31 @@
  * self-hosted via `next/font` so the hero renders font-correct
  * on the first paint (no FOUC, no extra request).
  */
-import type { Metadata, Viewport } from "next";
-import { Bricolage_Grotesque, Inter, JetBrains_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next"
+import { Bricolage_Grotesque, Inter, JetBrains_Mono } from "next/font/google"
 
-import "@cortex/ui/globals.css";
-import "./globals.css";
+import "@cortex/ui/globals.css"
+import "./globals.css"
 
-import { Providers } from "@/components/providers";
+import { Providers } from "@/components/providers"
 
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-sans",
   display: "swap",
-});
+})
 
 const display = Bricolage_Grotesque({
   subsets: ["latin"],
   variable: "--font-display",
   display: "swap",
-});
+})
 
 const mono = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-mono",
   display: "swap",
-});
+})
 
 export const metadata: Metadata = {
   title: {
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
   },
   description:
     "Multi-tenant AI Knowledge & Agent Platform. Hybrid search, knowledge graph, agents, and MCP — production-grade.",
-};
+}
 
 export const viewport: Viewport = {
   themeColor: [
@@ -48,12 +48,12 @@ export const viewport: Viewport = {
     { media: "(prefers-color-scheme: dark)", color: "#0a0a0c" },
   ],
   colorScheme: "light dark",
-};
+}
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: React.ReactNode
 }) {
   return (
     <html
@@ -65,5 +65,5 @@ export default function RootLayout({
         <Providers>{children}</Providers>
       </body>
     </html>
-  );
+  )
 }

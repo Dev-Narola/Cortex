@@ -1,2 +1,2 @@
-export * from "./primitives";
-export { cn } from "./utils/cn";
+export * from "./primitives"
+export { cn } from "./utils/cn"

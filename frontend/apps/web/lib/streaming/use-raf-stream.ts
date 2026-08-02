@@ -14,55 +14,54 @@
  * background tabs.
  */
 
-"use client";
+"use client"
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react"
 
 export function useRafStream(): {
-  text: string;
-  append: (token: string) => void;
-  reset: () => void;
+  text: string
+  append: (token: string) => void
+  reset: () => void
 } {
-  const [text, setText] = useState("");
-  const bufferRef = useRef("");
-  const scheduledRef = useRef(false);
+  const [text, setText] = useState("")
+  const bufferRef = useRef("")
+  const scheduledRef = useRef(false)
 
   const flush = () => {
-    scheduledRef.current = false;
-    if (!bufferRef.current) return;
-    setText((prev) => prev + bufferRef.current);
-    bufferRef.current = "";
-  };
+    scheduledRef.current = false
+    if (!bufferRef.current) return
+    setText((prev) => prev + bufferRef.current)
+    bufferRef.current = ""
+  }
 
   const schedule = () => {
-    if (scheduledRef.current) return;
-    scheduledRef.current = true;
-    if (typeof window === "undefined") return;
-    const reduce =
-      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+    if (scheduledRef.current) return
+    scheduledRef.current = true
+    if (typeof window === "undefined") return
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false
     if (reduce) {
-      setTimeout(flush, 0);
+      setTimeout(flush, 0)
     } else {
-      requestAnimationFrame(flush);
+      requestAnimationFrame(flush)
     }
-  };
+  }
 
   const append = (token: string) => {
-    if (!token) return;
-    bufferRef.current += token;
-    schedule();
-  };
+    if (!token) return
+    bufferRef.current += token
+    schedule()
+  }
 
   const reset = () => {
-    bufferRef.current = "";
-    setText("");
-  };
+    bufferRef.current = ""
+    setText("")
+  }
 
   useEffect(() => {
     return () => {
-      bufferRef.current = "";
-    };
-  }, []);
+      bufferRef.current = ""
+    }
+  }, [])
 
-  return { text, append, reset };
+  return { text, append, reset }
 }

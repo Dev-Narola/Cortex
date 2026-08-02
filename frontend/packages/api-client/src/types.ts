@@ -13,6 +13,6 @@
 // This is a placeholder; the real file is generated. The build
 // expects *some* export, hence the `unknown`-typed stand-ins.
 
-export type components = Record<string, unknown>;
-export type paths = Record<string, unknown>;
-export type operations = Record<string, unknown>;
+export type components = Record<string, unknown>
+export type paths = Record<string, unknown>
+export type operations = Record<string, unknown>

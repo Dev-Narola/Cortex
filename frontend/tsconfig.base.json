@@ -1,22 +1,52 @@
 {
   "compilerOptions": {
+    /* Language & runtime */
     "target": "ES2022",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "moduleResolution": "Bundler",
+    "jsx": "preserve",
+
+    /* Interop */
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "preserve",
+    "forceConsistentCasingInFileNames": true,
+
+    /* Strictness (the entire point of this base) */
     "strict": true,
-    "noUncheckedIndexedAccess": true,
+    "noImplicitAny": true,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
     "noImplicitOverride": true,
     "noFallthroughCasesInSwitch": true,
-    "forceConsistentCasingInFileNames": true,
-    "skipLibCheck": true,
+    "noUncheckedIndexedAccess": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "useUnknownInCatchVariables": true,
+    "exactOptionalPropertyTypes": false,
+
+    /* Build */
     "allowJs": false,
-    "incremental": true
+    "skipLibCheck": true,
+    "incremental": true,
+    "noEmit": true,
+
+    /* Path aliases — every package picks up these by name */
+    "baseUrl": ".",
+    "paths": {
+      "@cortex/ui": ["./packages/ui/src/index.ts"],
+      "@cortex/ui/*": ["./packages/ui/src/*"],
+      "@cortex/config": ["./packages/config/src/index.ts"],
+      "@cortex/config/*": ["./packages/config/src/*"],
+      "@cortex/api-client": ["./packages/api-client/src/index.ts"],
+      "@cortex/api-client/*": ["./packages/api-client/src/*"]
+    }
   },
-  "exclude": ["node_modules", "dist", ".next", ".turbo"]
+  "exclude": ["node_modules", "dist", ".next", ".turbo", "build"]
 }

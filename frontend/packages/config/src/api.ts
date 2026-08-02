@@ -7,7 +7,7 @@
  * truth to diff against.
  */
 
-import { publicEnv } from "./env";
+import { publicEnv } from "./env"
 
 export const apiConfig = {
   baseUrl: publicEnv.NEXT_PUBLIC_API_URL,
@@ -69,9 +69,8 @@ export const apiConfig = {
 
   ws: {
     conversation: (id: string) => `/ws/conversations/${id}`,
-    ingestionStatus: (documentId: string) =>
-      `/ws/documents/${documentId}/status`,
+    ingestionStatus: (documentId: string) => `/ws/documents/${documentId}/status`,
   },
-} as const;
+} as const
 
-export type ApiConfig = typeof apiConfig;
+export type ApiConfig = typeof apiConfig

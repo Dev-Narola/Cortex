@@ -5,13 +5,13 @@
  * document detail page, and the agent inspector.
  */
 
-"use client";
+"use client"
 
-import * as TabsPrimitive from "@radix-ui/react-tabs";
-import { forwardRef, type ComponentPropsWithoutRef, type ElementRef } from "react";
-import { cn } from "../utils/cn";
+import * as TabsPrimitive from "@radix-ui/react-tabs"
+import { type ComponentPropsWithoutRef, type ElementRef, forwardRef } from "react"
+import { cn } from "../utils/cn"
 
-const Tabs = TabsPrimitive.Root;
+const Tabs = TabsPrimitive.Root
 
 const TabsList = forwardRef<
   ElementRef<typeof TabsPrimitive.List>,
@@ -25,8 +25,8 @@ const TabsList = forwardRef<
     )}
     {...props}
   />
-));
-TabsList.displayName = TabsPrimitive.List.displayName;
+))
+TabsList.displayName = TabsPrimitive.List.displayName
 
 const TabsTrigger = forwardRef<
   ElementRef<typeof TabsPrimitive.Trigger>,
@@ -43,8 +43,8 @@ const TabsTrigger = forwardRef<
     )}
     {...props}
   />
-));
-TabsTrigger.displayName = TabsPrimitive.Trigger.displayName;
+))
+TabsTrigger.displayName = TabsPrimitive.Trigger.displayName
 
 const TabsContent = forwardRef<
   ElementRef<typeof TabsPrimitive.Content>,
@@ -58,7 +58,7 @@ const TabsContent = forwardRef<
     )}
     {...props}
   />
-));
-TabsContent.displayName = TabsPrimitive.Content.displayName;
+))
+TabsContent.displayName = TabsPrimitive.Content.displayName
 
-export { Tabs, TabsList, TabsTrigger, TabsContent };
+export { Tabs, TabsList, TabsTrigger, TabsContent }
