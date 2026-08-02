@@ -15,10 +15,8 @@
     "noFallthroughCasesInSwitch": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
-    "esModuleInterop": true,
     "allowJs": false,
-    "incremental": true,
-    "resolveJsonModule": true
+    "incremental": true
   },
   "exclude": ["node_modules", "dist", ".next", ".turbo"]
 }

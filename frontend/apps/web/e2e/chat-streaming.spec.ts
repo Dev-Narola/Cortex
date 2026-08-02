@@ -18,14 +18,13 @@ test.describe("chat streaming", () => {
           if (_ === "open") this.onopen = listener as () => void;
           if (_ === "message")
             this.onmessage = (ev) =>
-              (listener as (e: { data: string }) => void)(ev as { data: string });
+              (listener as unknown as (e: { data: string }) => void)(ev as unknown as { data: string });
           if (_ === "close") this.onclose = listener as () => void;
         }
         send() {}
         close() {}
       }
       const RealWS = window.WebSocket;
-      // @ts-expect-error - monkey-patch the global
       window.WebSocket = function () {
         return new FakeSocket() as unknown as WebSocket;
       } as unknown as typeof WebSocket;

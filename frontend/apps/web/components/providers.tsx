@@ -18,8 +18,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { ThemeProvider } from "next-themes";
 import { useState, type ReactNode } from "react";
-import { Provider as UrqlProvider, Client, cacheExchange, createClient } from "urql";
-import { graphcacheExchange } from "@urql/exchange-graphcache";
+import { Provider as UrqlProvider, Client, createClient } from "urql";
+import { cacheExchange } from "@urql/exchange-graphcache";
 
 import { ToastProvider, ToastViewport } from "@cortex/ui";
 import { publicEnv } from "@cortex/config";
@@ -42,8 +42,8 @@ export function Providers({ children }: { children: ReactNode }) {
 
   const [urqlClient] = useState<Client>(() =>
     createClient({
-      url: publicEnv.graphqlUrl,
-      exchanges: [cacheExchange, graphcacheExchange({})],
+      url: publicEnv.NEXT_PUBLIC_GRAPHQL_URL,
+      exchanges: [cacheExchange()],
     }),
   );
 

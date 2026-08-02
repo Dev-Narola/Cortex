@@ -24,6 +24,8 @@ import {
 interface ViewTransitionsContextValue {
   /** Trigger a view transition (used internally by the theme). */
   startViewTransition: (callback: () => void | Promise<void>) => void;
+  /** Wrap next-themes' `setTheme` in a view transition. */
+  setAnimatedTheme: (next: "light" | "dark" | "system") => void;
 }
 
 const ViewTransitionsContext = createContext<
