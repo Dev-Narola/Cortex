@@ -13,6 +13,13 @@ export const apiConfig = {
   baseUrl: publicEnv.NEXT_PUBLIC_API_URL,
   wsUrl: publicEnv.NEXT_PUBLIC_WS_URL,
   graphqlUrl: publicEnv.NEXT_PUBLIC_GRAPHQL_URL,
+  // Future: when the MCP server gets its own origin, this will
+  // diverge from `baseUrl`. Centralising the field now means
+  // the swap is a one-line env change.
+  mcpUrl: publicEnv.NEXT_PUBLIC_API_URL,
+  // Backend's OpenAPI spec URL — consumed by the codegen script
+  // in `packages/api-client/scripts/generate.ts`.
+  openapiUrl: `${publicEnv.NEXT_PUBLIC_API_URL.replace(/\/$/, "")}/openapi.json`,
   appName: publicEnv.NEXT_PUBLIC_APP_NAME,
   appUrl: publicEnv.NEXT_PUBLIC_APP_URL,
 

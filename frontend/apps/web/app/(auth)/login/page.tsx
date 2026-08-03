@@ -7,13 +7,19 @@
  * Zustand auth store (sessionStorage-backed so a hard refresh
  * doesn't bounce the user). The store is the only writer; this
  * page is just a thin form.
+ *
+ * **Why the Suspense boundary.** `useSearchParams()` opts the
+ * component out of static rendering. Next.js requires that any
+ * such consumer be wrapped in a Suspense boundary so the rest of
+ * the page can prerender with a fallback.
  */
+
 "use client"
 
 import { ApiError } from "@cortex/api-client"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useRouter, useSearchParams } from "next/navigation"
-import { useState } from "react"
+import { Suspense, useState } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 
@@ -53,9 +59,28 @@ interface TokenResponse {
 }
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoginFallback />}>
+      <LoginForm />
+    </Suspense>
+  )
+}
+
+function LoginFallback() {
+  return (
+    <Card>
+      <CardContent className="pt-6">
+        <h1 className="font-display text-2xl font-semibold">Sign in to Cortex</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Loading…</p>
+      </CardContent>
+    </Card>
+  )
+}
+
+function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const setSession = useAuthStore((s) => s.setSession)
+  const login = useAuthStore((s) => s.login)
   const [error, setError] = useState<string | null>(null)
 
   const {
@@ -78,8 +103,16 @@ export default function LoginPage() {
         role: data.user.role,
         tenantId: data.user.tenant_id,
       }
-      setSession({ user, accessToken: data.access_token })
-      const next = searchParams.get("next") ?? "/app"
+      login({
+        accessToken: data.access_token,
+        user,
+        tenant: {
+          id: data.tenant.id,
+          slug: data.tenant.slug,
+          name: data.tenant.name,
+        },
+      })
+      const next = (searchParams.get("next") ?? "/app") as Parameters<typeof router.push>[0]
       router.push(next)
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {

@@ -105,14 +105,60 @@
   --border: var(--cloud-200);
   --input: var(--cloud-200);
   --ring: var(--ember-500);
+  --primary: var(--ember-500);
+  --primary-foreground: var(--cloud-50);
+  --secondary: var(--cloud-200);
+  --secondary-foreground: var(--ink-900);
+  --card: var(--cloud-50);
+  --card-foreground: var(--ink-900);
+  --popover: var(--cloud-50);
+  --popover-foreground: var(--ink-900);
+  --accent: var(--ember-100);
+  --accent-foreground: var(--ink-900);
   --destructive: oklch(0.55 0.22 25);
+  --destructive-foreground: var(--cloud-50);
+  --error: oklch(0.55 0.22 25);
   --success: var(--volt-600);
+  --success-foreground: var(--cloud-50);
   --warning: oklch(0.75 0.16 75);
+  --warning-foreground: var(--ink-900);
+
+  /* Border radius */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-xs: 0 1px 2px 0 oklch(0.18 0.05 240 / 0.04);
+  --shadow-sm: 0 1px 3px 0 oklch(0.18 0.05 240 / 0.08), 0 1px 2px -1px oklch(0.18 0.05 240 / 0.06);
+  --shadow-md: 0 4px 6px -1px oklch(0.18 0.05 240 / 0.08), 0 2px 4px -2px
+    oklch(0.18 0.05 240 / 0.06);
+  --shadow-lg: 0 10px 15px -3px oklch(0.18 0.05 240 / 0.1), 0 4px 6px -4px
+    oklch(0.18 0.05 240 / 0.06);
+  --shadow-xl: 0 20px 25px -5px oklch(0.18 0.05 240 / 0.1), 0 8px 10px -6px
+    oklch(0.18 0.05 240 / 0.04);
+  --shadow-spark: 0 0 24px 0 oklch(0.68 0.16 50 / 0.3);
 
   /* Type scale */
   --font-display: "Bricolage Grotesque", "Inter", system-ui, sans-serif;
   --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-mono: "JetBrains Mono", "Fira Code", monospace;
+
+  /* Spacing scale — Tailwind-aligned 4px grid */
+  --space-0: 0;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-24: 6rem;
+  --space-32: 8rem;
 
   /* Motion */
   --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
@@ -132,9 +178,30 @@
   --border: var(--void-200);
   --input: var(--void-200);
   --ring: var(--ember-400);
+  --primary: var(--ember-400);
+  --primary-foreground: var(--void-950);
+  --secondary: var(--void-200);
+  --secondary-foreground: var(--paper-100);
+  --card: var(--void-100);
+  --card-foreground: var(--paper-100);
+  --popover: var(--void-100);
+  --popover-foreground: var(--paper-100);
+  --accent: var(--void-200);
+  --accent-foreground: var(--paper-100);
   --destructive: oklch(0.65 0.22 25);
+  --destructive-foreground: var(--void-950);
+  --error: oklch(0.65 0.22 25);
   --success: var(--volt-400);
+  --success-foreground: var(--void-950);
   --warning: oklch(0.8 0.16 75);
+  --warning-foreground: var(--void-950);
+
+  /* Dark shadows — heavier alpha for legibility on dark surfaces */
+  --shadow-xs: 0 1px 2px 0 oklch(0 0 0 / 0.2);
+  --shadow-sm: 0 1px 3px 0 oklch(0 0 0 / 0.3), 0 1px 2px -1px oklch(0 0 0 / 0.24);
+  --shadow-md: 0 4px 6px -1px oklch(0 0 0 / 0.3), 0 2px 4px -2px oklch(0 0 0 / 0.24);
+  --shadow-lg: 0 10px 15px -3px oklch(0 0 0 / 0.4), 0 4px 6px -4px oklch(0 0 0 / 0.24);
+  --shadow-xl: 0 20px 25px -5px oklch(0 0 0 / 0.4), 0 8px 10px -6px oklch(0 0 0 / 0.16);
 }
 
 /* Honour reduced-motion globally. */

@@ -1,37 +1,29 @@
 /**
- * Root layout — applies fonts, theme provider, and the (app) /
- * (marketing) / (auth) wrappers. Every page inherits this.
+ * Root layout — the outermost shell of the app.
  *
- * V9 Frontend: Bricolage Grotesque + JetBrains Mono are the
- * display / mono pair; Inter handles body text. All three are
- * self-hosted via `next/font` so the hero renders font-correct
- * on the first paint (no FOUC, no extra request).
+ * **F0 scope (Task 14).** Does only what every page needs and
+ * nothing more. Per spec:
+ *
+ *   1. Imports fonts (from `app/fonts.ts`).
+ *   2. Imports globals (`@cortex/ui/globals.css` + `./globals.css`).
+ *   3. Renders the HTML skeleton.
+ *   4. Mounts the `<Providers>` tree.
+ *   5. Sets metadata.
+ *   6. Sets viewport (theme-color + color-scheme).
+ *   7. Sets the favicon.
+ *
+ * **Never put business logic here.** No auth, no router state,
+ * no feature-specific markup. The route-group layouts
+ * (`(marketing)`, `(auth)`, `(app)`) own their own theme and shell.
  */
+
 import type { Metadata, Viewport } from "next"
-import { Bricolage_Grotesque, Inter, JetBrains_Mono } from "next/font/google"
 
 import "@cortex/ui/globals.css"
 import "./globals.css"
 
 import { Providers } from "@/components/providers"
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-sans",
-  display: "swap",
-})
-
-const display = Bricolage_Grotesque({
-  subsets: ["latin"],
-  variable: "--font-display",
-  display: "swap",
-})
-
-const mono = JetBrains_Mono({
-  subsets: ["latin"],
-  variable: "--font-mono",
-  display: "swap",
-})
+import { bodyFont, displayFont, monoFont } from "./fonts"
 
 export const metadata: Metadata = {
   title: {
@@ -40,6 +32,10 @@ export const metadata: Metadata = {
   },
   description:
     "Multi-tenant AI Knowledge & Agent Platform. Hybrid search, knowledge graph, agents, and MCP — production-grade.",
+  icons: {
+    icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
+    apple: "/favicon.svg",
+  },
 }
 
 export const viewport: Viewport = {
@@ -58,7 +54,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${display.variable} ${mono.variable}`}
+      className={`${displayFont.variable} ${bodyFont.variable} ${monoFont.variable}`}
       suppressHydrationWarning
     >
       <body>

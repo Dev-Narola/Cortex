@@ -1,61 +1,52 @@
 /**
- * Providers — composes every React provider the app needs.
+ * Providers — the application's root provider tree.
  *
- * **F0 scope:** ThemeProvider (next-themes), QueryClientProvider
- * (TanStack Query), ToastProvider (shadcn/ui), ViewTransitions.
+ * **F0 scope (Task 17).** Composes the four providers every
+ * Cortex screen relies on:
  *
- * The order matters:
- *   1. ThemeProvider must be outermost so its `class` attribute is
- *      on `<html>` before any child mounts.
- *   2. QueryClientProvider is a peer of every data-fetching component.
- *   3. ToastProvider sits at the root so any component can `useToast`.
- *   4. ViewTransitionProvider wraps the theme-switch in
- *      document.startViewTransition (Stage 4 of the UX doc).
+ *   1. `ThemeProvider` (next-themes) — outermost. The `class`
+ *      attribute on `<html>` is what `.dark` in `tokens.css`
+ *      keys off, so the theme must be applied before any child
+ *      reads a token.
+ *   2. `QueryProvider` (TanStack Query) — owns the `QueryClient`
+ *      and devtools. Created by `lib/query/client.ts`; mounted
+ *      by `lib/query/provider.tsx`. Pulled out so the cache
+ *      config and the dev-only debug UI can evolve independently
+ *      of this file.
+ *   3. `ToastProvider` (shadcn/ui) — the portal that surfaces
+ *      `useToast()` from anywhere in the tree.
+ *   4. `ViewTransitions` — wraps the theme toggle in
+ *      `document.startViewTransition` for the GPU-accelerated
+ *      light↔dark morph (Stage 4 of the UX doc).
  *
  * **Out of F0 scope (added by later phases):**
- *   - `UrqlProvider` for /graph queries — added in F6
- *   - `AuthProvider` for session hydration — added in F2
- *   - `PostHogProvider` for analytics — added in F10
+ *   - `UrqlProvider` for /graph queries — F6
+ *   - `AuthProvider` for session hydration — F2
+ *   - `PostHogProvider` for analytics — F10
  *
- * The list is intentionally short now. F0 is infrastructure only;
- * feature providers are added when their feature is built.
+ * The order is not arbitrary. Don't reorder.
  */
 
 "use client"
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools"
 import { ThemeProvider } from "next-themes"
-import { type ReactNode, useState } from "react"
+import type { ReactNode } from "react"
 
 import { ToastProvider, ToastViewport } from "@cortex/ui"
 
+import { QueryProvider } from "@/lib/query/provider"
 import { ViewTransitions } from "@/lib/theme/view-transitions"
 
 export function Providers({ children }: { children: ReactNode }) {
-  const [queryClient] = useState(
-    () =>
-      new QueryClient({
-        defaultOptions: {
-          queries: {
-            staleTime: 30_000,
-            refetchOnWindowFocus: false,
-            retry: 1,
-          },
-        },
-      }),
-  )
-
   return (
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
       <ViewTransitions>
-        <QueryClientProvider client={queryClient}>
+        <QueryProvider>
           <ToastProvider>
             {children}
             <ToastViewport />
           </ToastProvider>
-          {process.env.NODE_ENV === "development" && <ReactQueryDevtools initialIsOpen={false} />}
-        </QueryClientProvider>
+        </QueryProvider>
       </ViewTransitions>
     </ThemeProvider>
   )
