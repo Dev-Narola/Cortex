@@ -1,16 +1,17 @@
 /**
  * Separator — visual divider.
  *
- * Decorative by default; pass `decorative={false}` when the
- * separator carries semantic meaning (e.g. between a label
- * and a value the screen reader should announce).
+ * **F1 scope.** Decorative by default; pass `decorative={false}`
+ * when the separator carries semantic meaning (e.g. between a
+ * label and a value the screen reader should announce).
  */
 
 "use client"
 
 import * as SeparatorPrimitive from "@radix-ui/react-separator"
 import { type ComponentPropsWithoutRef, type ElementRef, forwardRef } from "react"
-import { cn } from "../utils/cn"
+
+import { cn } from "../../utils/cn"
 
 const Separator = forwardRef<
   ElementRef<typeof SeparatorPrimitive.Root>,

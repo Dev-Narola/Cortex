@@ -1,15 +1,19 @@
 /**
  * Tabs — accessible tabbed interface built on Radix.
  *
- * Used by Settings (General / Team / API Keys / Billing), the
- * document detail page, and the agent inspector.
+ * **F1 scope.** Used by Settings (General / Team / API Keys /
+ * Billing), the document detail page, and the agent inspector.
+ *
+ * **Compound API.** `Tabs` is the root; pair it with `TabsList`,
+ * `TabsTrigger`, and `TabsContent` to compose a tabbed view.
  */
 
 "use client"
 
 import * as TabsPrimitive from "@radix-ui/react-tabs"
 import { type ComponentPropsWithoutRef, type ElementRef, forwardRef } from "react"
-import { cn } from "../utils/cn"
+
+import { cn } from "../../utils/cn"
 
 const Tabs = TabsPrimitive.Root
 
@@ -61,4 +65,4 @@ const TabsContent = forwardRef<
 ))
 TabsContent.displayName = TabsPrimitive.Content.displayName
 
-export { Tabs, TabsList, TabsTrigger, TabsContent }
+export { Tabs, TabsContent, TabsList, TabsTrigger }

@@ -1,9 +1,15 @@
 /**
  * Dialog — accessible modal built on Radix.
  *
- * Focus-traps, scrolls the body, and supports a description
- * via `DialogDescription`. The portal renders into the document
- * body so the modal is never clipped by parent stacking contexts.
+ * **F1 scope.** Focus-traps, scrolls the body, and supports a
+ * description via `DialogDescription`. The portal renders into
+ * the document body so the modal is never clipped by parent
+ * stacking contexts.
+ *
+ * **Compound API.** `Dialog` is the root; pair it with
+ * `DialogTrigger`, `DialogContent`, `DialogHeader`, `DialogTitle`,
+ * `DialogDescription`, `DialogFooter`, and `DialogClose` to
+ * compose a modal.
  */
 
 "use client"
@@ -16,7 +22,8 @@ import {
   type HTMLAttributes,
   forwardRef,
 } from "react"
-import { cn } from "../utils/cn"
+
+import { cn } from "../../utils/cn"
 
 const Dialog = DialogPrimitive.Root
 const DialogTrigger = DialogPrimitive.Trigger
@@ -106,13 +113,13 @@ DialogDescription.displayName = DialogPrimitive.Description.displayName
 
 export {
   Dialog,
-  DialogTrigger,
-  DialogPortal,
   DialogClose,
-  DialogOverlay,
   DialogContent,
-  DialogHeader,
-  DialogFooter,
-  DialogTitle,
   DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogOverlay,
+  DialogPortal,
+  DialogTitle,
+  DialogTrigger,
 }

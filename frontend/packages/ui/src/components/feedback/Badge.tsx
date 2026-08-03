@@ -1,15 +1,23 @@
 /**
  * Badge — small status / count indicator.
  *
- * Used heavily by the document list (pending / parsing / indexed
- * / failed) and the agent runs. The colour vocabulary maps to
- * the V9 platform `health` enum: healthy = success, degraded =
- * warning, unhealthy = destructive.
+ * **F1 scope.** Used heavily by the document list (pending /
+ * parsing / indexed / failed) and the agent runs. The colour
+ * vocabulary maps to the V9 platform `health` enum: healthy =
+ * success, degraded = warning, unhealthy = destructive.
+ *
+ * **Variant API.** `variant` only — no size variants because a
+ * badge is intrinsically small. `healthy` / `degraded` /
+ * `unhealthy` mirror the V9 `ComponentHealth` enum; the
+ * ingestion aliases (`pending` / `processing` / `completed` /
+ * `failed`) mirror the V9 `IngestionStatus` enum so callers
+ * can pass those strings in without an extra mapping.
  */
 
 import { type VariantProps, cva } from "class-variance-authority"
 import { type HTMLAttributes, forwardRef } from "react"
-import { cn } from "../utils/cn"
+
+import { cn } from "../../utils/cn"
 
 const badgeVariants = cva(
   "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",

@@ -1,9 +1,14 @@
 /**
  * Toast — accessible notification built on Radix.
  *
- * Use sparingly: error reporting, success confirmations on
- * destructive actions (delete document, revoke API key), and
- * real-time alerts from the WebSocket.
+ * **F1 scope (Task 46).** Use sparingly: error reporting, success
+ * confirmations on destructive actions (delete document, revoke
+ * API key), and real-time alerts from the WebSocket.
+ *
+ * **Imperative API.** `toast({ title, description, variant })`
+ * spawns a toast from anywhere; `useToast()` exposes the
+ * dismiss-all helper. The state is in-memory only — toasts are
+ * ephemeral, never persisted.
  */
 
 "use client"
@@ -20,7 +25,8 @@ import {
   useEffect,
   useState,
 } from "react"
-import { cn } from "../utils/cn"
+
+import { cn } from "../../utils/cn"
 
 const ToastProvider = ToastPrimitive.Provider
 
@@ -125,6 +131,7 @@ type ToastActionElement = ReactElement<typeof ToastAction>
 export {
   type ToastActionElement,
   type ToastProps,
+  Toast,
   ToastAction,
   ToastClose,
   ToastDescription,
@@ -136,11 +143,7 @@ export {
 }
 
 // ---------------------------------------------------------------------------
-// `toast()` — imperative API to spawn toasts from anywhere in the tree.
-//
-// Mirrors the shadcn/ui pattern: a tiny in-memory reducer + a context
-// provider reads from it. The state is intentionally NOT persisted — toasts
-// are ephemeral notifications, never durable.
+// Imperative `toast()` API + `useToast()` hook (shadcn-style reducer).
 // ---------------------------------------------------------------------------
 
 const TOAST_LIMIT = 5

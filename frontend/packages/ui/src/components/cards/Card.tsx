@@ -1,12 +1,24 @@
 /**
  * Card — the standard surface container.
  *
- * Used by every (app) screen for the dashboard tiles, document
- * previews, agent cards, and graph inspector panels.
+ * **F1 scope (Task 7).** Used by every (app) screen for the
+ * dashboard tiles, document previews, agent cards, and graph
+ * inspector panels.
+ *
+ * **Theme integration.** `bg-background` + `text-foreground` +
+ * `border-border` are CSS-variable-driven, so a Card works on
+ * the marketing (light) and authenticated app (dark) themes
+ * with zero changes.
+ *
+ * **Compound component.** `Card` is the surface; the sub-parts
+ * (`CardHeader`, `CardTitle`, `CardDescription`, `CardContent`,
+ * `CardFooter`) build the typical Card skeleton but are also
+ * usable independently.
  */
 
 import { type HTMLAttributes, forwardRef } from "react"
-import { cn } from "../utils/cn"
+
+import { cn } from "../../utils/cn"
 
 const Card = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
@@ -61,4 +73,4 @@ const CardFooter = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
 )
 CardFooter.displayName = "CardFooter"
 
-export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent }
+export { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }

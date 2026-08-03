@@ -1,15 +1,24 @@
 /**
  * Button — the foundation of every interactive surface.
  *
- * Variant ladder matches shadcn/ui defaults; the `spark` variant
- * is the brand-gradient call-to-action reserved for the hero
- * and the empty-state primary actions.
+ * **F1 scope (Task 5/7).** Variant ladder matches shadcn/ui
+ * defaults; the `spark` variant is the brand-gradient call-to-action
+ * reserved for the hero and the empty-state primary actions.
+ *
+ * **Theme integration.** Every colour comes from a CSS variable
+ * (`--ink-900`, `--paper-50`, etc.) — never `text-white` /
+ * `bg-black` — so the component is theme-agnostic out of the box.
+ *
+ * **Variant API.** `variant` × `size` × `asChild`. Never add
+ * `if (primary)` / `if (danger)` branches in the component body —
+ * add a variant to the `cva` config instead.
  */
 
 import { Slot } from "@radix-ui/react-slot"
 import { type VariantProps, cva } from "class-variance-authority"
 import { type ButtonHTMLAttributes, forwardRef } from "react"
-import { cn } from "../utils/cn"
+
+import { cn } from "../../utils/cn"
 
 const buttonVariants = cva(
   "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
@@ -42,6 +51,7 @@ const buttonVariants = cva(
 export interface ButtonProps
   extends ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
+  /** Render as a child element (Next.js Link, etc.) while keeping button styles. */
   asChild?: boolean
 }
 

@@ -1,14 +1,19 @@
 /**
  * Input — the standard text field primitive.
  *
- * Forwarded ref so form libraries (React Hook Form) can attach
- * focus management + validation. Styling is opt-in via `className`;
- * the layout is owned by the parent (label + helper + error live
- * outside the field for accessibility).
+ * **F1 scope.** Forwarded ref so form libraries (React Hook
+ * Form) can attach focus management + validation. Styling is
+ * opt-in via `className`; the layout is owned by the parent
+ * (label + helper + error live outside the field for
+ * accessibility).
+ *
+ * **Theme integration.** `bg-background`, `text-foreground`,
+ * `border-input` — every colour token, never hardcoded.
  */
 
 import { type InputHTMLAttributes, forwardRef } from "react"
-import { cn } from "../utils/cn"
+
+import { cn } from "../../utils/cn"
 
 export type InputProps = InputHTMLAttributes<HTMLInputElement>
 

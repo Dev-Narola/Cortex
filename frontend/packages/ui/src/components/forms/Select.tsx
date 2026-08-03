@@ -1,8 +1,14 @@
 /**
  * Select — accessible dropdown built on Radix.
  *
- * Used by Settings (language, timezone, default model) and by
- * the table column-filter menus.
+ * **F1 scope.** Used by Settings (language, timezone, default
+ * model) and by the table column-filter menus.
+ *
+ * **Compound API.** `Select` is the root; pair it with
+ * `SelectTrigger`, `SelectContent`, `SelectItem`, and
+ * `SelectValue` to compose a dropdown. The portal renders into
+ * the document body so the dropdown is never clipped by parent
+ * stacking contexts.
  */
 
 "use client"
@@ -10,7 +16,8 @@
 import * as SelectPrimitive from "@radix-ui/react-select"
 import { Check, ChevronDown, ChevronUp } from "lucide-react"
 import { type ComponentPropsWithoutRef, type ElementRef, forwardRef } from "react"
-import { cn } from "../utils/cn"
+
+import { cn } from "../../utils/cn"
 
 const Select = SelectPrimitive.Root
 const SelectGroup = SelectPrimitive.Group
@@ -113,4 +120,4 @@ const SelectItem = forwardRef<
 ))
 SelectItem.displayName = SelectPrimitive.Item.displayName
 
-export { Select, SelectGroup, SelectValue, SelectTrigger, SelectContent, SelectLabel, SelectItem }
+export { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue }

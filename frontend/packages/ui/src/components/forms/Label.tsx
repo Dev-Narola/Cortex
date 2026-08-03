@@ -1,9 +1,9 @@
 /**
  * Label — accessible form label.
  *
- * Built on Radix so screen readers announce the field correctly
- * even when the label is visually hidden. Always pair with a
- * control that has the matching `id`.
+ * **F1 scope.** Built on Radix so screen readers announce the
+ * field correctly even when the label is visually hidden. Always
+ * pair with a control that has the matching `id`.
  */
 
 "use client"
@@ -11,7 +11,8 @@
 import * as LabelPrimitive from "@radix-ui/react-label"
 import { type VariantProps, cva } from "class-variance-authority"
 import { type ComponentPropsWithoutRef, type ElementRef, forwardRef } from "react"
-import { cn } from "../utils/cn"
+
+import { cn } from "../../utils/cn"
 
 const labelVariants = cva(
   "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
