@@ -1,132 +1,102 @@
 # Cortex
 
-Multi-tenant AI Knowledge & Agent Platform. A production-grade
-backend (Python / FastAPI / Postgres / pgvector / Arq) with a
-modern frontend (Next.js 15 / React 19 / Tailwind v4) in a
-single monorepo.
+Multi-tenant AI Knowledge & Agent Platform. Backend on FastAPI, frontend
+on Next.js 15 + React 19, monorepo via pnpm.
 
-> **You are at the monorepo root.** The backend lives in
-> [`Cortex/`](./Cortex). The frontend lives in
-> [`frontend/`](./frontend). The shared docs live in
-> [`Docs/`](./Docs).
-
----
-
-## Why a monorepo?
-
-* **One source of truth** — the API contract (OpenAPI) is
-  generated from the backend and consumed by the frontend
-  via `pnpm codegen`. A backend schema change becomes a
-  frontend compile error.
-* **One release** — both halves ship together (`v1.0.0`).
-* **One CI** — `.github/workflows/ci.yml` runs backend + frontend
-  jobs in parallel; the build fails if either half breaks.
-* **One developer** — the monorepo is the right shape for a
-  solo build. If the team grows, splitting is one
-  `git-filter-repo` away.
-
-## Quick start
-
-```bash
-# 1. Install everything
-make install
-
-# 2. Open two terminals
-make backend        # http://localhost:8000
-make frontend       # http://localhost:3000
-
-# Or, in a single shell, run both:
-make dev
-```
-
-The web app expects the backend at `http://localhost:8000`. If
-you change it, update `frontend/apps/web/.env.local`:
-
-```bash
-NEXT_PUBLIC_API_URL=http://localhost:9000
-```
-
-## Layout
+## Repo layout
 
 ```
-Cortex/                          ← monorepo root (this file)
-├── Cortex/                      ← Python backend (FastAPI)
-│   ├── src/
-│   ├── tests/
-│   ├── alembic/
-│   ├── pyproject.toml
-│   └── README.md
-├── frontend/                    ← TypeScript frontend (Next.js 15)
+Cortex/
+├── backend/                 # the FastAPI service (V0–V9, see backend/Cortex/)
+├── frontend/                # the Next.js monorepo (F0 foundation + features)
 │   ├── apps/
-│   │   └── web/                 ← the Next.js app
+│   │   └── web/             # the only deployable app
 │   ├── packages/
-│   │   ├── api-client/          ← generated from the backend OpenAPI
-│   │   ├── ui/                  ← shadcn primitives + tokens
-│   │   └── config/              ← env validation + shared constants
+│   │   ├── ui/              # shadcn primitives + OKLCH design tokens
+│   │   ├── config/          # Zod env validation + endpoint registry
+│   │   └── api-client/      # typed fetch runtime + OpenAPI codegen
+│   ├── biome.json
 │   ├── pnpm-workspace.yaml
-│   └── README.md
-├── Docs/                        ← shared documentation
-│   ├── architecture/  adr/  performance/  scaling/
-│   ├── security/  recovery/  runbooks/  testing/
-│   ├── platform/  operations/  governance/  release/
-│   ├── frontend/               ← frontend-specific docs
-│   ├── Architecture.md
-│   └── ...
-├── scripts/                     ← root-level utilities
-│   ├── gen-api-client.sh        ← regenerate the TS API client
-│   └── ...
-├── benchmarks/                  ← V9 performance regression suite
-├── .github/workflows/           ← CI + release pipelines
-└── Makefile                     ← the single entrypoint
+│   ├── tsconfig.base.json
+│   └── package.json
+├── Docs/                    # roadmap + design + governance
+├── scripts/                 # workspace-level scripts (codegen, etc.)
+├── Makefile                 # top-level dev shortcuts
+└── .github/workflows/       # CI + release
 ```
 
-## Useful commands
+## Backend
 
-| Command | What it does |
-| --- | --- |
-| `make help` | Show every command in this Makefile |
-| `make install` | Install both halves |
-| `make dev` | Run backend + frontend in parallel |
-| `make backend-test` | Run the backend pytest suite |
-| `make frontend-test` | Run the frontend Vitest suite |
-| `make frontend-e2e` | Run the Playwright E2E suite |
-| `make frontend-codegen` | Regenerate the API client from the running backend |
-| `make lint` / `make format` | Lint + format both halves |
-| `make typecheck` | Type-check both halves |
-| `make clean` | Remove build artifacts |
+The backend lives in `backend/Cortex/`. Full Python service with the
+V0–V9 versioning documented in `backend/Cortex/Docs/architecture/`.
+Runs on FastAPI + SQLAlchemy + Postgres + Redis + an S3-compatible
+object store. See `backend/Cortex/README.md` for the full command set.
 
-## V9 release
+## Frontend
 
-The monorepo is now Cortex v1.0.0. See:
+See `frontend/README.md` for the workspace-level overview and
+`frontend/apps/web/README.md` for the app. Short version:
 
-* [`Docs/release/v1.0.0-notes.md`](./Docs/release/v1.0.0-notes.md) — the release notes
-* [`Docs/release/v1.0.0-acceptance.md`](./Docs/release/v1.0.0-acceptance.md) — the acceptance report
-* [`Docs/release/production-readiness.md`](./Docs/release/production-readiness.md) — the go/no-go gate
-* [`Docs/frontend/`](./Docs/frontend/) — the frontend developer guide
+| Command | From | What it does |
+|---|---|---|
+| `make dev` | root | start backend + frontend together |
+| `pnpm dev` | `frontend/` | Next.js dev server on `:3000` |
+| `pnpm build` | `frontend/` | production build |
+| `pnpm test` | `frontend/` | unit + component tests (Vitest) |
+| `pnpm test:e2e` | `frontend/apps/web/` | Playwright (Chromium/Firefox/WebKit) |
+| `pnpm lint` | `frontend/` | Biome workspace-wide |
+| `pnpm typecheck` | `frontend/` | tsc on every workspace |
+| `pnpm codegen` | `frontend/` | regenerate `@cortex/api-client` from the backend's OpenAPI |
 
-## Architecture at a glance
+## Environment variables
 
-```
-Users
-MCP clients
-SDKs
-REST / GraphQL / WS
-        ↓
-   ┌────────┐
-   │  Web   │ (Next.js 15, React 19, App Router)
-   └────────┘
-        ↓
-   ┌────────┐
-   │  API   │ (FastAPI, hexagonal, V9 hardening)
-   └────────┘
-        ↓
-Command / Query services
-        ↓
-Repositories    Read models
-        ↓
-PostgreSQL + pgvector · Redis · S3 · (Neo4j forward-compat)
-```
+The frontend reads from `.env.local` (gitignored) at `frontend/apps/web/.env.local`.
+See `frontend/apps/web/.env.example` for the full set. Required for a
+local dev run:
 
-See [`Docs/architecture/architecture-review.md`](./Docs/architecture/architecture-review.md)
-for the per-context audit, and [`Docs/architecture/cqrs-analysis.md`](./Docs/architecture/cqrs-analysis.md)
-for the read/write split rationale.
+- `NEXT_PUBLIC_API_URL` — the backend's base URL (default `http://localhost:8000`)
+- `NEXT_PUBLIC_WS_URL` — WebSocket base URL (default `ws://localhost:8000`)
+- `NEXT_PUBLIC_GRAPHQL_URL` — GraphQL endpoint (default `http://localhost:8000/graphql`)
+
+Server-only (never read on the client):
+
+- `CORTEX_SERVICE_TOKEN` — used by route handlers that hit the private API
+
+## Development workflow
+
+1. **First time:** `pnpm install` from the workspace root.
+2. **Backend up:** see `backend/Cortex/README.md`. A live backend
+   is required for codegen and most feature work; health probes
+   are tolerant of it being down.
+3. **Frontend up:** `pnpm dev` from `frontend/`. The app boots even
+   if the backend is unreachable; the health probe surfaces that.
+4. **Feature work:** `pnpm codegen` whenever the backend's OpenAPI
+   changes, then `pnpm test` before pushing.
+
+## Workspace packages
+
+| Package | Owner | Purpose |
+|---|---|---|
+| `@cortex/ui` | design system | shadcn primitives, OKLCH tokens, no business logic |
+| `@cortex/config` | platform | Zod-validated env, endpoint registry, React-free |
+| `@cortex/api-client` | platform | fetch wrapper + 401-refresh + generated types |
+
+Every shared package is consumed via `workspace:*` — no relative
+imports across package boundaries.
+
+## What's in F0
+
+F0 is **infrastructure only** — no feature UI. After F0, the project
+has a complete foundation (theme, providers, query, auth scaffold,
+API client, error mapping, testing, accessibility, SEO, dev tools)
+but no dashboard, login screen, or feature code.
+
+The build sequence is in `Docs/Frontend-Roadmap.md`:
+- **F0** — Foundation (Parts 1, 2, 3) ← we are here
+- **F1** — Component library
+- **F2** — Auth + onboarding
+- **F3+** — Feature phases (Dashboard, Documents, Chat, etc.)
+
+## License
+
+Proprietary. See `LICENSE` (when added).
