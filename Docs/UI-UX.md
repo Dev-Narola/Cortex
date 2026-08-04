@@ -283,3 +283,43 @@ Tabbed Slate panel, left tab list, content right. Team tab's empty/near-empty st
 
 ### Cross-cutting states
 Rate-limit banner: top of viewport, Error-tinted Slate, persists until dismissed or the period resets. Permission boundaries: viewer role never renders a Delete button at all. Session expiry: silent `POST /auth/refresh` attempt first, only redirecting to Log In (light theme) on failure, copy stating the fact plainly: "Your session expired — log in again to continue."
+
+---
+
+## 9. Component Library (`@cortex/ui`)
+
+Every screen above is composed from the primitives below. All exports live in the `@cortex/ui` package (`frontend/packages/ui`); the single barrel is `import { X } from "@cortex/ui"` — never reach into `components/...` directly. The library is split into **primitive** components (used in F1 Parts 1–2) and **complex** components (F1 Part 3, this delivery).
+
+### Primitives (Parts 1–2)
+
+| Category | Exports |
+|---|---|
+| **Buttons** | `Button`, `buttonVariants`, `ButtonProps`, `ButtonVariantProps` |
+| **Forms** | `Input`, `Textarea`, `Label`, `Checkbox`, `RadioGroup`, `Switch`, `Select` (plus per-component variant + types) |
+| **Data display** | `Avatar`, `Badge`, `badgeVariants` |
+| **Feedback** | `Toast`, `ToastAction`, `ToastClose`, `ToastDescription`, `ToastProvider`, `ToastTitle`, `ToastViewport`, `toast`, `useToast`, `Tooltip`, `TooltipContent`, `TooltipProvider`, `TooltipRoot`, `TooltipTrigger`, `Spinner`, `Skeleton` |
+| **Typography** | `Heading`, `Text`, `Caption`, `Code`, `Link` |
+| **Icons** | `Icon`, `IconName`, `IconSize`, `IconTone`, `IconNode`, `LucideIcon` |
+| **Layout** | `Separator` |
+| **Utils** | `cn` |
+
+### Complex (Part 3, this delivery)
+
+| Category | Exports |
+|---|---|
+| **Cards** | `Card`, `CardHeader`, `CardTitle`, `CardDescription`, `CardContent`, `CardFooter`, `cardVariants` (+ types) |
+| **Dialogs** | `Dialog`, `DialogTrigger`, `DialogContent`, `DialogHeader`, `DialogFooter`, `DialogTitle`, `DialogDescription`, `DialogClose`, `DialogOverlay`, `DialogPortal`, `dialogContentVariants` (+ types) |
+| **Overlays** | `Drawer`, `DrawerBody`, `DrawerClose`, `DrawerContent`, `DrawerDescription`, `DrawerFooter`, `DrawerHeader`, `DrawerTitle`, `DrawerTrigger`, `drawerContentVariants`, `DropdownMenu`, `DropdownMenuCheckboxItem`, `DropdownMenuContent`, `DropdownMenuGroup`, `DropdownMenuItem`, `DropdownMenuLabel`, `DropdownMenuPortal`, `DropdownMenuRadioGroup`, `DropdownMenuRadioItem`, `DropdownMenuSeparator`, `DropdownMenuShortcut`, `DropdownMenuSub`, `DropdownMenuSubContent`, `DropdownMenuSubTrigger`, `DropdownMenuTrigger` (+ types) |
+| **Tables** | `Table`, `TableHeader`, `TableBody`, `TableRow`, `TableCell`, `TableHead`, `TableToolbar` (+ types) |
+| **Navigation** | `Sidebar`, `SidebarItem`, `SidebarSection`, `SidebarFooter`, `Topbar`, `TopbarSearch`, `UserMenu`, `Logo`, `Tabs`, `TabsList`, `TabsTrigger`, `TabsContent`, `Breadcrumb`, `Pagination` (+ types) |
+| **Zero-data states** | `EmptyState`, `ErrorState`, `LoadingState` (+ types) |
+
+### Composition rules
+
+- **Variant system** — every visual axis is a `cva` config (Button, Card, Badge, Dialog content sizes, Drawer sides, Table cell padding, etc.). Never branch on `variant === ...` at the call site.
+- **Theme integration** — every colour comes from a CSS variable token (`bg-card`, `text-muted-foreground`, `border-border`…). Never hard-code `text-white` / `bg-black`.
+- **No feature-specific UI in `@cortex/ui`** — the package ships only reusable primitives. Specialised surfaces (a "document card" with a status pill row) extend a `Card` variant; they do not live in a feature folder.
+- **Compound API mirrors Radix** — every compound (`Dialog` → `DialogContent` + `DialogHeader` + `DialogFooter`, `Card` → `CardHeader` + `CardContent` + `CardFooter`, `DropdownMenu` → `DropdownMenuTrigger` + `DropdownMenuContent` + `DropdownMenuItem`) follows the same composition pattern.
+- **`asChild` for routing** — interactive primitives that need to wrap a `next/link` (e.g. `SidebarItem`, `Button`) accept `asChild` and use Radix `Slot` to merge styles. The call site composes the icon + label inside the slotted element.
+- **a11y by default** — Radix primitives are used for every interactive component (Dialog, DropdownMenu, Tabs, Checkbox, RadioGroup, Switch, Select, Tooltip, Toast, Avatar's role="img"). Keyboard nav, focus trap, Escape dismissal, and ARIA wiring are inherited from Radix.
+- **Unit tests** — every complex component has a `*.test.tsx` next to it (Card, Dialog, Drawer, DropdownMenu, Table, Sidebar/nav, EmptyState/ErrorState/LoadingState). Radix's pointer-capture path is covered by Playwright e2e, not happy-dom.

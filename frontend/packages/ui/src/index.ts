@@ -1,7 +1,7 @@
 /**
  * `@cortex/ui` — the Cortex design system.
  *
- * **F1 Part 2.** Single barrel re-export for every component.
+ * **F1 Part 3.** Single barrel re-export for every component.
  * App code does:
  *
  *   import { Button, Card, Icon } from "@cortex/ui"
@@ -9,15 +9,16 @@
  * — never reaches into `components/...` directly.
  *
  * **Folder map.**
- *   - components/buttons/      Button
+ *   - components/buttons/      Button + variants/tests
  *   - components/cards/        Card + compound parts
  *   - components/forms/        Input, Textarea, Label, Checkbox, RadioGroup, Switch, Select
- *   - components/dialogs/      Dialog + compound parts
- *   - components/navigation/   Tabs
- *   - components/feedback/     Toast, Spinner, Skeleton, Tooltip
+ *   - components/dialogs/      Dialog + compound parts + size axis
+ *   - components/overlays/     Drawer (left/right/top/bottom), DropdownMenu
+ *   - components/navigation/   Tabs, Sidebar, Topbar, UserMenu, Logo, Breadcrumb, Pagination
+ *   - components/feedback/     Toast, Spinner, Skeleton, Tooltip, EmptyState, ErrorState, LoadingState
  *   - components/data-display/ Avatar, Badge
  *   - components/layout/       Separator
- *   - components/tables/       (empty — F1 Part 3+)
+ *   - components/tables/       Table, TableHeader, TableBody, TableRow, TableCell, TableHead, TableToolbar
  *   - typography/              Heading, Text, Caption, Code, Link
  *   - icons/                   Icon
  *   - utils/                   cn
@@ -33,11 +34,12 @@ export * from "./components/buttons"
 export * from "./components/cards"
 export * from "./components/forms"
 export * from "./components/dialogs"
+export * from "./components/overlays"
 export * from "./components/navigation"
 export * from "./components/feedback"
 export * from "./components/data-display"
 export * from "./components/layout"
-// tables/ is intentionally not re-exported yet — F1 Part 3+ work.
+export * from "./components/tables"
 
 // Top-level primitives
 export * from "./typography"
