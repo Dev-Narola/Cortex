@@ -1,68 +1,130 @@
 /**
  * Button — the foundation of every interactive surface.
  *
- * **F1 scope (Task 5/7).** Variant ladder matches shadcn/ui
- * defaults; the `spark` variant is the brand-gradient call-to-action
- * reserved for the hero and the empty-state primary actions.
+ * **F1 scope (Task 11).** Variant ladder + size ladder + loading
+ * state + left/right icon slots. The `asChild` prop (Radix Slot)
+ * lets the button render as a child element (Next.js Link,
+ * anchor, etc.) while keeping the button styles.
  *
- * **Theme integration.** Every colour comes from a CSS variable
- * (`--ink-900`, `--paper-50`, etc.) — never `text-white` /
- * `bg-black` — so the component is theme-agnostic out of the box.
+ * **Loading state.** When `loading` is `true`:
+ *   - The label is replaced by a `Spinner` (if no `loadingLabel`
+ *     is given) or by the `loadingLabel` itself.
+ *   - The trailing icon slot is repurposed for the spinner.
+ *   - The button is `aria-busy="true"` and `data-loading="true"`.
+ *   - Pointer events are disabled.
  *
- * **Variant API.** `variant` × `size` × `asChild`. Never add
- * `if (primary)` / `if (danger)` branches in the component body —
- * add a variant to the `cva` config instead.
+ * **Icon slots.** `iconLeft` and `iconRight` accept any React
+ * node (typically an `<Icon>`). The slots are rendered before
+ * and after the label respectively. When the button is in the
+ * `icon` size, the label is hidden and the `iconLeft` becomes
+ * the button's only content — a square icon button.
+ *
+ * **Ref forwarding.** The forwarded `ref` lands on the
+ * underlying element (`<button>` or the slotted child).
+ *
+ * **Theme integration.** Every colour comes from a CSS
+ * variable — never a hard-coded `text-white` / `bg-black`.
  */
 
 import { Slot } from "@radix-ui/react-slot"
-import { type VariantProps, cva } from "class-variance-authority"
+import { Loader2 } from "lucide-react"
 import { type ButtonHTMLAttributes, forwardRef } from "react"
 
 import { cn } from "../../utils/cn"
+import { Spinner } from "../feedback/Spinner"
+import { type ButtonVariantProps, buttonVariants } from "./button.variants"
 
-const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
-  {
-    variants: {
-      variant: {
-        default: "bg-ink-900 text-paper-50 hover:bg-ink-800",
-        destructive: "bg-destructive text-paper-50 hover:opacity-90",
-        outline: "border border-border bg-background hover:bg-muted hover:text-foreground",
-        secondary: "bg-muted text-foreground hover:bg-cloud-200",
-        ghost: "hover:bg-muted hover:text-foreground",
-        link: "text-ember-600 underline-offset-4 hover:underline",
-        spark: "bg-spark text-paper-50 shadow-ember-500/20 shadow-lg hover:opacity-95",
-      },
-      size: {
-        default: "h-10 px-4 py-2",
-        sm: "h-8 rounded-md px-3 text-xs",
-        lg: "h-11 rounded-md px-6 text-base",
-        xl: "h-12 rounded-md px-8 text-base",
-        icon: "h-10 w-10",
-      },
-    },
-    defaultVariants: {
-      variant: "default",
-      size: "default",
-    },
-  },
-)
-
-export interface ButtonProps
-  extends ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {
+export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement>, ButtonVariantProps {
   /** Render as a child element (Next.js Link, etc.) while keeping button styles. */
   asChild?: boolean
+  /** Show a spinner + dim the button. Click handlers are skipped. */
+  loading?: boolean
+  /** Custom label shown while loading. Defaults to a Spinner. */
+  loadingLabel?: string
+  /** Icon rendered before the label. */
+  iconLeft?: React.ReactNode
+  /** Icon rendered after the label. */
+  iconRight?: React.ReactNode
 }
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
+  (
+    {
+      className,
+      variant,
+      size,
+      asChild = false,
+      loading = false,
+      loadingLabel,
+      iconLeft,
+      iconRight,
+      disabled,
+      children,
+      ...props
+    },
+    ref,
+  ) => {
     const Comp = asChild ? Slot : "button"
+    const isIconOnly = size === "icon"
+    const trailing = loading ? (
+      <span aria-hidden="true" data-testid="button-spinner" className="inline-flex shrink-0">
+        <Spinner size="sm" />
+      </span>
+    ) : iconRight ? (
+      <span aria-hidden="true" className="inline-flex shrink-0">
+        {iconRight}
+      </span>
+    ) : null
+    const leading = iconLeft ? (
+      <span aria-hidden="true" className="inline-flex shrink-0">
+        {iconLeft}
+      </span>
+    ) : null
+
+    if (asChild) {
+      // Slot requires a single React element child. We pass
+      // through the children untouched; the call-site is
+      // responsible for laying out the leading/trailing icons
+      // inside the slotted child.
+      return (
+        <Comp
+          className={cn(buttonVariants({ variant, size, className }))}
+          ref={ref}
+          aria-busy={loading || undefined}
+          data-loading={loading || undefined}
+          {...props}
+        >
+          {children}
+        </Comp>
+      )
+    }
+
     return (
-      <Comp className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props} />
+      <Comp
+        className={cn(buttonVariants({ variant, size, className }))}
+        ref={ref}
+        disabled={disabled || loading || undefined}
+        aria-busy={loading || undefined}
+        data-loading={loading || undefined}
+        {...props}
+      >
+        {leading}
+        {loading ? (
+          <span aria-hidden="true" data-testid="button-spinner" className="inline-flex shrink-0">
+            <Spinner size="sm" />
+          </span>
+        ) : null}
+        {loading ? (
+          <span data-testid="button-spinner-label" className="sr-only">
+            {Loader2.displayName ?? "Loading"}
+          </span>
+        ) : null}
+        {!isIconOnly ? children : null}
+        {!loading ? trailing : null}
+      </Comp>
     )
   },
 )
 Button.displayName = "Button"
 
-export { Button, buttonVariants }
+export { Button }

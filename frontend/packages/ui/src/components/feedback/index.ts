@@ -1,11 +1,12 @@
 /**
- * Feedback — barrel for toasts, alerts, badges, and other
- * "system talking to the user" primitives.
+ * Feedback — barrel for toasts, spinners, skeletons,
+ * tooltips, and other "system talking to the user" primitives.
  *
  * Re-exported by `@cortex/ui`; never imported directly by app code.
  *
- * F1 ships `Badge` + `Toast`. `Alert`, `Skeleton`, and
- * `EmptyState` land in later parts of F1.
+ * `Badge` used to live here; it moved to `data-display/` per
+ * the F1 Part 2 spec (it reads as read-only data, not as
+ * a transient feedback surface).
  */
 
 export {
@@ -22,4 +23,13 @@ export {
   useToast,
 } from "./Toast"
 
-export { Badge, badgeVariants, type BadgeProps } from "./Badge"
+export { Skeleton, type SkeletonProps, type SkeletonVariant } from "./Skeleton"
+export { Spinner, type SpinnerProps, type SpinnerSize } from "./Spinner"
+export {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipRoot,
+  TooltipTrigger,
+  type TooltipRootProps,
+} from "./Tooltip"

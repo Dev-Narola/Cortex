@@ -1,7 +1,11 @@
 /**
- * Buttons — barrel for every button-flavoured component.
+ * Buttons — barrel.
  *
  * Re-exported by `@cortex/ui`; never imported directly by app code.
  */
 
-export { Button, buttonVariants, type ButtonProps } from "./Button"
+export {
+  Button,
+  type ButtonProps,
+} from "./Button"
+export { buttonVariants, type ButtonVariantProps } from "./button.variants"

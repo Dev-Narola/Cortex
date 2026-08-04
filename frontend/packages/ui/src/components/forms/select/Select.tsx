@@ -1,14 +1,30 @@
 /**
- * Select — accessible dropdown built on Radix.
+ * Select — accessible single-select dropdown.
  *
- * **F1 scope.** Used by Settings (language, timezone, default
- * model) and by the table column-filter menus.
+ * **F1 scope (Task 18).** Built on Radix so keyboard
+ * navigation (arrow keys, Home/End, type-ahead), scroll
+ * handling, and focus management work for free. The
+ * styling is Cortex.
  *
- * **Compound API.** `Select` is the root; pair it with
- * `SelectTrigger`, `SelectContent`, `SelectItem`, and
- * `SelectValue` to compose a dropdown. The portal renders into
- * the document body so the dropdown is never clipped by parent
- * stacking contexts.
+ * **Search-ready API.** Each `SelectItem` already carries
+ * a `value` + display label. A future search-filter layer
+ * (F2+) can wrap the items with a filter input that
+ * narrows the visible set; nothing in this component
+ * needs to change. The `SelectContent` already supports
+ * `max-h-96` and a viewport — long lists scroll.
+ *
+ * **Generic for all settings surfaces.** Tenant selector,
+ * model selector, theme picker, language picker — the
+ * component has no domain knowledge. The app passes the
+ * option list and the selected value.
+ *
+ * **Sub-components.** `Select` is the root; `SelectTrigger`
+ * is the field; `SelectContent` is the dropdown panel;
+ * `SelectItem` is one option; `SelectGroup` /
+ * `SelectLabel` are the optional grouping.
+ *
+ * **Ref forwarding.** The forwarded `ref` lands on the
+ * underlying `<button>` (the trigger).
  */
 
 "use client"
@@ -17,7 +33,7 @@ import * as SelectPrimitive from "@radix-ui/react-select"
 import { Check, ChevronDown, ChevronUp } from "lucide-react"
 import { type ComponentPropsWithoutRef, type ElementRef, forwardRef } from "react"
 
-import { cn } from "../../utils/cn"
+import { cn } from "../../../utils/cn"
 
 const Select = SelectPrimitive.Root
 const SelectGroup = SelectPrimitive.Group
@@ -34,6 +50,7 @@ const SelectTrigger = forwardRef<
       "ring-offset-background placeholder:text-muted-foreground",
       "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
       "disabled:cursor-not-allowed disabled:opacity-50",
+      "data-[placeholder]:text-muted-foreground",
       "[&>span]:line-clamp-1",
       className,
     )}
@@ -46,6 +63,34 @@ const SelectTrigger = forwardRef<
   </SelectPrimitive.Trigger>
 ))
 SelectTrigger.displayName = SelectPrimitive.Trigger.displayName
+
+const SelectScrollUpButton = forwardRef<
+  ElementRef<typeof SelectPrimitive.ScrollUpButton>,
+  ComponentPropsWithoutRef<typeof SelectPrimitive.ScrollUpButton>
+>(({ className, ...props }, ref) => (
+  <SelectPrimitive.ScrollUpButton
+    ref={ref}
+    className={cn("flex cursor-default items-center justify-center py-1", className)}
+    {...props}
+  >
+    <ChevronUp className="h-4 w-4" />
+  </SelectPrimitive.ScrollUpButton>
+))
+SelectScrollUpButton.displayName = SelectPrimitive.ScrollUpButton.displayName
+
+const SelectScrollDownButton = forwardRef<
+  ElementRef<typeof SelectPrimitive.ScrollDownButton>,
+  ComponentPropsWithoutRef<typeof SelectPrimitive.ScrollDownButton>
+>(({ className, ...props }, ref) => (
+  <SelectPrimitive.ScrollDownButton
+    ref={ref}
+    className={cn("flex cursor-default items-center justify-center py-1", className)}
+    {...props}
+  >
+    <ChevronDown className="h-4 w-4" />
+  </SelectPrimitive.ScrollDownButton>
+))
+SelectScrollDownButton.displayName = SelectPrimitive.ScrollDownButton.displayName
 
 const SelectContent = forwardRef<
   ElementRef<typeof SelectPrimitive.Content>,
@@ -64,9 +109,7 @@ const SelectContent = forwardRef<
       position={position}
       {...props}
     >
-      <SelectPrimitive.ScrollUpButton className="flex cursor-default items-center justify-center py-1">
-        <ChevronUp className="h-4 w-4" />
-      </SelectPrimitive.ScrollUpButton>
+      <SelectScrollUpButton />
       <SelectPrimitive.Viewport
         className={cn(
           "p-1",
@@ -76,9 +119,7 @@ const SelectContent = forwardRef<
       >
         {children}
       </SelectPrimitive.Viewport>
-      <SelectPrimitive.ScrollDownButton className="flex cursor-default items-center justify-center py-1">
-        <ChevronDown className="h-4 w-4" />
-      </SelectPrimitive.ScrollDownButton>
+      <SelectScrollDownButton />
     </SelectPrimitive.Content>
   </SelectPrimitive.Portal>
 ))
@@ -105,7 +146,7 @@ const SelectItem = forwardRef<
     className={cn(
       "relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none",
       "focus:bg-accent focus:text-accent-foreground",
-      "data-disabled:pointer-events-none data-disabled:opacity-50",
+      "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
       className,
     )}
     {...props}
@@ -120,4 +161,27 @@ const SelectItem = forwardRef<
 ))
 SelectItem.displayName = SelectPrimitive.Item.displayName
 
-export { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue }
+const SelectSeparator = forwardRef<
+  ElementRef<typeof SelectPrimitive.Separator>,
+  ComponentPropsWithoutRef<typeof SelectPrimitive.Separator>
+>(({ className, ...props }, ref) => (
+  <SelectPrimitive.Separator
+    ref={ref}
+    className={cn("-mx-1 my-1 h-px bg-muted", className)}
+    {...props}
+  />
+))
+SelectSeparator.displayName = SelectPrimitive.Separator.displayName
+
+export {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectScrollDownButton,
+  SelectScrollUpButton,
+  SelectSeparator,
+  SelectTrigger,
+  SelectValue,
+}
