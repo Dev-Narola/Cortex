@@ -33,6 +33,7 @@ import { Button, Checkbox, Input, Label, Spinner, Text } from "@cortex/ui"
 
 import { type RegisterInput, registerSchema } from "@/lib/auth/register.schema"
 import { type AuthSession, useAuthStore } from "@/lib/auth/store"
+import { resolvePostAuthDestination } from "@/lib/auth/post-auth-destination"
 import { toFrontendError } from "@/lib/http/errors"
 import { register as registerUser, toAuthUser } from "@/services/auth"
 
@@ -74,7 +75,7 @@ export function RegisterForm() {
         tenant: data.tenant,
       }
       storeLogin(session)
-      router.push("/app" as never)
+      router.push(resolvePostAuthDestination(null) as never)
     } catch (err) {
       const fe = toFrontendError(err)
       // Inline validation: bind field-level errors to RHF.

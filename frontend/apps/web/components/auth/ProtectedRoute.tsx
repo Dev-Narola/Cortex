@@ -28,6 +28,7 @@ import { type ReactNode, useEffect, useState } from "react"
 
 import { Spinner } from "@cortex/ui"
 
+import { useSessionRestore } from "@/hooks/auth/useSessionRestore"
 import { useAuthStore } from "@/lib/auth/store"
 
 export interface ProtectedRouteProps {
@@ -54,7 +55,10 @@ export function ProtectedRoute({
   const router = useRouter()
   const hydrated = useAuthStore((s) => s.hydrated)
   const isAuthed = useAuthStore((s) => s.isAuthenticated())
+  const restored = useAuthStore((s) => s.restored)
   const [mounted, setMounted] = useState(false)
+
+  const { isRestoring } = useSessionRestore()
 
   useEffect(() => {
     setMounted(true)
@@ -62,10 +66,8 @@ export function ProtectedRoute({
 
   useEffect(() => {
     if (!mounted) return
-    // Wait for the persisted store to rehydrate before
-    // making a redirect decision — otherwise a hard
-    // refresh would bounce a real session.
-    if (!hydrated) return
+    // Wait for store hydration AND silent session restore before deciding
+    if (!hydrated || isRestoring) return
 
     if (!isAuthed) {
       const next = nextPath ?? `${window.location.pathname}${window.location.search}`
@@ -76,9 +78,9 @@ export function ProtectedRoute({
     if (redirectIfAuthenticatedTo) {
       router.replace(redirectIfAuthenticatedTo as never)
     }
-  }, [hydrated, isAuthed, loginPath, redirectIfAuthenticatedTo, nextPath, mounted, router])
+  }, [hydrated, isRestoring, isAuthed, loginPath, redirectIfAuthenticatedTo, nextPath, mounted, router])
 
-  if (!mounted || !hydrated) {
+  if (!mounted || !hydrated || isRestoring || (!restored && !isAuthed)) {
     return (
       <output
         className="flex min-h-screen items-center justify-center bg-background"
@@ -93,9 +95,6 @@ export function ProtectedRoute({
   }
 
   if (!isAuthed) {
-    // Redirect is in flight; render the loading shell
-    // so the user doesn't see a flash of the protected
-    // content.
     return (
       <output
         className="flex min-h-screen items-center justify-center bg-background"

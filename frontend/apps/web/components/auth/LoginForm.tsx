@@ -35,6 +35,7 @@ import { Button, Input, Label, Spinner } from "@cortex/ui"
 
 import { type LoginInput, loginSchema } from "@/lib/auth/login.schema"
 import { type AuthSession, useAuthStore } from "@/lib/auth/store"
+import { resolvePostAuthDestination } from "@/lib/auth/post-auth-destination"
 import { toFrontendError } from "@/lib/http/errors"
 import { login, toAuthUser } from "@/services/auth"
 
@@ -70,8 +71,13 @@ export function LoginForm({ nextPath }: LoginFormProps = {}) {
         tenant: data.tenant,
       }
       storeLogin(session)
-      const next = nextPath ?? searchParams.get("next") ?? "/app"
-      router.push(next as never)
+      // Post-auth destination: with-tenant → /app/dashboard,
+      // without-tenant → /workspace-setup. A `?next=...` query
+      // parameter (validated by resolvePostAuthDestination)
+      // overrides the default.
+      const requested = nextPath ?? searchParams.get("next") ?? null
+      const destination = resolvePostAuthDestination(requested)
+      router.push(destination as never)
     } catch (err) {
       const fe = toFrontendError(err)
       // Per spec: "Invalid email, password, or workspace." is

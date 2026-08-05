@@ -30,7 +30,7 @@ describe("ProtectedRoute", () => {
     replaceMock.mockReset()
     pushMock.mockReset()
     useAuthStore.getState().clear()
-    useAuthStore.setState({ hydrated: true })
+    useAuthStore.setState({ hydrated: true, restored: true, isRestoring: false })
   })
 
   afterEach(() => {
@@ -59,7 +59,7 @@ describe("ProtectedRoute", () => {
         role: "owner",
         tenantId: "t",
       },
-      tenant: { id: "t", slug: "acme", name: "Acme" },
+      tenant: { id: "t", slug: "acme", workspace: "Acme" },
       expiresAt: Date.now() + 60_000,
     })
     render(
@@ -104,7 +104,7 @@ describe("ProtectedRoute", () => {
       accessToken: "jwt-1",
       refreshToken: "rt-1",
       user: { id: "u", email: "a@b.c", role: "owner", tenantId: "t" },
-      tenant: { id: "t", slug: "acme", name: "Acme" },
+      tenant: { id: "t", slug: "acme", workspace: "Acme" },
       expiresAt: Date.now() + 60_000,
     })
     render(

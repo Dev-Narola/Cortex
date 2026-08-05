@@ -81,17 +81,28 @@ function clearAuthHintCookie(): void {
 
 export type AuthRole = "owner" | "admin" | "member" | "viewer"
 
+/**
+ * The "current tenant" record. After onboarding,
+ * the auth store carries the active workspace here.
+ * `slug` is the URL-friendly handle (e.g. "acme");
+ * `workspace` is the friendly display name (e.g. "Acme");
+ * `organization` is the umbrella entity the workspace
+ * belongs to (multi-tenant organisations land in F3+).
+ */
+export interface AuthTenant {
+  id: string
+  slug: string
+  /** Friendly display name; falls back to `slug` if absent. */
+  workspace?: string
+  /** Umbrella entity the tenant belongs to. */
+  organization?: string
+}
+
 export interface AuthUser {
   id: string
   email: string
   role: AuthRole
   tenantId: string
-}
-
-export interface AuthTenant {
-  id: string
-  slug: string
-  name: string
 }
 
 /**
@@ -112,14 +123,21 @@ interface AuthState {
   refreshToken: string | null
   user: AuthUser | null
   tenant: AuthTenant | null
+  /** True once the user has completed workspace onboarding. */
+  isOnboarded: boolean
   /** Epoch ms when the access token expires. */
   expiresAt: number | null
   loading: boolean
   /** True after the store has rehydrated from sessionStorage. */
   hydrated: boolean
+  /** True once silent session restoration has completed. */
+  restored: boolean
+  /** True while silent session restoration is in flight. */
+  isRestoring: boolean
 
   // -- Computed selectors (not stored) --
   isAuthenticated: () => boolean
+  hasTenant: () => boolean
 
   // -- Actions --
   login: (session: AuthSession) => void
@@ -127,6 +145,15 @@ interface AuthState {
   refresh: (input: { accessToken: string; expiresIn: number }) => void
   restore: () => void
   clear: () => void
+
+  // -- Restoration state helpers --
+  setRestored: (restored: boolean) => void
+  setIsRestoring: (isRestoring: boolean) => void
+
+  // -- Onboarding actions (F2 Part 2) --
+  setTenant: (tenant: AuthTenant) => void
+  completeOnboarding: () => void
+  clearTenant: () => void
 
   // -- Loading-state helper (not in spec, but the form uses it) --
   setLoading: (loading: boolean) => void
@@ -148,9 +175,12 @@ export const useAuthStore = create<AuthState>()(
       refreshToken: null,
       user: null,
       tenant: null,
+      isOnboarded: false,
       expiresAt: null,
       loading: false,
       hydrated: false,
+      restored: false,
+      isRestoring: false,
 
       isAuthenticated: () => {
         const { accessToken, expiresAt } = get()
@@ -159,15 +189,25 @@ export const useAuthStore = create<AuthState>()(
         return true
       },
 
+      hasTenant: () => {
+        return get().tenant !== null
+      },
+
       login: (session) => {
         setAuthHintCookie("1")
         set({
           accessToken: session.accessToken,
           refreshToken: session.refreshToken,
           user: session.user,
-          tenant: session.tenant,
+          tenant: session.tenant ?? null,
+          // If the backend returned a tenant at login time
+          // (e.g. the user already belongs to a workspace
+          // and is signing back in), mark them as onboarded.
+          isOnboarded: session.tenant !== undefined,
           expiresAt: computeExpiresAt(session.expiresIn),
           loading: false,
+          restored: true,
+          isRestoring: false,
         })
       },
 
@@ -180,8 +220,11 @@ export const useAuthStore = create<AuthState>()(
           refreshToken: null,
           user: null,
           tenant: null,
+          isOnboarded: false,
           expiresAt: null,
           loading: false,
+          restored: true,
+          isRestoring: false,
         })
         if (typeof window !== "undefined") {
           try {
@@ -220,9 +263,29 @@ export const useAuthStore = create<AuthState>()(
           refreshToken: null,
           user: null,
           tenant: null,
+          isOnboarded: false,
           expiresAt: null,
           loading: false,
+          restored: false,
+          isRestoring: false,
         })
+      },
+
+      setRestored: (restored) => set({ restored }),
+      setIsRestoring: (isRestoring) => set({ isRestoring }),
+
+      // -- Onboarding actions --
+
+      setTenant: (tenant) => {
+        set({ tenant })
+      },
+
+      completeOnboarding: () => {
+        set({ isOnboarded: true })
+      },
+
+      clearTenant: () => {
+        set({ tenant: null, isOnboarded: false })
       },
 
       setLoading: (loading) => set({ loading }),
@@ -237,6 +300,7 @@ export const useAuthStore = create<AuthState>()(
         refreshToken: state.refreshToken,
         user: state.user,
         tenant: state.tenant,
+        isOnboarded: state.isOnboarded,
         expiresAt: state.expiresAt,
       }),
       onRehydrateStorage: () => (state) => {

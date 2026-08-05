@@ -33,6 +33,29 @@ import { publicEnv } from "@cortex/config"
 import { useAuthStore } from "./store"
 
 let cached: ApiClient | null = null
+let refreshPromise: Promise<boolean> | null = null
+
+async function performRefresh(): Promise<boolean> {
+  try {
+    const res = await fetch(`${publicEnv.NEXT_PUBLIC_API_URL}/api/v1/auth/refresh`, {
+      method: "POST",
+      credentials: "include",
+    })
+    if (!res.ok) {
+      await useAuthStore.getState().logout()
+      return false
+    }
+    const data = (await res.json()) as { access_token: string; expires_in?: number }
+    useAuthStore.getState().refresh({
+      accessToken: data.access_token,
+      expiresIn: data.expires_in ?? 900,
+    })
+    return true
+  } catch {
+    await useAuthStore.getState().logout()
+    return false
+  }
+}
 
 export function getApiClient(): ApiClient {
   if (cached) return cached
@@ -40,23 +63,12 @@ export function getApiClient(): ApiClient {
     baseUrl: publicEnv.NEXT_PUBLIC_API_URL,
     getAccessToken: () => useAuthStore.getState().accessToken,
     onUnauthorized: async () => {
-      try {
-        const res = await fetch(`${publicEnv.NEXT_PUBLIC_API_URL}/api/v1/auth/refresh`, {
-          method: "POST",
-          credentials: "include",
+      if (!refreshPromise) {
+        refreshPromise = performRefresh().finally(() => {
+          refreshPromise = null
         })
-        if (!res.ok) {
-          await useAuthStore.getState().logout()
-          return false
-        }
-        const data = (await res.json()) as { access_token: string }
-        // Only update the token; leave user/tenant/loading alone.
-        useAuthStore.setState({ accessToken: data.access_token })
-        return true
-      } catch {
-        await useAuthStore.getState().logout()
-        return false
       }
+      return refreshPromise
     },
   })
   return cached

@@ -47,7 +47,7 @@ const sampleSession: AuthSession = {
   tenant: {
     id: "tenant-1",
     slug: "acme",
-    name: "Acme",
+    workspace: "Acme",
   },
 }
 

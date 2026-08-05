@@ -20,28 +20,22 @@ export const metadata: Metadata = {
 
 export default function LandingPage() {
   return (
-    <div className="mx-auto max-w-6xl px-6 py-24">
+    <main className="mx-auto max-w-4xl px-6 py-32 text-center md:py-44">
       <h1 className="font-display text-5xl font-semibold tracking-tight md:text-7xl">
         <span className="text-spark">Cortex</span> — your company&apos;s private knowledge, on tap.
       </h1>
-      <p className="mt-6 max-w-2xl text-lg text-muted-foreground">
-        Multi-tenant AI platform with hybrid search, a real knowledge graph, agents that can reason,
-        and an MCP server so any client can talk to it. Production-grade.
+      <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
+        Multi-tenant AI platform with hybrid search, knowledge graph, and intelligent agents.
+        Production-grade.
       </p>
-      <div className="mt-10 flex gap-4">
+      <div className="mt-10 flex justify-center">
         <a
-          href="/login"
-          className="inline-flex h-11 items-center justify-center rounded-md bg-spark px-6 text-base font-medium text-paper-50 shadow-lg transition-opacity hover:opacity-95"
+          href="/register"
+          className="inline-flex h-12 items-center justify-center rounded-md bg-spark px-8 text-base font-medium text-paper-50 shadow-lg transition-opacity hover:opacity-95"
         >
-          Sign in
-        </a>
-        <a
-          href="/pricing"
-          className="inline-flex h-11 items-center justify-center rounded-md border border-border bg-background px-6 text-base font-medium hover:bg-muted"
-        >
-          See pricing
+          Sign Up
         </a>
       </div>
-    </div>
+    </main>
   )
 }

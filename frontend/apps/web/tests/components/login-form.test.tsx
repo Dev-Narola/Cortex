@@ -110,7 +110,7 @@ describe("LoginForm", () => {
     await waitFor(() => {
       expect(useAuthStore.getState().accessToken).toBe("jwt-1")
     })
-    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/app"))
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/app/dashboard"))
   })
 
   it("on 401, surfaces a generic 'Invalid email, password, or workspace.' error", async () => {

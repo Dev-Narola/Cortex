@@ -30,6 +30,7 @@ vi.mock("@/lib/auth/api-client", () => ({
     post: postMock,
     get: getMock,
   }),
+  resetApiClient: vi.fn(),
 }))
 
 const loginResponse = {

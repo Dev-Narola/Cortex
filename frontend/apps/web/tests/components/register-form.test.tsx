@@ -118,7 +118,7 @@ describe("RegisterForm", () => {
     await waitFor(() => {
       expect(useAuthStore.getState().accessToken).toBe("jwt-2")
     })
-    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/app"))
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/app/dashboard"))
   })
 
   it("on 409 (duplicate email), surfaces the error inline on the email field", async () => {

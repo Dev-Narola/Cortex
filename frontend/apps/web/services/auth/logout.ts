@@ -14,7 +14,8 @@
  * the backend.
  */
 
-import { getApiClient } from "@/lib/auth/api-client"
+import { getApiClient, resetApiClient } from "@/lib/auth/api-client"
+import { useAuthStore } from "@/lib/auth/store"
 
 export async function logout(): Promise<void> {
   try {
@@ -23,5 +24,8 @@ export async function logout(): Promise<void> {
   } catch {
     // No-op: local logout still proceeds even if the
     // backend is down or the cookie has already expired.
+  } finally {
+    useAuthStore.getState().clear()
+    resetApiClient()
   }
 }
