@@ -1,3 +1,5 @@
+"use client"
+
 /**
  * Avatar — user / team / agent / organisation initial.
  *

@@ -1,3 +1,5 @@
+"use client"
+
 /**
  * Input — the standard text field primitive.
  *

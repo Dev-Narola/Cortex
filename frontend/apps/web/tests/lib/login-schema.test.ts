@@ -1,26 +1,19 @@
 /**
- * Login form schema validation.
+ * Login form schema validation (F2 Part 1).
  *
- * The schema lives inline in the page component; we mirror
- * the rules here so the contract is unit-testable in isolation.
- * (The page itself is covered by the e2e test.)
+ * Tests the Zod schema exported by
+ * `lib/auth/login.schema.ts`. The schema is the
+ * source of truth for the login form; the page
+ * and form both consume it via React Hook Form's
+ * `zodResolver`.
  */
 import { describe, expect, it } from "vitest"
-import { z } from "zod"
 
-const schema = z.object({
-  tenant_slug: z
-    .string()
-    .min(2, "Workspace slug is required")
-    .max(63, "Workspace slug is too long")
-    .regex(/^[a-z0-9-]+$/, "Lowercase letters, numbers, and dashes only"),
-  email: z.string().email("Enter a valid email"),
-  password: z.string().min(1, "Password is required"),
-})
+import { loginSchema } from "@/lib/auth/login.schema"
 
 describe("login schema", () => {
   it("accepts a valid payload", () => {
-    const result = schema.safeParse({
+    const result = loginSchema.safeParse({
       tenant_slug: "acme",
       email: "owner@acme.com",
       password: "TestPass!2345",
@@ -28,35 +21,47 @@ describe("login schema", () => {
     expect(result.success).toBe(true)
   })
 
+  it("lowercases the tenant_slug on the way in", () => {
+    const result = loginSchema.safeParse({
+      tenant_slug: "ACME",
+      email: "owner@acme.com",
+      password: "x",
+    })
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.tenant_slug).toBe("acme")
+    }
+  })
+
   it("rejects empty tenant_slug", () => {
-    const result = schema.safeParse({
+    const result = loginSchema.safeParse({
       tenant_slug: "",
       email: "owner@acme.com",
-      password: "TestPass!2345",
+      password: "x",
     })
     expect(result.success).toBe(false)
   })
 
   it("rejects uppercase / special chars in tenant_slug", () => {
-    const result = schema.safeParse({
+    const result = loginSchema.safeParse({
       tenant_slug: "Acme_Corp",
       email: "owner@acme.com",
-      password: "TestPass!2345",
+      password: "x",
     })
     expect(result.success).toBe(false)
   })
 
   it("rejects invalid email", () => {
-    const result = schema.safeParse({
+    const result = loginSchema.safeParse({
       tenant_slug: "acme",
       email: "not-an-email",
-      password: "TestPass!2345",
+      password: "x",
     })
     expect(result.success).toBe(false)
   })
 
   it("rejects empty password", () => {
-    const result = schema.safeParse({
+    const result = loginSchema.safeParse({
       tenant_slug: "acme",
       email: "owner@acme.com",
       password: "",
@@ -64,12 +69,16 @@ describe("login schema", () => {
     expect(result.success).toBe(false)
   })
 
-  it("accepts a long-ish password (only min length is 1)", () => {
-    const result = schema.safeParse({
-      tenant_slug: "acme",
-      email: "owner@acme.com",
+  it("trims whitespace from the email + slug", () => {
+    const result = loginSchema.safeParse({
+      tenant_slug: "  acme  ",
+      email: "  owner@acme.com  ",
       password: "x",
     })
     expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.tenant_slug).toBe("acme")
+      expect(result.data.email).toBe("owner@acme.com")
+    }
   })
 })

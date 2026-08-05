@@ -141,12 +141,7 @@ export default function ComponentShowcase() {
         title="@cortex/ui — Component Showcase"
         description="Internal development page. Every reusable primitive from the design system, in one place."
         breadcrumb={
-          <Breadcrumb
-            items={[
-              { label: "Internal", href: "/" },
-              { label: "Component showcase" },
-            ]}
-          />
+          <Breadcrumb items={[{ label: "Internal", href: "/" }, { label: "Component showcase" }]} />
         }
         actions={
           <Badge variant="warning" size="md">
@@ -305,30 +300,23 @@ export default function ComponentShowcase() {
             <Checkbox checked="indeterminate" />
           </ShowcaseRow>
           <ShowcaseRow label="Radio">
-            <RadioGroup
-              value={radioValue}
-              onValueChange={setRadioValue}
-              className="flex gap-3"
-            >
-              <label className="flex items-center gap-2 text-sm">
-                <RadioGroupItem value="option-1" />
+            <RadioGroup value={radioValue} onValueChange={setRadioValue} className="flex gap-3">
+              <label htmlFor="radio-opt-1" className="flex items-center gap-2 text-sm">
+                <RadioGroupItem value="option-1" id="radio-opt-1" />
                 Option 1
               </label>
-              <label className="flex items-center gap-2 text-sm">
-                <RadioGroupItem value="option-2" />
+              <label htmlFor="radio-opt-2" className="flex items-center gap-2 text-sm">
+                <RadioGroupItem value="option-2" id="radio-opt-2" />
                 Option 2
               </label>
-              <label className="flex items-center gap-2 text-sm">
-                <RadioGroupItem value="option-3" />
+              <label htmlFor="radio-opt-3" className="flex items-center gap-2 text-sm">
+                <RadioGroupItem value="option-3" id="radio-opt-3" />
                 Option 3
               </label>
             </RadioGroup>
           </ShowcaseRow>
           <ShowcaseRow label="Switch">
-            <Switch
-              checked={switchChecked}
-              onCheckedChange={(v) => setSwitchChecked(v)}
-            />
+            <Switch checked={switchChecked} onCheckedChange={(v) => setSwitchChecked(v)} />
             <Switch defaultChecked />
             <Switch disabled />
           </ShowcaseRow>
@@ -566,9 +554,7 @@ export default function ComponentShowcase() {
               <DialogContent size="sm" showClose={false}>
                 <DialogHeader>
                   <DialogTitle>Delete this document?</DialogTitle>
-                  <DialogDescription>
-                    This action cannot be undone.
-                  </DialogDescription>
+                  <DialogDescription>This action cannot be undone.</DialogDescription>
                 </DialogHeader>
                 <DialogFooter>
                   <DialogClose asChild>
@@ -621,14 +607,9 @@ export default function ComponentShowcase() {
                 <DropdownMenuItem iconLeft={<Icon name="User" />} shortcut="⌘U">
                   Profile
                 </DropdownMenuItem>
-                <DropdownMenuItem iconLeft={<Icon name="Settings" />}>
-                  Settings
-                </DropdownMenuItem>
+                <DropdownMenuItem iconLeft={<Icon name="Settings" />}>Settings</DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  iconLeft={<Icon name="LogOut" />}
-                  tone="destructive"
-                >
+                <DropdownMenuItem iconLeft={<Icon name="LogOut" />} tone="destructive">
                   Sign out
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -702,9 +683,7 @@ export default function ComponentShowcase() {
                 <SidebarItem iconLeft={<Icon name="FileText" />} state="active">
                   Documents
                 </SidebarItem>
-                <SidebarItem iconLeft={<Icon name="MessageSquare" />}>
-                  Conversations
-                </SidebarItem>
+                <SidebarItem iconLeft={<Icon name="MessageSquare" />}>Conversations</SidebarItem>
                 <SidebarItem iconLeft={<Icon name="Network" />}>Graph</SidebarItem>
                 <SidebarItem iconLeft={<Icon name="Bot" />}>Agents</SidebarItem>
                 <SidebarItem iconLeft={<Icon name="Settings" />}>Settings</SidebarItem>

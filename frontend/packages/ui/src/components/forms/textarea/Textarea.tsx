@@ -1,3 +1,5 @@
+"use client"
+
 /**
  * Textarea — multi-line text field.
  *

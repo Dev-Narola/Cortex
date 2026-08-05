@@ -20,6 +20,13 @@ import { defineConfig } from "vitest/config"
 const r = (rel: string) => fileURLToPath(new URL(rel, import.meta.url))
 
 export default defineConfig({
+  esbuild: {
+    // The `tsconfig.json` uses `jsx: "preserve"` (Next.js's
+    // standard) but vitest doesn't go through the Next.js
+    // compiler. Force the automatic JSX runtime so component
+    // tests don't need to import React explicitly.
+    jsx: "automatic",
+  },
   test: {
     environment: "happy-dom",
     globals: true,
