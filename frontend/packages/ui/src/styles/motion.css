@@ -1,0 +1,287 @@
+/**
+ * Motion — keyframes + Tailwind v4 `@theme` motion tokens.
+ *
+ * **F1 Part 4 (Task 33).** Side-effect-imported by
+ * `globals.css` so the keyframes are available to every
+ * consumer of `@cortex/ui`. Defines:
+ *
+ *   - The `@keyframes` blocks for every preset
+ *     (fade, slide-from-{up,down,left,right}, scale, etc.)
+ *   - The `--motion-*` CSS variables consumed by the
+ *     `motionClass` / preset CSS classes
+ *   - The `prefers-reduced-motion: reduce` block that flattens
+ *     every animation to its end-state instantly
+ *
+ * **How a preset is wired.** The `fade.ts` module exports
+ * `fade.className = "animate-fade-in duration-base"`. The
+ * `animate-fade-in` utility is defined in `@theme` below to
+ * `animation: fadeIn var(--motion-duration-base) ...`. The
+ * matching `@keyframes fadeIn` lives in this file.
+ *
+ * **Why Tailwind v4 `@theme` instead of a hand-rolled class.**
+ * The `animate-*` utilities are first-class in Tailwind v4;
+ * using `@theme` keeps the syntax consistent with the rest of
+ * the design system and lets the user override the keyframe
+ * via the `animation` property if needed.
+ */
+
+@keyframes cortex-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes cortex-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes cortex-fade {
+  0% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes cortex-slide-in-from-top {
+  from {
+    transform: translateY(calc(-1 * var(--motion-slide-distance, 1rem)));
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes cortex-slide-in-from-bottom {
+  from {
+    transform: translateY(var(--motion-slide-distance, 1rem));
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes cortex-slide-in-from-left {
+  from {
+    transform: translateX(calc(-1 * var(--motion-slide-distance, 1rem)));
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes cortex-slide-in-from-right {
+  from {
+    transform: translateX(var(--motion-slide-distance, 1rem));
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes cortex-slide-out-to-top {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(calc(-1 * var(--motion-slide-distance, 1rem)));
+    opacity: 0;
+  }
+}
+
+@keyframes cortex-slide-out-to-bottom {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(var(--motion-slide-distance, 1rem));
+    opacity: 0;
+  }
+}
+
+@keyframes cortex-slide-out-to-left {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(calc(-1 * var(--motion-slide-distance, 1rem)));
+    opacity: 0;
+  }
+}
+
+@keyframes cortex-slide-out-to-right {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(var(--motion-slide-distance, 1rem));
+    opacity: 0;
+  }
+}
+
+@keyframes cortex-scale-in {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes cortex-scale-out {
+  from {
+    transform: scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+}
+
+@keyframes cortex-pop-in {
+  0% {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.02);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes cortex-page-subtle {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes cortex-page-threshold {
+  0% {
+    opacity: 0;
+    transform: scale(0.99);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes cortex-page-stage {
+  0% {
+    opacity: 0;
+    transform: translateY(1rem);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@theme {
+  --animate-fade-in: cortex-fade-in var(--motion-duration-base, 250ms)
+    var(--motion-ease-out-quint, cubic-bezier(0.22, 1, 0.36, 1)) both;
+  --animate-fade-out: cortex-fade-out var(--motion-duration-base, 250ms)
+    var(--motion-ease-out-quint, cubic-bezier(0.22, 1, 0.36, 1)) both;
+  --animate-fade: cortex-fade var(--motion-duration-base, 250ms)
+    var(--motion-ease-out-quint, cubic-bezier(0.22, 1, 0.36, 1)) both;
+
+  --animate-slide-in-from-top: cortex-slide-in-from-top var(--motion-duration-base, 250ms)
+    var(--motion-ease-out-quint, cubic-bezier(0.22, 1, 0.36, 1)) both;
+  --animate-slide-in-from-bottom: cortex-slide-in-from-bottom var(--motion-duration-base, 250ms)
+    var(--motion-ease-out-quint, cubic-bezier(0.22, 1, 0.36, 1)) both;
+  --animate-slide-in-from-left: cortex-slide-in-from-left var(--motion-duration-base, 250ms)
+    var(--motion-ease-out-quint, cubic-bezier(0.22, 1, 0.36, 1)) both;
+  --animate-slide-in-from-right: cortex-slide-in-from-right var(--motion-duration-base, 250ms)
+    var(--motion-ease-out-quint, cubic-bezier(0.22, 1, 0.36, 1)) both;
+
+  --animate-slide-out-to-top: cortex-slide-out-to-top var(--motion-duration-base, 250ms)
+    var(--motion-ease-out-quint, cubic-bezier(0.22, 1, 0.36, 1)) both;
+  --animate-slide-out-to-bottom: cortex-slide-out-to-bottom var(--motion-duration-base, 250ms)
+    var(--motion-ease-out-quint, cubic-bezier(0.22, 1, 0.36, 1)) both;
+  --animate-slide-out-to-left: cortex-slide-out-to-left var(--motion-duration-base, 250ms)
+    var(--motion-ease-out-quint, cubic-bezier(0.22, 1, 0.36, 1)) both;
+  --animate-slide-out-to-right: cortex-slide-out-to-right var(--motion-duration-base, 250ms)
+    var(--motion-ease-out-quint, cubic-bezier(0.22, 1, 0.36, 1)) both;
+
+  --animate-scale-in: cortex-scale-in var(--motion-duration-base, 250ms)
+    var(--motion-ease-out-quint, cubic-bezier(0.22, 1, 0.36, 1)) both;
+  --animate-scale-out: cortex-scale-out var(--motion-duration-base, 250ms)
+    var(--motion-ease-out-quint, cubic-bezier(0.22, 1, 0.36, 1)) both;
+  --animate-pop-in: cortex-pop-in var(--motion-duration-slow, 400ms)
+    var(--motion-ease-out-quint, cubic-bezier(0.22, 1, 0.36, 1)) both;
+
+  --animate-page-subtle: cortex-page-subtle var(--motion-duration-base, 250ms)
+    var(--motion-ease-out-quint, cubic-bezier(0.22, 1, 0.36, 1)) both;
+  --animate-page-threshold: cortex-page-threshold var(--motion-duration-slow, 400ms)
+    var(--motion-ease-in-out-quart, cubic-bezier(0.76, 0, 0.24, 1)) both;
+  --animate-page-stage: cortex-page-stage var(--motion-duration-stage, 1400ms)
+    var(--motion-ease-in-out-quart, cubic-bezier(0.76, 0, 0.24, 1)) both;
+
+  --motion-duration-fast: 150ms;
+  --motion-duration-base: 250ms;
+  --motion-duration-slow: 400ms;
+  --motion-duration-stage: 1400ms;
+  --motion-ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-ease-in-out-quart: cubic-bezier(0.76, 0, 0.24, 1);
+  --motion-slide-distance: 1rem;
+}
+
+/* Stagger — children inherit a cascading fade-in via
+ * animation-delay driven by the inline `--stagger-index`
+ * style on each child. The parent only needs the
+ * `stagger-children` class (or just the @keyframes; the
+ * cascade is purely on the children's animation-delay). */
+.stagger-children > * {
+  animation-fill-mode: both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-duration-fast: 0ms;
+    --motion-duration-base: 0ms;
+    --motion-duration-slow: 0ms;
+    --motion-duration-stage: 0ms;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

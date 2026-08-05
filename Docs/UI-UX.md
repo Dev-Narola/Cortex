@@ -323,3 +323,75 @@ Every screen above is composed from the primitives below. All exports live in th
 - **`asChild` for routing** — interactive primitives that need to wrap a `next/link` (e.g. `SidebarItem`, `Button`) accept `asChild` and use Radix `Slot` to merge styles. The call site composes the icon + label inside the slotted element.
 - **a11y by default** — Radix primitives are used for every interactive component (Dialog, DropdownMenu, Tabs, Checkbox, RadioGroup, Switch, Select, Tooltip, Toast, Avatar's role="img"). Keyboard nav, focus trap, Escape dismissal, and ARIA wiring are inherited from Radix.
 - **Unit tests** — every complex component has a `*.test.tsx` next to it (Card, Dialog, Drawer, DropdownMenu, Table, Sidebar/nav, EmptyState/ErrorState/LoadingState). Radix's pointer-capture path is covered by Playwright e2e, not happy-dom.
+
+---
+
+## 10. Production Readiness (Part 4)
+
+Part 4 finalised the library so F2 can begin immediately. These are the additions on top of the primitive + complex components shipped in Parts 1–3.
+
+### Motion (`motion/`)
+
+Centralised animation presets. Every page and component imports from `@cortex/ui`; never define animations inline.
+
+| Module | Purpose |
+|---|---|
+| `duration` | Tokens: `fast` (150ms), `base` (250ms), `slow` (400ms), `stage` (1400ms) |
+| `fade` | `fade`, `fadeIn`, `fadeOut`, `fadeFast`, `fadeSlow` |
+| `slide` | `slideInFrom{Top,Bottom,Left,Right}`, `slideOutTo{Top,Bottom,Left,Right}` |
+| `scale` | `scaleIn`, `scaleOut`, `popIn` |
+| `stagger` | `staggerFast`, `stagger`, `staggerSlow`, `staggerItem(index, preset)` |
+| `page` | `pageSubtle` (default cross-fade), `pageThreshold` (Stage 4 light→dark), `pageStage` (marketing hero) |
+
+The CSS keyframes live in `styles/motion.css` (side-effect-imported by `globals.css`) and include a `prefers-reduced-motion: reduce` block that flattens every animation to its end-state.
+
+### Icons (`icons/`)
+
+Reorganised into category subfolders for single-source-of-truth icon swap:
+
+- `icons/actions/` — `Plus`, `Search`, `Edit`, `Trash`, `Copy`, `Save`, `Filter`, `Download`, `Upload`, `Share`, `Send`, `LogIn`, `LogOut`, …
+- `icons/navigation/` — `ChevronLeft/Right/Up/Down`, `ArrowLeft/Right/Up/Down`, `Menu`, `House`, `Settings`, `User`, `Users`, …
+- `icons/status/` — `CircleCheck`, `CircleX`, `TriangleAlert`, `Info`, `Loader`, `Clock`, `Calendar`, …
+- `icons/documents/` — `FileText`, `Folder`, `BookOpen`, `Paperclip`, `Image`, …
+- `icons/agents/` — `Bot`, `Sparkles`, `MessageSquare`, `Network`, `Wand`, …
+- `icons/settings/` — `Key`, `Shield`, `Bell`, `CreditCard`, `ChartBar`, …
+
+The full curated list lives in `icons/categories.ts`; `iconCategory(name)` resolves a name to its category. To swap lucide for a different icon family, change `Icon.tsx` (the lookup) and `categories.ts` (the curated list). Nothing else needs to move.
+
+### Form composition (`FormField` family)
+
+App forms compose these instead of wiring labels / descriptions / validation by hand.
+
+```
+<FormField name="email" required error="Email is required">
+  <FormItem>
+    <FormLabel>Email</FormLabel>
+    <FormControl>
+      <Input type="email" />
+    </FormControl>
+    <FormDescription>We'll never share this.</FormDescription>
+    <FormMessage />
+  </FormItem>
+</FormField>
+```
+
+`FormField` is framework-agnostic — the `state` and `error` props are plain values; the app wires them to react-hook-form (or whichever form lib) at the call site. The `FormControl` uses Radix `Slot` to merge `id`, `aria-describedby`, and `aria-invalid` onto the child input.
+
+### Layout primitives
+
+| Component | Purpose |
+|---|---|
+| `Page` | The root surface for a route. `size` axis: `sm` (forms) / `md` (default) / `lg` (dashboard) / `full` (chat). |
+| `PageHeader` | Title + description + breadcrumb + actions. Stacks on mobile, row on `sm:`. |
+| `PageContent` | Vertical stack with `gap-6`. |
+| `Section` | Labelled grouping inside a page. `aria-labelledby` wires to the title. |
+| `Container` | Content-width cap with horizontal padding. `size` axis: `sm | md | lg | xl | full`. |
+| `Grid` | 12-column responsive grid. `cols` accepts `{ base?, sm?, md?, lg?, xl? }`. `gap` axis: `none | sm | md | lg | xl`. |
+
+### Component showcase
+
+A non-production page at `apps/web/app/(internal)/component-showcase/page.tsx` renders every reusable component with its variants. Used by design review, theme-token changes, and onboarding new contributors. Not linked from anywhere; no analytics; no auth.
+
+### Test coverage
+
+134 unit tests across 17 files in `@cortex/ui`. Every complex component (Card, Dialog, Drawer, DropdownMenu, Table, Sidebar, Tabs, forms, layout, motion, icons) has a `*.test.tsx` next to it. Radix's pointer-capture path is covered by Playwright e2e, not happy-dom.

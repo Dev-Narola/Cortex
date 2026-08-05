@@ -1,190 +1,73 @@
 # `@cortex/ui`
 
-The Cortex design system. The single source of reusable UI
-for every Cortex frontend app.
+The Cortex design system. Every reusable primitive the apps compose from.
 
-## Why this package exists
+> **Read first.** [Docs/UI-UX.md](../../../Docs/UI-UX.md) is the full visual / behavioural identity. This README is the developer entry point.
 
-Without a shared UI package, every screen grows its own
-button styling and the design language drifts within a sprint.
-With it, every screen imports from one place and the design
-language stays cohesive by default.
+## What ships here
 
-If a page needs a new visual pattern, **build it here first**,
-then import it. Never duplicate UI in the app.
+- **Primitive components** (Parts 1–2) — Button, Input, Textarea, Label, Checkbox, RadioGroup, Switch, Select, Toast, Spinner, Skeleton, Tooltip, Avatar, Badge, Heading, Text, Caption, Code, Link, Icon, Separator, `cn`.
+- **Complex components** (Part 3) — Card + compound parts, Dialog + compound parts (sm/md/lg/xl/fullscreen), Drawer (left/right/top/bottom), DropdownMenu, Table + compound parts, Sidebar, Topbar, UserMenu, Logo, Tabs, Breadcrumb, Pagination, EmptyState, ErrorState, LoadingState.
+- **Form composition** (Part 4) — `FormField`, `FormItem`, `FormLabel`, `FormControl`, `FormDescription`, `FormMessage`.
+- **Layout primitives** (Part 4) — `Page`, `PageHeader`, `PageContent`, `Section`, `Container`, `Grid`.
+- **Motion** (Part 4) — `fade`, `slide`, `scale`, `stagger`, `page` presets in `motion/`. CSS keyframes in `styles/motion.css`.
+- **Icons** (Part 4) — `Icon` (single entry point, lucide-react backed) + curated category lists (`actions/`, `navigation/`, `status/`, `documents/`, `agents/`, `settings/`).
+- **Styles** — `globals.css` (Tailwind v4 `@theme` + base reset) + `tokens.css` (OKLCH colour table for light + dark).
 
-## Folder organisation
+## Importing
+
+```ts
+// Single barrel — never reach into components/... directly.
+import { Button, Card, Dialog, Icon } from "@cortex/ui"
+
+// Side-effect styles — import once at the root layout.
+import "@cortex/ui/globals.css"
+```
+
+## Scripts
+
+```bash
+pnpm --filter @cortex/ui typecheck    # tsc --noEmit
+pnpm --filter @cortex/ui lint        # biome check src/
+pnpm --filter @cortex/ui format      # biome format --write src/
+pnpm --filter @cortex/ui test:unit   # vitest run
+```
+
+## Composition rules (don't break these)
+
+- **No feature-specific UI.** Specialised surfaces extend a `Card` / `Dialog` / `Drawer` variant; they do not live in a feature folder.
+- **No hard-coded colours.** Every colour is a CSS variable token (`bg-card`, `text-muted-foreground`, `border-border`, …).
+- **Every visual axis is a `cva` config.** Never branch on `variant === "..."` at the call site.
+- **`asChild` for routing.** Interactive primitives that need to wrap a `next/link` (`Button`, `SidebarItem`) accept `asChild` and use Radix `Slot`.
+- **a11y by default.** Radix primitives are used for every interactive component — keyboard nav, focus trap, ARIA wiring are inherited.
+
+## Folder map
 
 ```
 src/
 ├── components/
-│   ├── buttons/        Button (+ buttonVariants)
-│   ├── forms/          Input, Label, Select
-│   ├── cards/          Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter
-│   ├── dialogs/        Dialog, DialogTrigger, DialogContent, DialogTitle, …
-│   ├── navigation/     Tabs, TabsList, TabsTrigger, TabsContent
-│   ├── feedback/       Badge, Toast (+ toast, useToast, ToastProvider)
-│   ├── tables/         (empty — F1 Part 2)
-│   └── layout/         Separator
-│
-├── typography/         Heading, Text, Caption, Code, Link  (top-level by design)
-├── icons/              Icon (lucide-react wrapper)
-├── utils/              cn (clsx + tailwind-merge)
-├── hooks/              (empty — F1 Part 2+)
-└── styles/             tokens.css + globals.css (Tailwind v4 @theme)
+│   ├── buttons/         Button + variants
+│   ├── cards/           Card + compound parts
+│   ├── dialogs/         Dialog + compound parts + size axis
+│   ├── feedback/        Toast, Spinner, Skeleton, Tooltip, EmptyState, ErrorState, LoadingState
+│   ├── forms/           Input, Textarea, Label, Checkbox, RadioGroup, Switch, Select, FormField family
+│   ├── data-display/    Avatar, Badge
+│   ├── layout/          Page, PageHeader, PageContent, Section, Container, Grid, Separator
+│   ├── navigation/      Sidebar, Topbar, UserMenu, Logo, Tabs, Breadcrumb, Pagination
+│   ├── overlays/        Drawer, DropdownMenu
+│   └── tables/          Table, TableHeader, TableBody, TableRow, TableCell, TableHead, TableToolbar
+├── icons/               Icon + categories + subfolders (actions/ navigation/ status/ documents/ agents/ settings/)
+├── motion/              fade, slide, scale, stagger, page
+├── styles/              globals.css, tokens.css, motion.css
+├── hooks/               (empty placeholder)
+├── utils/               cn
+└── index.ts             single barrel
 ```
-
-Every category folder has an `index.ts` barrel. Components
-themselves are **never imported directly** — the package
-barrel (`packages/ui/src/index.ts`) is the single entry point.
-
-## Naming conventions
-
-| Type | Convention | Example |
-|---|---|---|
-| Component file | `PascalCase.tsx` | `Button.tsx`, `Card.tsx` |
-| Component folder | lowercase, plural | `buttons/`, `cards/`, `forms/` |
-| Variant config | `cva('...', { variants: { variant: {...} } })` + `xxxVariants` export | `buttonVariants` |
-| Type for component props | `ComponentNameProps` | `ButtonProps`, `DialogProps` |
-| Compound sub-parts | `Parent + SubPart` | `CardHeader`, `CardTitle`, `CardFooter` |
-| Hook | `useThing` | `useToast` |
-| Utility | `verbThing` | `cn`, `formatDate` |
-
-Never use lowercase component filenames (`button.tsx` is
-rejected at review). The linter catches the easy cases; review
-catches the rest.
-
-## Export conventions
-
-Every component file follows the same export shape:
-
-```ts
-// MyThing.tsx
-export interface MyThingProps extends HTMLAttributes<HTMLElement> { ... }
-const MyThing = forwardRef<...>(...)
-MyThing.displayName = "MyThing"
-export { MyThing, myThingVariants }   // variants are exported for composition
-```
-
-Every category folder has an `index.ts` that re-exports
-its components. The root `src/index.ts` re-exports every
-category barrel.
-
-**Consumers do `import { Button } from "@cortex/ui"`.** That
-single import path is the contract — never reach into
-`@cortex/ui/components/buttons/Button`.
-
-## Variant conventions
-
-Every interactive component has a `variant` + `size` (and where
-relevant `tone`) shape declared via `class-variance-authority`:
-
-```ts
-const buttonVariants = cva("base classes…", {
-  variants: {
-    variant: { default: "...", destructive: "...", outline: "..." },
-    size:    { default: "...", sm: "...", lg: "..." },
-  },
-  defaultVariants: { variant: "default", size: "default" },
-})
-```
-
-**Never write `if (primary) { ... } if (danger) { ... }` inside
-a component body.** Add a variant to the `cva` config instead.
-The shape is discoverable in one place and the call site stays
-declarative.
-
-## Base props convention
-
-Every component accepts the standard set of HTML props
-appropriate for its element type, plus:
-
-- `className` — appended via `cn()`, never replaces
-- `ref` — always forwarded to the underlying element
-- `disabled` — passed through (no `isDisabled`)
-- `children` — typed explicitly on compound components
-
-Avoid custom prop names that duplicate HTML attributes. If the
-HTML attribute already exists, use it.
-
-## Theme integration
-
-Every component reads from the CSS variables defined in
-`styles/tokens.css`. Never hard-code a colour:
-
-| ❌ Never | ✅ Use |
-|---|---|
-| `text-white` | `text-foreground` (or `text-paper-50` on dark surfaces) |
-| `bg-black` | `bg-background` |
-| `bg-gray-900` | `bg-card` |
-| `text-gray-500` | `text-muted-foreground` |
-| `border-gray-200` | `border-border` |
-
-The same component renders correctly on the marketing (light)
-and authenticated app (dark) themes because the tokens flip
-on the `<html class="dark">` selector. Never branch on theme
-inside a component — that's a token's job.
-
-## Accessibility expectations
-
-- All interactive components are **keyboard navigable** (Tab,
-  Enter, Space, arrow keys where appropriate).
-- Focus is visible — every focusable element has a
-  `focus-visible:ring-2 focus-visible:ring-ring` style.
-- All form fields have a paired `<Label>`.
-- Decorative icons get `aria-hidden="true"`; meaningful icons
-  get `role="img" aria-label="..."` (the `<Icon>` component
-  does this for you via the `label` prop).
-- Components that build on Radix primitives inherit the Radix
-  a11y contract: focus traps (Dialog), keyboard navigation
-  (Tabs, Select), `aria-*` wiring for screen readers.
-
-## Responsive expectations
-
-- Layouts are mobile-first; the smallest breakpoint is the
-  default, larger breakpoints add up.
-- A `Card` is full-width on mobile, max-width on desktop.
-- Dialogs become full-screen sheets on mobile.
-- Tables get a horizontal scroll wrapper on small screens
-  (F1 Part 2).
 
 ## Adding a new component
 
-1. Pick the right category folder (`components/<category>/`).
-   If it doesn't fit any existing category, add one.
-2. Name the file `PascalCase.tsx` and follow the export shape
-   in the **Export conventions** section.
-3. Use `cva` for variants — no `if (variant === ...)` branches.
-4. Add an `index.ts` barrel to the category folder if one
-   doesn't exist.
-5. Re-export from the root `src/index.ts`.
-6. Add a Playwright test in `apps/web/e2e/` (F1 Part 2+).
-7. Add a Storybook story if a story exists (F1 Part 2+).
-
-## When NOT to add a component here
-
-- **One-screen-only layout.** A bespoke `DashboardHero` lives in
-  the screen's own folder, not here. The library ships atoms
-  + small molecules, not pages.
-- **Backend-driven data shape.** Don't build a `UserTable` that
-  expects the `User` row shape — build a `DataTable<T>` that
-  takes the data and lets the page pick the columns.
-- **Stateful features.** Components in this package are
-  presentational. The `useToast` hook is the only stateful
-  exception, and it lives here because every screen needs it.
-
-## Testing
-
-- Unit tests live next to the package in F1 Part 2.
-- Visual regression via Playwright `e2e/` snapshots in the
-  consuming app.
-- Every component gets a smoke test in F1 Part 2 (renders +
-  no console errors + a11y audit via `@axe-core/playwright`).
-
-## Versioning
-
-The package follows the workspace's single-version policy
-(via pnpm workspaces). Breaking a component is a breaking
-change for every consuming app — that's the trade-off for a
-shared design system. The change goes in a single commit and
-ships through the normal release pipeline.
+1. Pick the right folder (or create a new one if the category doesn't exist).
+2. Split the component + variants into per-file: `<Name>.tsx` + `<name>.variants.ts` when there's a non-trivial variant space.
+3. Add a `*.test.tsx` next to it covering rendering + props + variants + a11y.
+4. Re-export from the category's `index.ts` AND from the root `index.ts`.
+5. Update [Docs/UI-UX.md §9 Component Library](../../../Docs/UI-UX.md) with the new export.
