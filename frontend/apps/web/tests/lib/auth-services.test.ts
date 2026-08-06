@@ -126,6 +126,47 @@ describe("auth services", () => {
       expect(data).toEqual(registerResponse)
     })
 
+    it("auto-derives tenant_name + tenant_slug from name + email (V4 backend contract)", async () => {
+      postMock.mockResolvedValueOnce(registerResponse)
+      await register({
+        name: "Ada Lovelace",
+        email: "ada.lovelace@gmail.com",
+        password: "TestPass123",
+      })
+      // The post body should include tenant_name=<name>
+      // and tenant_slug=<email-local-part>-<6 hex chars>
+      // so the V4 backend (which still requires these
+      // fields) accepts the request.
+      expect(postMock).toHaveBeenCalledTimes(1)
+      const call = postMock.mock.calls[0]
+      expect(call).toBeDefined()
+      const body = call?.[1] as Record<string, unknown> | undefined
+      expect(body).toMatchObject({
+        name: "Ada Lovelace",
+        email: "ada.lovelace@gmail.com",
+        password: "TestPass123",
+        tenant_name: "Ada Lovelace",
+      })
+      expect(body?.tenant_slug).toMatch(/^ada-lovelace-[a-f0-9]{6}$/)
+    })
+
+    it("respects caller-supplied tenant_name + tenant_slug (F2-aware backends)", async () => {
+      postMock.mockResolvedValueOnce(registerResponse)
+      await register({
+        name: "Ada",
+        email: "ada@cortex.dev",
+        password: "TestPass123",
+        tenant_name: "Acme",
+        tenant_slug: "acme",
+      })
+      expect(postMock).toHaveBeenCalledTimes(1)
+      const call = postMock.mock.calls[0]
+      expect(call).toBeDefined()
+      const body = call?.[1] as Record<string, unknown> | undefined
+      expect(body?.tenant_name).toBe("Acme")
+      expect(body?.tenant_slug).toBe("acme")
+    })
+
     it("propagates a 409 (duplicate email) as an ApiError", async () => {
       postMock.mockRejectedValueOnce(new ApiError(409, { message: "Email already exists" }))
       await expect(

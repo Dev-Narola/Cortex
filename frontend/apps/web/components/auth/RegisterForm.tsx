@@ -103,7 +103,15 @@ export function RegisterForm() {
           message: "An account with this email already exists.",
         })
       } else {
-        setServerError(fe.message)
+        // Surface a useful message for every other case.
+        // For 422 specifically, include the status so
+        // the user knows it's a backend validation
+        // issue, not a form issue.
+        const detail =
+          fe.status !== null
+            ? `${fe.message} (HTTP ${fe.status})`
+            : fe.message
+        setServerError(detail)
       }
     }
   }

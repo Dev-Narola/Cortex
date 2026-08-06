@@ -13,6 +13,7 @@ services; nothing else in the application should.
 
 from __future__ import annotations
 
+import re
 import uuid
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -41,6 +42,9 @@ from src.shared.exceptions import (
     UnauthorizedException,
     ValidationException,
 )
+
+# Tenant slug pattern (mirrors the domain entity's).
+_SLUG_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 
 # ---------------------------------------------------------------------------
 # DTOs (plain dataclasses; Pydantic models live in the interface layer)
@@ -81,8 +85,18 @@ class RegisterTenantService:
     """
     Register a new tenant and its owner user in a single transaction.
 
+    **F2 update.** The tenant fields are now optional. If
+    the caller doesn't supply ``tenant_name`` + ``tenant_slug``,
+    the service auto-creates a per-user "personal" tenant
+    with a UUID-suffixed slug so the caller is still scoped
+    to a valid tenant. The caller can later call
+    ``CreateTenantService`` (via ``POST /tenants``) to create
+    a real workspace and have the user rebound.
+
     Flow:
         Validate input
+            ↓
+        Derive tenant_name + tenant_slug (or use as given)
             ↓
         Slug available
             ↓
@@ -103,8 +117,8 @@ class RegisterTenantService:
     def execute(
         self,
         *,
-        tenant_name: str,
-        tenant_slug: str,
+        tenant_name: str | None,
+        tenant_slug: str | None,
         owner_email: str,
         owner_password: str,
         owner_full_name: str | None = None,
@@ -117,19 +131,35 @@ class RegisterTenantService:
                 data={"field": "password", "min_length": 8},
             )
 
-        # 2. Slug available (cheap in-process check before going to the DB)
-        if self._tenants.exists(slug=tenant_slug):
-            raise ConflictException(
-                message=f"Tenant slug '{tenant_slug}' is already in use.",
-                code=409,
-                data={"field": "slug", "value": tenant_slug.lower()},
-            )
+        # 2. Derive tenant identity. The F2 frontend no
+        #    longer sends tenant_name/slug on registration
+        #    (workspace creation is a separate step). If
+        #    the caller didn't supply them, generate a
+        #    per-user "personal" tenant so the user is
+        #    scoped to *something* and the post-auth flow
+        #    works without the caller having to also
+        #    POST /tenants.
+        derived_name, derived_slug = self._derive_tenant_identity(
+            tenant_name=tenant_name,
+            tenant_slug=tenant_slug,
+            owner_email=owner_email,
+        )
 
-        # 3. Create tenant
-        tenant = Tenant.create(name=tenant_name, slug=tenant_slug)
+        # 3. Slug available (cheap in-process check before going to the DB).
+        #    Loop until we find an unused slug; the UUID suffix already
+        #    makes collisions astronomically unlikely, but the in-process
+        #    check is still cheap and prevents a 409 from racing the DB.
+        candidate_slug = derived_slug
+        while self._tenants.exists(slug=candidate_slug):
+            # Should not happen with UUID suffixes, but keep the loop
+            # defensive.
+            candidate_slug = f"{derived_slug}-{uuid.uuid4().hex[:6]}"
+
+        # 4. Create tenant
+        tenant = Tenant.create(name=derived_name, slug=candidate_slug)
         tenant = self._tenants.create(tenant)
 
-        # 4. Create owner user
+        # 5. Create owner user
         owner = User.create(
             tenant_id=tenant.id,
             email=owner_email,
@@ -139,11 +169,139 @@ class RegisterTenantService:
         )
         owner = self._users.create(owner)
 
-        # 5. Commit
+        # 6. Commit
         self._session.commit()
 
-        # 6. Return
+        # 7. Return
         return RegisteredTenant(tenant=tenant, owner=owner)
+
+    @staticmethod
+    def _derive_tenant_identity(
+        *,
+        tenant_name: str | None,
+        tenant_slug: str | None,
+        owner_email: str,
+    ) -> tuple[str, str]:
+        """Pick the (name, slug) pair for the new tenant.
+
+        If both ``tenant_name`` + ``tenant_slug`` were provided
+        (legacy V4 single-step registration), use them as-is.
+        Otherwise, generate a per-user "personal" tenant:
+
+        - name = ``"{email}'s workspace"`` (or just the email if no ``@``)
+        - slug = ``"personal-" + 8-char UUID hex``
+
+        The UUID suffix guarantees uniqueness across concurrent
+        registrations of users with the same email prefix.
+        """
+        if tenant_name and tenant_slug:
+            return tenant_name, tenant_slug.lower()
+        local = owner_email.split("@", 1)[0] if "@" in owner_email else owner_email
+        return f"{local}'s workspace", f"personal-{uuid.uuid4().hex[:8]}"
+
+
+# ---------------------------------------------------------------------------
+# CreateTenantService — POST /tenants (F2 workspace creation)
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class ReboundUser:
+    """Output of ``CreateTenantService``: the new tenant + the
+    user record rebound to it (and the role upgraded to
+    ``OWNER`` so the user is the new workspace's owner)."""
+
+    tenant: Tenant
+    user: User
+
+
+class CreateTenantService:
+    """Create a new tenant workspace for the current user.
+
+    **F2 Part 2 (Task 15).** Distinct from
+    ``RegisterTenantService`` (which creates a user + tenant
+    in one step). This service is the F2 "workspace
+    onboarding" step: a user who registered without a
+    workspace (``tenant_name`` omitted at registration) calls
+    this to spin up a real one and have themselves rebound
+    to it as the owner.
+
+    Flow:
+        Validate input (slug format, name length)
+            ↓
+        Slug available
+            ↓
+        Create tenant
+            ↓
+        Rebind the user to the new tenant (tenant_id + role=OWNER)
+            ↓
+        Commit
+        ↓
+        Return new tenant + rebound user
+    """
+
+    def __init__(self, session: Session) -> None:
+        self._session = session
+        self._tenants = TenantRepository(session)
+        self._users = UserRepository(session)
+
+    def execute(
+        self,
+        *,
+        user_id: uuid.UUID,
+        tenant_name: str,
+        tenant_slug: str,
+    ) -> ReboundUser:
+        # 1. Validate
+        tenant_name = (tenant_name or "").strip()
+        tenant_slug = (tenant_slug or "").strip().lower()
+        if len(tenant_name) < 1 or len(tenant_name) > 255:
+            raise ValidationException(
+                message="Tenant name must be 1-255 characters.",
+                code=400,
+                data={"field": "name"},
+            )
+        if not _SLUG_RE.match(tenant_slug):
+            raise ValidationException(
+                message="Tenant slug must be lowercase alphanumeric with hyphens.",
+                code=400,
+                data={"field": "slug"},
+            )
+
+        # 2. Find the user
+        user = self._users.find_by_id(user_id)
+        if user is None:
+            raise NotFoundException(
+                message="User not found.",
+                code=404,
+            )
+
+        # 3. Slug available
+        if self._tenants.exists(slug=tenant_slug):
+            raise ConflictException(
+                message=f"Tenant slug '{tenant_slug}' is already in use.",
+                code=409,
+                data={"field": "slug", "value": tenant_slug},
+            )
+
+        # 4. Create the tenant
+        tenant = Tenant.create(name=tenant_name, slug=tenant_slug)
+        tenant = self._tenants.create(tenant)
+
+        # 5. Rebind the user to the new tenant as the OWNER.
+        #    A user can only have one tenant_id at a time
+        #    in the V4 schema, so "rebind" is the right
+        #    verb: the user leaves their personal tenant
+        #    and joins the new one.
+        user.tenant_id = tenant.id
+        user.role = Role.OWNER
+        user = self._users.update(user)
+
+        # 6. Commit
+        self._session.commit()
+
+        # 7. Return
+        return ReboundUser(tenant=tenant, user=user)
 
 
 # ---------------------------------------------------------------------------
