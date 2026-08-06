@@ -11,6 +11,30 @@
 @import "./motion.css";
 @import "tailwindcss";
 
+/*
+ * Tailwind v4 content discovery.
+ *
+ * The package is consumed by both `apps/web` and any future
+ * Next.js app. Without an explicit `@source`, Tailwind v4
+ * falls back to auto-discovery from the CSS file's package,
+ * which on a pnpm monorepo + Windows throws a flood of
+ * "Invalid dependencies" warnings (it walks the workspace
+ * and reports non-existent file paths). We point Tailwind
+ * at the only places class names actually live:
+ *
+ *   - the `apps/web` source tree (where the pages + form
+ *     components live)
+ *   - this package's own components (so the F1 component
+ *     library's classes are picked up too)
+ *
+ * Adding a new app? Add its source path here.
+ */
+@source "../../../../apps/web/app/**/*.{ts,tsx}";
+@source "../../../../apps/web/components/**/*.{ts,tsx}";
+@source "../../../../apps/web/lib/**/*.{ts,tsx}";
+@source "../../../../apps/web/hooks/**/*.{ts,tsx}";
+@source "../**/*.{ts,tsx}";
+
 @theme {
   /* Map the CSS custom properties into Tailwind's color namespace. */
   --color-cloud-50: var(--cloud-50);

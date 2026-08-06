@@ -8,17 +8,24 @@
  * `/login?next=...`; authenticated users see the
  * children.
  *
+ * **Two modes of operation:**
+ *   1. **Protection mode** (default) — `redirectIfAuthenticatedTo`
+ *      is not set. Requires authentication. Runs session
+ *      restore, shows loading while restoring, redirects to
+ *      login when unauthenticated.
+ *   2. **Public auth page mode** — `redirectIfAuthenticatedTo`
+ *      is set (e.g. on `/login`). Renders children immediately
+ *      once hydrated. Only redirects if the user IS authenticated
+ *      (so they don't see the login form when already signed in).
+ *      Does NOT run session restore — no reason to attempt a
+ *      network refresh on a page that doesn't require auth.
+ *
  * **Why client-side + not just middleware.** The
  * middleware is the first line of defence (it
  * redirects at the edge before any HTML is sent);
  * ProtectedRoute is the second line for client-
  * navigations (Next.js client-side route changes
  * don't go through middleware). Both must agree.
- *
- * **No permission logic yet.** F2 Part 1 ships
- * auth-only gating; role-based access control
- * (viewer / member / admin / owner) is a later
- * F2 part.
  */
 
 "use client"
@@ -46,12 +53,78 @@ export interface ProtectedRouteProps {
   nextPath?: string
 }
 
-export function ProtectedRoute({
+/**
+ * Public-auth-page mode: renders children immediately,
+ * redirects away only if already authenticated.
+ */
+function PublicAuthGate({
   children,
-  loginPath = "/login",
-  redirectIfAuthenticatedTo,
+  redirectTo,
+}: {
+  children: ReactNode
+  redirectTo: string
+}) {
+  const router = useRouter()
+  const hydrated = useAuthStore((s) => s.hydrated)
+  const isAuthed = useAuthStore((s) => s.isAuthenticated())
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (!mounted || !hydrated) return
+    if (isAuthed) {
+      router.replace(redirectTo as never)
+    }
+  }, [mounted, hydrated, isAuthed, redirectTo, router])
+
+  // Show a brief loading state only during hydration
+  if (!mounted || !hydrated) {
+    return (
+      <output
+        className="flex min-h-screen items-center justify-center bg-background"
+        aria-live="polite"
+      >
+        <div className="flex flex-col items-center gap-3 text-muted-foreground">
+          <Spinner size="lg" />
+        </div>
+      </output>
+    )
+  }
+
+  // Already authenticated → show spinner while redirect fires
+  if (isAuthed) {
+    return (
+      <output
+        className="flex min-h-screen items-center justify-center bg-background"
+        aria-live="polite"
+      >
+        <div className="flex flex-col items-center gap-3 text-muted-foreground">
+          <Spinner size="lg" />
+          <p className="text-sm">Redirecting to dashboard…</p>
+        </div>
+      </output>
+    )
+  }
+
+  return <>{children}</>
+}
+
+/**
+ * Protection mode: requires authentication, runs
+ * session restore, redirects to login when unauthenticated.
+ */
+function AuthRequiredGate({
+  children,
+  loginPath,
   nextPath,
-}: ProtectedRouteProps) {
+}: {
+  children: ReactNode
+  loginPath: string
+  nextPath?: string
+}) {
   const router = useRouter()
   const hydrated = useAuthStore((s) => s.hydrated)
   const isAuthed = useAuthStore((s) => s.isAuthenticated())
@@ -65,20 +138,22 @@ export function ProtectedRoute({
   }, [])
 
   useEffect(() => {
-    if (!mounted) return
-    // Wait for store hydration AND silent session restore before deciding
-    if (!hydrated || isRestoring) return
+    if (!mounted || !hydrated || isRestoring) return
 
     if (!isAuthed) {
-      const next = nextPath ?? `${window.location.pathname}${window.location.search}`
-      const url = next ? `${loginPath}?next=${encodeURIComponent(next)}` : loginPath
+      const currentPath = `${window.location.pathname}${window.location.search}`
+      if (
+        window.location.pathname === loginPath ||
+        window.location.pathname.startsWith(`${loginPath}/`)
+      ) {
+        return
+      }
+      const targetNext = nextPath ?? currentPath
+      const isValidNext = targetNext && !targetNext.startsWith(loginPath)
+      const url = isValidNext ? `${loginPath}?next=${encodeURIComponent(targetNext)}` : loginPath
       router.replace(url as never)
-      return
     }
-    if (redirectIfAuthenticatedTo) {
-      router.replace(redirectIfAuthenticatedTo as never)
-    }
-  }, [hydrated, isRestoring, isAuthed, loginPath, redirectIfAuthenticatedTo, nextPath, mounted, router])
+  }, [hydrated, isRestoring, isAuthed, loginPath, nextPath, mounted, router])
 
   if (!mounted || !hydrated || isRestoring || (!restored && !isAuthed)) {
     return (
@@ -110,3 +185,25 @@ export function ProtectedRoute({
 
   return <>{children}</>
 }
+
+export function ProtectedRoute({
+  children,
+  loginPath = "/login",
+  redirectIfAuthenticatedTo,
+  nextPath,
+}: ProtectedRouteProps) {
+  if (redirectIfAuthenticatedTo) {
+    return (
+      <PublicAuthGate redirectTo={redirectIfAuthenticatedTo}>
+        {children}
+      </PublicAuthGate>
+    )
+  }
+
+  return (
+    <AuthRequiredGate loginPath={loginPath} nextPath={nextPath}>
+      {children}
+    </AuthRequiredGate>
+  )
+}
+

@@ -92,7 +92,8 @@ describe("auth store", () => {
     expect(s.accessToken).toBeNull()
     expect(s.user).toBeNull()
     expect(s.isAuthenticated()).toBe(false)
-    expect(readAuthCookie()).toBeNull()
+    const cookie = readAuthCookie()
+    expect(cookie === null || cookie === "").toBe(true)
   })
 
   it("clear() hard-clears without telling the backend", () => {

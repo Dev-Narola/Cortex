@@ -18,10 +18,10 @@
 import { render, screen } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it } from "vitest"
 
-import DashboardPage from "@/app/(app)/dashboard/page"
+import { DashboardView } from "@/app/(app)/app/dashboard/DashboardView"
 import { useAuthStore } from "@/lib/auth/store"
 
-describe("DashboardPage (empty state)", () => {
+describe("DashboardView (empty state)", () => {
   beforeEach(() => {
     useAuthStore.getState().clear()
     useAuthStore.setState({ hydrated: true, restored: true, isRestoring: false })
@@ -37,7 +37,7 @@ describe("DashboardPage (empty state)", () => {
       slug: "acme",
       workspace: "Acme",
     })
-    render(<DashboardPage />)
+    render(<DashboardView />)
     expect(
       screen.getByRole("heading", { name: /welcome to cortex/i, level: 1 }),
     ).toBeInTheDocument()
@@ -49,7 +49,7 @@ describe("DashboardPage (empty state)", () => {
       slug: "acme",
       workspace: "Acme",
     })
-    render(<DashboardPage />)
+    render(<DashboardView />)
     expect(screen.getByText(/your workspace is ready/i)).toBeInTheDocument()
   })
 
@@ -59,7 +59,7 @@ describe("DashboardPage (empty state)", () => {
       slug: "acme",
       workspace: "Acme",
     })
-    render(<DashboardPage />)
+    render(<DashboardView />)
     expect(screen.getByText(/no documents yet/i)).toBeInTheDocument()
     expect(
       screen.getByRole("button", { name: /upload your first document/i }),
@@ -72,13 +72,13 @@ describe("DashboardPage (empty state)", () => {
       slug: "acme",
       workspace: "Acme Inc",
     })
-    render(<DashboardPage />)
+    render(<DashboardView />)
     expect(screen.getByText(/acme inc/i)).toBeInTheDocument()
   })
 
   it("falls back to the slug when the workspace name is missing", () => {
     useAuthStore.getState().setTenant({ id: "t-1", slug: "acme" })
-    render(<DashboardPage />)
+    render(<DashboardView />)
     expect(screen.getByText(/acme/i)).toBeInTheDocument()
   })
 
@@ -88,7 +88,7 @@ describe("DashboardPage (empty state)", () => {
       slug: "acme",
       workspace: "Acme",
     })
-    render(<DashboardPage />)
+    render(<DashboardView />)
     expect(screen.getByText(/upload documents/i)).toBeInTheDocument()
     expect(screen.getByText(/ask questions/i)).toBeInTheDocument()
     expect(screen.getByText(/build the knowledge graph/i)).toBeInTheDocument()

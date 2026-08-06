@@ -1,32 +1,19 @@
+/**
+ * DashboardView — the client-rendered view of the dashboard.
+ *
+ * Kept separate from `page.tsx` so the page can be a server
+ * entry (no build-time pre-render of `useAuthStore`).
+ */
+
 "use client"
 
-import Link from "next/link"
+import { Card, CardContent, EmptyState, Heading, Text } from "@cortex/ui"
 
-import { Card, CardContent, EmptyState, Heading, Spinner, Text } from "@cortex/ui"
-
-import { useSessionRestore } from "@/hooks/auth/useSessionRestore"
 import { useAuthStore } from "@/lib/auth/store"
 
-export default function DashboardPage() {
-  const hydrated = useAuthStore((s) => s.hydrated)
+export function DashboardView() {
   const tenant = useAuthStore((s) => s.tenant)
   const user = useAuthStore((s) => s.user)
-  const { isRestoring } = useSessionRestore()
-
-  if (!hydrated || isRestoring) {
-    return (
-      <output
-        className="flex min-h-[400px] items-center justify-center"
-        aria-live="polite"
-      >
-        <div className="flex flex-col items-center gap-3 text-muted-foreground">
-          <Spinner size="lg" />
-          <p className="text-sm">Bootstrapping dashboard…</p>
-        </div>
-      </output>
-    )
-  }
-
   const workspaceName = tenant?.workspace ?? tenant?.slug ?? "your workspace"
 
   return (
@@ -67,15 +54,6 @@ export default function DashboardPage() {
           title="Build the knowledge graph"
           body="Cortex connects entities across your documents into a graph you can explore visually."
         />
-      </div>
-
-      <div className="flex items-center justify-end">
-        <Link
-          href={"/app" as never}
-          className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-        >
-          ← Back
-        </Link>
       </div>
     </div>
   )
