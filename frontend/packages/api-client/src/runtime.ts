@@ -64,11 +64,14 @@ export class ApiClient {
       }
     }
 
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-      ...(init?.headers ?? {}),
-    }
+    const isFormData = init?.body instanceof FormData
+    const headers: Record<string, string> = isFormData
+      ? { Accept: "application/json", ...(init?.headers ?? {}) }
+      : {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          ...(init?.headers ?? {}),
+        }
 
     const token = await this.getAccessToken?.()
     if (token) {
@@ -78,7 +81,11 @@ export class ApiClient {
     let res = await fetch(url.toString(), {
       method,
       headers,
-      body: init?.body ? JSON.stringify(init.body) : undefined,
+      body: init?.body
+        ? isFormData
+          ? (init.body as FormData)
+          : JSON.stringify(init.body)
+        : undefined,
       signal: init?.signal,
       credentials: "include",
     })
@@ -93,7 +100,11 @@ export class ApiClient {
         res = await fetch(url.toString(), {
           method,
           headers,
-          body: init?.body ? JSON.stringify(init.body) : undefined,
+          body: init?.body
+            ? isFormData
+              ? (init.body as FormData)
+              : JSON.stringify(init.body)
+            : undefined,
           signal: init?.signal,
           credentials: "include",
         })
@@ -113,16 +124,47 @@ export class ApiClient {
   get<T = unknown>(path: string, query?: Record<string, unknown>) {
     return this.request<T>("GET", path, { query })
   }
-  post<T = unknown>(path: string, body?: unknown) {
-    return this.request<T>("POST", path, { body })
+  post<T = unknown>(
+    path: string,
+    body?: unknown,
+    init?: {
+      query?: Record<string, unknown>
+      headers?: Record<string, string>
+      signal?: AbortSignal
+    },
+  ) {
+    return this.request<T>("POST", path, { body, ...init })
   }
-  patch<T = unknown>(path: string, body?: unknown) {
-    return this.request<T>("PATCH", path, { body })
+  patch<T = unknown>(
+    path: string,
+    body?: unknown,
+    init?: {
+      query?: Record<string, unknown>
+      headers?: Record<string, string>
+      signal?: AbortSignal
+    },
+  ) {
+    return this.request<T>("PATCH", path, { body, ...init })
   }
-  put<T = unknown>(path: string, body?: unknown) {
-    return this.request<T>("PUT", path, { body })
+  put<T = unknown>(
+    path: string,
+    body?: unknown,
+    init?: {
+      query?: Record<string, unknown>
+      headers?: Record<string, string>
+      signal?: AbortSignal
+    },
+  ) {
+    return this.request<T>("PUT", path, { body, ...init })
   }
-  delete<T = unknown>(path: string) {
-    return this.request<T>("DELETE", path)
+  delete<T = unknown>(
+    path: string,
+    init?: {
+      query?: Record<string, unknown>
+      headers?: Record<string, string>
+      signal?: AbortSignal
+    },
+  ) {
+    return this.request<T>("DELETE", path, init)
   }
 }

@@ -71,7 +71,7 @@ describe("DocumentStatusBadge", () => {
         indexed: "Indexed",
         failed: "Failed",
       }
-      expect(container).toHaveTextContent(labelMap[status])
+      expect(container).toHaveTextContent(labelMap[status]!)
     }
   })
 
@@ -173,7 +173,7 @@ describe("DocumentsTable", () => {
       ),
     )
     const table = screen.getByRole("table")
-    const headerRow = within(table).getAllByRole("row")[0]
+    const headerRow = within(table).getAllByRole("row")[0]!
     expect(within(headerRow).getByText("Name")).toBeInTheDocument()
     expect(within(headerRow).getByText("Status")).toBeInTheDocument()
     expect(within(headerRow).getByText("Source")).toBeInTheDocument()

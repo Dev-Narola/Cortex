@@ -1,2 +1,6 @@
+export { useDeleteDocument } from "./useDeleteDocument"
 export { useDocument } from "./useDocument"
 export { useDocuments } from "./useDocuments"
+export { useInvalidateDocuments } from "./useInvalidateDocuments"
+export { useReprocessDocument } from "./useReprocessDocument"
+export { useUploadDocument } from "./useUploadDocument"

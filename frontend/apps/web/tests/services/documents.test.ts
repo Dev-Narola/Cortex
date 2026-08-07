@@ -6,9 +6,9 @@
  * singleton so the tests don't depend on the network.
  */
 
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 
-import { getApiClient, resetApiClient } from "@/lib/auth/api-client"
+import { getApiClient } from "@/lib/auth/api-client"
 import { getDocument, getDocuments } from "@/services/documents"
 
 vi.mock("@/lib/auth/api-client", async () => {
@@ -57,7 +57,7 @@ describe("services/documents", () => {
 
       await getDocuments({ limit: 25, offset: 50, status: "indexed" })
 
-      const calledPath = get.mock.calls[0][0]
+      const calledPath = get.mock.calls[0]?.[0] as string
       expect(calledPath).toMatch(/^\/api\/v1\/documents\?/)
       // URLSearchParams encodes the keys deterministically;
       // assert the substring the way the api-client will see it.
@@ -77,7 +77,7 @@ describe("services/documents", () => {
 
       await getDocuments({ limit: 10 })
 
-      const calledPath = get.mock.calls[0][0]
+      const calledPath = get.mock.calls[0]?.[0] as string
       expect(calledPath).toBe("/api/v1/documents?limit=10")
       expect(calledPath).not.toContain("offset=")
       expect(calledPath).not.toContain("status=")

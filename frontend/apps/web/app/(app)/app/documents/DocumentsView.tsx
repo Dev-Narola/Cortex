@@ -1,15 +1,15 @@
 /**
  * DocumentsView — the client half of `/app/documents`.
  *
- * **F3 Part 2 (Task 11).** Composes the documents
- * module. Kept as a client component (not the page
- * itself) so the build doesn't try to pre-render
- * the TanStack Query / auth-store calls.
+ * **F3 Part 2 (Task 11) + Part 3.** Composes the
+ * documents module. Kept as a client component (not
+ * the page itself) so the build doesn't try to
+ * pre-render the TanStack Query / auth-store calls.
  *
  * **Flow.**
  *   1. Wrap in `DocumentSelectionProvider` so the
- *      future slide-over + the rows share the same
- *      `selectedId` context.
+ *      table rows + the detail slide-over share
+ *      the same `selectedId` + `isOpen` context.
  *   2. `useDocuments()` — the single source of truth.
  *   3. Render toolbar (above) + the appropriate
  *      surface below:
@@ -17,6 +17,9 @@
  *        - loading (no data) → centered `Spinner`
  *        - empty → `DocumentsEmptyState`
  *        - data → `DocumentsTable`
+ *   4. The `DocumentDetailDrawer` reads the
+ *      selection context and mounts the slide-over
+ *      whenever a row is clicked.
  *
  * **The toolbar shows even on the loading / error
  * / empty states** so the user can still click
@@ -34,12 +37,13 @@ import { useState } from "react"
 
 import { Card, CardContent, Spinner } from "@cortex/ui"
 
+import { DocumentDetailDrawer } from "@/components/documents/detail/DocumentDetailDrawer"
 import { DocumentErrorState } from "@/components/documents/DocumentErrorState"
 import { DocumentSelectionProvider } from "@/components/documents/DocumentSelectionProvider"
 import { DocumentToolbar } from "@/components/documents/DocumentToolbar"
-import { DocumentUploadModal } from "@/components/documents/upload-modal"
 import { DocumentsEmptyState } from "@/components/documents/DocumentsEmptyState"
 import { DocumentsTable } from "@/components/documents/DocumentsTable"
+import { UploadDocumentModal } from "@/components/documents/upload/UploadDocumentModal"
 import { useDocuments } from "@/hooks/documents"
 
 export function DocumentsView() {
@@ -106,7 +110,8 @@ export function DocumentsView() {
           </p>
         ) : null}
 
-        <DocumentUploadModal open={uploadOpen} onOpenChange={setUploadOpen} />
+        <UploadDocumentModal open={uploadOpen} onOpenChange={setUploadOpen} />
+        <DocumentDetailDrawer />
       </div>
     </DocumentSelectionProvider>
   )

@@ -93,7 +93,7 @@ describe("hooks/documents", () => {
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true))
       // The service was called with the params
-      const calledPath = get.mock.calls[0][0]
+      const calledPath = get.mock.calls[0]?.[0] as string
       expect(calledPath).toContain("limit=25")
       expect(calledPath).toContain("offset=25")
       expect(calledPath).toContain("status=failed")
