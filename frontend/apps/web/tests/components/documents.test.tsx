@@ -110,7 +110,9 @@ describe("DocumentRow", () => {
     )
     expect(screen.getByText("Quarterly Plan.pdf")).toBeInTheDocument()
     expect(screen.getByText("application/pdf")).toBeInTheDocument()
-    expect(screen.getByText("Indexed")).toBeInTheDocument()
+    // "Indexed" appears in both the badge and the
+    // progress line; assert at least one.
+    expect(screen.getAllByText("Indexed").length).toBeGreaterThanOrEqual(1)
     // Chunks placeholder
     expect(screen.getByText("—")).toBeInTheDocument()
   })

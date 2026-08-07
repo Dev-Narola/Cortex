@@ -1,20 +1,27 @@
 /**
  * DocumentRow — a single row in the documents table.
  *
- * **F3 Part 2 (Task 16).** Composes the F1
- * `TableRow` + `TableCell` primitives. Clicking
- * the row triggers the `DocumentSelectionProvider`
- * `openDetail()` — Part 3 wires the actual slide-over.
+ * **F3 Part 2 (Task 16) + Part 4 (Task 38).**
+ * Composes the F1 `TableRow` + `TableCell`
+ * primitives. Clicking the row triggers the
+ * `DocumentSelectionProvider` `openDetail()` —
+ * Part 3 wires the actual slide-over.
  *
  * **Columns.**
  *   - Document icon (derived from `mime_type`)
  *   - Name (`title`)
- *   - Status badge
+ *   - Status badge + progress line
  *   - Source type (`mime_type` truncated)
+ *   - Chunks (placeholder)
  *   - Updated date (formatted)
- *   - Actions (the spec's "Actions" column; currently
- *     a placeholder "…" button that opens the detail
- *     placeholder in Part 3)
+ *   - Actions
+ *
+ * **Live status.** The badge + the progress
+ * line both read from `document.status`, which
+ * the `useIngestionStatus` hook patches
+ * directly in the TanStack Query cache. No
+ * extra wiring in this component — when the
+ * cache updates, React re-renders this row.
  *
  * **Selection state.** When `id === selectedId` we
  * render an "active" visual (left-edge accent + row
@@ -35,6 +42,7 @@ import {
 
 import { type Document } from "@/services/documents"
 
+import { DocumentIngestionProgress } from "./DocumentIngestionProgress"
 import { DocumentStatusBadge } from "./DocumentStatusBadge"
 
 export interface DocumentRowProps {
@@ -107,7 +115,13 @@ export function DocumentRow({
       </TableCell>
 
       <TableCell>
-        <DocumentStatusBadge status={document.status} />
+        <div className="flex flex-col gap-1.5">
+          <DocumentStatusBadge status={document.status} />
+          <DocumentIngestionProgress
+            status={document.status}
+            className="w-32"
+          />
+        </div>
       </TableCell>
 
       <TableCell>

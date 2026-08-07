@@ -1,24 +1,25 @@
 /**
  * DocumentToolbar — the row above the table.
  *
- * **F3 Part 2 (Task 15).** Search box + filter +
- * sort + Upload button. The F1 `TableToolbar`
- * primitive provides the title/description/actions
- * layout; we compose the action surface.
+ * **F3 Part 2 (Task 15) + Part 4 (Task 42).**
+ * Search box + filter + sort + Upload button.
+ * The F1 `TableToolbar` primitive provides the
+ * title/description/actions layout; we compose
+ * the action surface.
  *
- * **State.** The search box is local UI state (the
- * spec says "search and filter locally — UI only
- * where backend support is absent"). The filter +
- * sort dropdowns are placeholders for now; the
- * spec says "can update UI state or remain
- * placeholders depending on backend support".
- * We make the filter dropdown call `onFilterChange`
- * which is currently a no-op (the backend doesn't
- * support it yet).
+ * **State.** The search box is local UI state
+ * (the spec says "search and filter locally —
+ * UI only where backend support is absent"). The
+ * filter + sort dropdowns are placeholders.
+ *
+ * **Connection indicator.** The description
+ * slot is shared with the live ingestion
+ * indicator: the page passes both `total` and
+ * `connectionSlot` so the user sees "3 documents
+ * • Live" (or "• Reconnecting…") in a single row.
  *
  * **Upload.** The Upload button opens the
- * `DocumentUploadModal` (already wired in the
- * page). Part 3 wires the actual upload.
+ * `DocumentUploadModal`.
  */
 
 "use client"
@@ -47,6 +48,12 @@ export interface DocumentToolbarProps {
    * thread the filter into the query.
    */
   onFilterChange?: (filter: string | null) => void
+  /**
+   * Optional slot for the ingestion connection
+   * indicator. Rendered inline with the count
+   * description (e.g. "3 documents · Live").
+   */
+  connectionSlot?: ReactNode
 }
 
 export function DocumentToolbar({
@@ -54,6 +61,7 @@ export function DocumentToolbar({
   loading,
   onUpload,
   onFilterChange,
+  connectionSlot,
 }: DocumentToolbarProps): ReactNode {
   // Local search input — not yet wired to the data
   // layer (the spec marks this as a future task).
@@ -63,9 +71,14 @@ export function DocumentToolbar({
     <TableToolbar
       title="All documents"
       description={
-        loading
-          ? "Loading…"
-          : `${total} ${total === 1 ? "document" : "documents"}`
+        <span className="flex items-center gap-2">
+          <span>
+            {loading
+              ? "Loading…"
+              : `${total} ${total === 1 ? "document" : "documents"}`}
+          </span>
+          {connectionSlot}
+        </span>
       }
       actions={
         <div className="flex flex-wrap items-center gap-2">
