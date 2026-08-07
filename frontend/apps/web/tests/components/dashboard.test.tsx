@@ -1,18 +1,12 @@
 /**
- * Empty Dashboard — `/app/dashboard` (F2 Part 2, Task 20).
+ * DashboardView — empty dashboard (F3 Part 1, Task 7).
  *
  * Verifies the spec's "Empty Dashboard" surface:
- *   - Renders the "Welcome to Cortex" heading.
- *   - Renders the EmptyState for "no documents yet".
+ *   - Renders the "Welcome to Cortex" hero heading.
  *   - Renders the workspace name from the auth store.
- *   - Renders the user's email when set.
- *   - Renders the three hint cards (upload / ask / graph).
- *
- * The page is a server-renderable RSC-friendly default
- * export that uses `useAuthStore` (the auth store is
- * hydrated on the client before this page renders). In
- * tests we wrap the component with a small harness that
- * seeds the auth store.
+ *   - Renders the "Upload your first document" primary CTA.
+ *   - Renders the Quick Actions row (Upload + Search +
+ *     Create Agent, two of which are disabled "Soon").
  */
 
 import { render, screen } from "@testing-library/react"
@@ -21,7 +15,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest"
 import { DashboardView } from "@/app/(app)/app/dashboard/DashboardView"
 import { useAuthStore } from "@/lib/auth/store"
 
-describe("DashboardView (empty state)", () => {
+describe("DashboardView (empty state — F3 Part 1)", () => {
   beforeEach(() => {
     useAuthStore.getState().clear()
     useAuthStore.setState({ hydrated: true, restored: true, isRestoring: false })
@@ -53,14 +47,13 @@ describe("DashboardView (empty state)", () => {
     expect(screen.getByText(/your workspace is ready/i)).toBeInTheDocument()
   })
 
-  it("renders the 'No documents yet' EmptyState", () => {
+  it("renders the primary 'Upload your first document' CTA", () => {
     useAuthStore.getState().setTenant({
       id: "t-1",
       slug: "acme",
       workspace: "Acme",
     })
     render(<DashboardView />)
-    expect(screen.getByText(/no documents yet/i)).toBeInTheDocument()
     expect(
       screen.getByRole("button", { name: /upload your first document/i }),
     ).toBeInTheDocument()
@@ -79,18 +72,33 @@ describe("DashboardView (empty state)", () => {
   it("falls back to the slug when the workspace name is missing", () => {
     useAuthStore.getState().setTenant({ id: "t-1", slug: "acme" })
     render(<DashboardView />)
-    expect(screen.getByText(/acme/i)).toBeInTheDocument()
+    // The slug appears in the "{slug} is ready" heading
+    // so the dashboard always reads naturally even
+    // before the user has named their workspace.
+    expect(screen.getByText(/acme is ready/i)).toBeInTheDocument()
   })
 
-  it("renders the three hint cards", () => {
+  it("renders the Quick Actions row with all three cards", () => {
     useAuthStore.getState().setTenant({
       id: "t-1",
       slug: "acme",
       workspace: "Acme",
     })
     render(<DashboardView />)
-    expect(screen.getByText(/upload documents/i)).toBeInTheDocument()
-    expect(screen.getByText(/ask questions/i)).toBeInTheDocument()
-    expect(screen.getByText(/build the knowledge graph/i)).toBeInTheDocument()
+    expect(screen.getByText(/upload document/i)).toBeInTheDocument()
+    expect(screen.getByText(/search knowledge/i)).toBeInTheDocument()
+    expect(screen.getByText(/create agent/i)).toBeInTheDocument()
+  })
+
+  it("marks the 'Search Knowledge' and 'Create Agent' cards as Coming Soon", () => {
+    useAuthStore.getState().setTenant({
+      id: "t-1",
+      slug: "acme",
+      workspace: "Acme",
+    })
+    render(<DashboardView />)
+    const soonBadges = screen.getAllByText(/^soon$/i)
+    // Two "Soon" badges (one per disabled card).
+    expect(soonBadges.length).toBe(2)
   })
 })

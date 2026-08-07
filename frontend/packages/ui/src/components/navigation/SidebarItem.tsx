@@ -25,7 +25,7 @@
  */
 
 import { Slot } from "@radix-ui/react-slot"
-import { type HTMLAttributes, forwardRef } from "react"
+import { type AnchorHTMLAttributes, forwardRef } from "react"
 
 import { cn } from "../../utils/cn"
 
@@ -37,7 +37,7 @@ const STATE = {
   disabled: "opacity-50 pointer-events-none",
 } as const
 
-export interface SidebarItemProps extends HTMLAttributes<HTMLAnchorElement> {
+export interface SidebarItemProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
   /** Default `default`. */
   state?: SidebarItemState
   /** Default `false`. Set `true` to render a `next/link` child as the anchor. */
