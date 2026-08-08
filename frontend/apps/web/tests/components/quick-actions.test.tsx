@@ -47,12 +47,17 @@ describe("QuickActionCard", () => {
 })
 
 describe("QuickActions", () => {
-  it("renders Upload (live) + Search + Create Agent (both Soon)", () => {
+  it("renders Upload (live) + Ask Cortex (live) + Create Agent (Soon)", () => {
     render(<QuickActions />)
     expect(screen.getByText(/upload document/i)).toBeInTheDocument()
-    expect(screen.getByText(/search knowledge/i)).toBeInTheDocument()
+    // F4 Part 1: "Search Knowledge" was replaced
+    // by the "Ask Cortex" CTA (the F4 chat entry
+    // point).
+    expect(screen.getByText(/ask cortex/i)).toBeInTheDocument()
     expect(screen.getByText(/create agent/i)).toBeInTheDocument()
-    // Two "Soon" pills.
-    expect(screen.getAllByText(/^soon$/i).length).toBe(2)
+    // F4 Part 1: only "Create Agent" is still
+    // coming-soon — "Search Knowledge" is gone
+    // and "Ask Cortex" is live.
+    expect(screen.getAllByText(/^soon$/i).length).toBe(1)
   })
 })

@@ -86,11 +86,11 @@ describe("DashboardView (empty state — F3 Part 1)", () => {
     })
     render(<DashboardView />)
     expect(screen.getByText(/upload document/i)).toBeInTheDocument()
-    expect(screen.getByText(/search knowledge/i)).toBeInTheDocument()
+    expect(screen.getByText(/ask cortex/i)).toBeInTheDocument()
     expect(screen.getByText(/create agent/i)).toBeInTheDocument()
   })
 
-  it("marks the 'Search Knowledge' and 'Create Agent' cards as Coming Soon", () => {
+  it("marks only the 'Create Agent' card as Coming Soon (Upload + Ask Cortex are live)", () => {
     useAuthStore.getState().setTenant({
       id: "t-1",
       slug: "acme",
@@ -98,7 +98,9 @@ describe("DashboardView (empty state — F3 Part 1)", () => {
     })
     render(<DashboardView />)
     const soonBadges = screen.getAllByText(/^soon$/i)
-    // Two "Soon" badges (one per disabled card).
-    expect(soonBadges.length).toBe(2)
+    // F4 Part 1 — only "Create Agent" is disabled now.
+    // "Search Knowledge" was replaced by "Ask Cortex"
+    // (the F4 chat entry point).
+    expect(soonBadges.length).toBe(1)
   })
 })

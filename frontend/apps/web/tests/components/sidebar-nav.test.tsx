@@ -41,9 +41,11 @@ describe("SidebarNav", () => {
   it("renders all 8 nav items", () => {
     render(<SidebarNav />, { wrapper: makeWrapper() })
     expect(screen.getByText("Dashboard")).toBeInTheDocument()
+    // F4 Part 1: "Chat" replaces the old
+    // "Conversations" placeholder (now a real route).
+    expect(screen.getByText("Chat")).toBeInTheDocument()
     expect(screen.getByText("Documents")).toBeInTheDocument()
     expect(screen.getByText("Search")).toBeInTheDocument()
-    expect(screen.getByText("Conversations")).toBeInTheDocument()
     expect(screen.getByText("Knowledge Graph")).toBeInTheDocument()
     expect(screen.getByText("Agents")).toBeInTheDocument()
     expect(screen.getByText("MCP")).toBeInTheDocument()
@@ -53,9 +55,10 @@ describe("SidebarNav", () => {
   it("marks the 'Coming Soon' items as disabled + visible badge", () => {
     render(<SidebarNav />, { wrapper: makeWrapper() })
     const soonBadges = screen.getAllByText(/^soon$/i)
-    // 5 items are "coming soon": Search, Conversations,
-    // Knowledge Graph, Agents, MCP. Settings is live.
-    expect(soonBadges.length).toBe(5)
+    // F4 Part 1: 4 items are "coming soon"
+    // (Search, Knowledge Graph, Agents, MCP).
+    // Chat is now a live route.
+    expect(soonBadges.length).toBe(4)
   })
 
   it("marks the live items as links (active state wiring is exercised by `pathname === href`)", () => {

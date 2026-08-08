@@ -46,14 +46,9 @@ interface NavItem {
 
 const NAV: readonly NavItem[] = [
   { href: "/app/dashboard", label: "Dashboard", icon: "House" },
+  { href: "/app/chat", label: "Chat", icon: "MessageSquare" },
   { href: "/app/documents", label: "Documents", icon: "FileText" },
   { href: "/app/search", label: "Search", icon: "Search", comingSoon: true },
-  {
-    href: "/app/conversations",
-    label: "Conversations",
-    icon: "MessageSquare",
-    comingSoon: true,
-  },
   {
     href: "/app/graph",
     label: "Knowledge Graph",

@@ -1,11 +1,11 @@
 /**
  * QuickActions — the dashboard's "Quick Actions" row.
  *
- * **F3 Part 1 (Task 8).** Three tiles: Upload Document
- * (live), Search Knowledge (coming soon), Create Agent
- * (coming soon). The F4+ versions of these will wire
- * to real navigation + modals; for now the layout is
- * the deliverable.
+ * **F3 Part 1 (Task 8) + F4 Part 1 (Task 18).** Three
+ * tiles: Upload Document (live), Ask Cortex (live —
+ * lands in F4 Part 1), Create Agent (coming soon).
+ * The F4+ versions of these will wire to real
+ * navigation + modals.
  *
  * **Responsive.** Renders as a 1-up on mobile, 2-up
  * on small, 3-up on large. The F1 `Card` primitive
@@ -13,9 +13,14 @@
  * `className` so we just supply the right classes
  * here.
  *
- * **Upload trigger.** The Upload card opens a
- * stub callback that surfaces a toast — F3 Part 2
- * wires this to the real upload modal.
+ * **Upload trigger.** The Upload card navigates to
+ * `/app/documents` (F3 Part 2 wires the real upload
+ * modal there).
+ *
+ * **Ask Cortex trigger.** Navigates to `/app/chat`
+ * where the empty state + input await the user's
+ * first question. The submission flow itself
+ * arrives in F4 Part 2.
  */
 
 "use client"
@@ -31,14 +36,15 @@ export function QuickActions(): ReactNode {
   const router = useRouter()
 
   function onUpload() {
-    // F3 Part 2 wires the real upload modal. For now
-    // we route the user to Documents so they have
-    // somewhere to go.
     toast({
       title: "Document upload",
-      description: "Uploads open in F3 Part 2. Heading to Documents for now.",
+      description: "Heading to Documents so you can drop a file.",
     })
     router.push("/app/documents" as never)
+  }
+
+  function onAsk() {
+    router.push("/app/chat" as never)
   }
 
   return (
@@ -51,11 +57,11 @@ export function QuickActions(): ReactNode {
         onAction={onUpload}
       />
       <QuickActionCard
-        title="Search Knowledge"
-        description="Hybrid BM25 + vector search across your entire workspace."
-        icon="Search"
-        actionLabel="Search"
-        variant="coming-soon"
+        title="Ask Cortex"
+        description="Ask anything about your indexed documents. Answers are grounded and source-cited."
+        icon="Sparkles"
+        actionLabel="Ask"
+        onAction={onAsk}
       />
       <QuickActionCard
         title="Create Agent"
