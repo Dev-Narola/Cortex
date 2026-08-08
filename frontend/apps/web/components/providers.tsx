@@ -32,7 +32,7 @@
 import { ThemeProvider } from "next-themes"
 import type { ReactNode } from "react"
 
-import { ToastProvider, ToastViewport } from "@cortex/ui"
+import { ToastProvider, ToastViewport, Toaster } from "@cortex/ui"
 
 import { QueryProvider } from "@/lib/query/provider"
 import { ViewTransitions } from "@/lib/theme/view-transitions"
@@ -44,6 +44,7 @@ export function Providers({ children }: { children: ReactNode }) {
         <QueryProvider>
           <ToastProvider>
             {children}
+            <Toaster />
             <ToastViewport />
           </ToastProvider>
         </QueryProvider>

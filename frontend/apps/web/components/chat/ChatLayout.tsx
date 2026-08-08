@@ -4,28 +4,25 @@
  *   - MessageList (flex-1)
  *   - MessageInput (pinned to the bottom)
  *
- * **F4 Part 1 (Task 8).** This is the visual
- * container. The page routes own the data +
- * mutations; this component only arranges the
- * chrome. That separation lets the same layout
- * be reused by the future F5 conversation list
- * (which will own its own data + selection
- * state).
+ * **F4 Part 1 (Task 8) + Part 2.** This is the
+ * visual container. The page routes own the
+ * data + mutations; this component only
+ * arranges the chrome.
+ *
+ * **Streaming (Part 2).** The component now
+ * takes an `ActiveStream` so the message list
+ * can render the in-flight streaming slot.
+ * It also passes `isBusy` to the input — the
+ * input disables Send while a turn is in
+ * flight (Task 24).
+ *
+ * **The Send handler.** The parent page wires
+ * the real mutation + WebSocket flow. This
+ * component only forwards.
  *
  * **Responsive.** Single column at every
  * breakpoint. The 320px citation panel (Part 3)
- * is not yet reserved — Part 3 will introduce
- * a two-column variant of this layout.
- *
- * **Height.** The outer container is `flex
- * flex-col h-full` so the message list can claim
- * the remaining height between header + input.
- * The (app) layout's `<main>` already provides
- * the viewport height.
- *
- * **The input is wired with a no-op submit in
- * Part 1.** Part 2 will thread the real
- * mutation + WebSocket flow.
+ * is not yet reserved.
  */
 
 "use client"
@@ -33,6 +30,7 @@
 import { useState, type ReactNode } from "react"
 
 import type { Message } from "@/types/conversation"
+import type { ActiveStream } from "@/hooks/chat/conversationStreamStore"
 
 import { ConversationHeader } from "./ConversationHeader"
 import { MessageInput } from "./MessageInput"
@@ -45,16 +43,31 @@ export interface ChatLayoutProps {
    *  empty — the layout renders the empty state
    *  in that case. */
   messages?: Message[]
+  /**
+   * Active stream for the conversation. Pass
+   * `null` when the page has no id yet (the
+   * new-conversation flow before the first
+   * message is sent). The MessageList uses
+   * this to render the streaming slot.
+   */
+  stream?: ActiveStream | null
+  /**
+   * `true` while a turn is in flight. The
+   * input disables Send; the layout could
+   * also show a subtle "Generation in
+   * progress" affordance in the future.
+   */
+  isBusy?: boolean
   /** Called when the user submits a non-empty
-   *  message. Part 1 wires this to a no-op toast
-   *  so the input is exercisable; Part 2 wires it
-   *  to the real POST + WS flow. */
+   *  message. The parent wires the real flow. */
   onSend?: (value: string) => void
 }
 
 export function ChatLayout({
   title,
   messages = [],
+  stream = null,
+  isBusy = false,
   onSend,
 }: ChatLayoutProps): ReactNode {
   const [draft, setDraft] = useState("")
@@ -68,11 +81,17 @@ export function ChatLayout({
   return (
     <div className="flex h-full min-h-0 flex-col">
       <ConversationHeader title={title} />
-      <MessageList messages={messages} />
+      <MessageList messages={messages} stream={stream} />
       <MessageInput
         value={draft}
         onChange={setDraft}
         onSubmit={handleSend}
+        disabled={isBusy}
+        placeholder={
+          isBusy
+            ? "Cortex is generating a response…"
+            : "Ask something about your knowledge base…"
+        }
       />
     </div>
   )

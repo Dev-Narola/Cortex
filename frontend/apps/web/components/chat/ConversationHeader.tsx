@@ -53,7 +53,10 @@ export function ConversationHeader({
       const conversation = await create.mutateAsync({
         title: "New conversation",
       })
-      router.push(`/app/chat/${conversation.id}` as never)
+      // Route group `(app)` does not contribute a URL
+      // segment — the route lives at `/chat/{id}`,
+      // not `/app/chat/{id}`. (F4 Part 2: Task 31.)
+      router.push(`/chat/${conversation.id}` as never)
     } catch (err) {
       toast({
         title: "Couldn't start a new conversation",

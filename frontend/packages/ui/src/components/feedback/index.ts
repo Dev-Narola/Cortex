@@ -24,6 +24,7 @@ export {
   ToastProvider,
   ToastTitle,
   ToastViewport,
+  Toaster,
   toast,
   useToast,
 } from "./Toast"

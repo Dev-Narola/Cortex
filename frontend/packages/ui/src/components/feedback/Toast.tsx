@@ -271,3 +271,45 @@ function useToast() {
     dismiss: (toastId?: string) => dispatch({ type: "DISMISS_TOAST", toastId }),
   }
 }
+
+/**
+ * Toaster — the consumer component that maps the
+ * toast state into rendered `<Toast>` items. Must
+ * be mounted inside a `<ToastProvider>` (and
+ * typically paired with a `<ToastViewport>`).
+ *
+ * **Why we ship this in `@cortex/ui` rather than
+ * the app.** The shadcn Toaster pattern requires
+ * the imperative `toast()` API + a renderer. The
+ * `toast()` function is the entry point; the
+ * `Toaster` component is the consumer. Both
+ * belong in the package so apps have a one-stop
+ * primitive set.
+ */
+export function Toaster() {
+  const { toasts } = useToast()
+  return (
+    <>
+      {toasts.map(function renderToast({
+        id,
+        title,
+        description,
+        action,
+        ...rest
+      }) {
+        return (
+          <Toast key={id} {...rest}>
+            <div className="grid gap-1">
+              {title ? <ToastTitle>{title}</ToastTitle> : null}
+              {description ? (
+                <ToastDescription>{description}</ToastDescription>
+              ) : null}
+            </div>
+            {action}
+            <ToastClose />
+          </Toast>
+        )
+      })}
+    </>
+  )
+}
