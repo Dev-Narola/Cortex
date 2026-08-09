@@ -1,5 +1,5 @@
 /**
- * StreamingMessage — F4 Part 2 (Tasks 20, 22, 23).
+ * StreamingMessage — F4 Part 2 (Tasks 20, 22, 23) + Part 3.
  *
  * Verifies:
  *   - The Spark Glow is rendered while
@@ -14,6 +14,9 @@
  *     normal MessageBubble.
  *   - The accumulator content is shown
  *     while the stream is active.
+ *   - The conversationId + retrievedChunkIds
+ *     props are forwarded to the citation
+ *     resolver (Part 3).
  */
 
 import { render, screen } from "@testing-library/react"
@@ -42,19 +45,24 @@ describe("StreamingMessage", () => {
       <StreamingMessage
         content="Cortex uses"
         isActive={true}
+        conversationId="c-1"
+        retrievedChunkIds={[]}
       />,
     )
     expect(screen.getByText("Cortex uses")).toBeInTheDocument()
-    // The streaming cursor is a visible
-    // block (Tailwind's bg-volt-500/80).
-    // We just confirm the article has
-    // `data-streaming` set to true.
     const article = screen.getByRole("article")
     expect(article.getAttribute("data-streaming")).toBe("true")
   })
 
   it("renders the Generating pill while active", () => {
-    render(<StreamingMessage content="Cortex" isActive={true} />)
+    render(
+      <StreamingMessage
+        content="Cortex"
+        isActive={true}
+        conversationId="c-1"
+        retrievedChunkIds={[]}
+      />,
+    )
     expect(screen.getByText(/generating/i)).toBeInTheDocument()
   })
 
@@ -63,6 +71,8 @@ describe("StreamingMessage", () => {
       <StreamingMessage
         content="Cortex uses Postgres"
         isActive={false}
+        conversationId="c-1"
+        retrievedChunkIds={[]}
         finalMessage={null}
       />,
     )
@@ -76,6 +86,8 @@ describe("StreamingMessage", () => {
       <StreamingMessage
         content="Cortex uses Postgres"
         isActive={false}
+        conversationId="c-1"
+        retrievedChunkIds={[]}
         finalMessage={makeMessage({
           id: "a-1",
           role: "assistant",
@@ -83,11 +95,6 @@ describe("StreamingMessage", () => {
         })}
       />,
     )
-    // The handoff bubble has its own
-    // `data-role` from MessageBubble. The
-    // streaming-specific attributes
-    // (`data-streaming`) should NOT be
-    // present.
     const article = screen.getByRole("article")
     expect(article.getAttribute("data-streaming")).toBeNull()
     expect(article.getAttribute("data-role")).toBe("assistant")

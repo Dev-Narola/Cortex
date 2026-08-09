@@ -34,6 +34,7 @@ import { useTheme } from "next-themes"
 import { useEffect, useState, type ReactNode } from "react"
 
 import { OnboardingGuard, ProtectedRoute } from "@/components/auth"
+import { DocumentDetailHost } from "@/components/documents/DocumentDetailHost"
 import { AppSidebar, type AppSidebarState } from "@/components/navigation/AppSidebar"
 import { BreadcrumbProvider } from "@/components/navigation/BreadcrumbProvider"
 import { Topbar } from "@/components/navigation/Topbar"
@@ -48,7 +49,16 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       <OnboardingGuard>
         <BreadcrumbProvider>
           <ThemeApplier>
-            <AppShell>{children}</AppShell>
+            <AppShell>
+              {children}
+              {/* DocumentDetailHost is the (app) layout's
+                  single mount point for the F3 document
+                  drawer. F4 Part 3 promoted it from the
+                  documents page to here so the chat
+                  citation panel can open the same drawer
+                  via the global document-selection store. */}
+              <DocumentDetailHost />
+            </AppShell>
           </ThemeApplier>
         </BreadcrumbProvider>
       </OnboardingGuard>

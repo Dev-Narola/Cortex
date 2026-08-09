@@ -81,7 +81,12 @@ afterEach(() => {
 
 describe("MessageBubble", () => {
   it("renders a user message with the 'You' label and ember accent", () => {
-    render(<MessageBubble message={makeMessage({ role: "user", content: "Hi" })} />)
+    render(
+      <MessageBubble
+        conversationId="c-1"
+        message={makeMessage({ role: "user", content: "Hi" })}
+      />,
+    )
     expect(screen.getByText("You")).toBeInTheDocument()
     expect(screen.getByText("Hi")).toBeInTheDocument()
     const article = screen.getByRole("article")
@@ -91,6 +96,7 @@ describe("MessageBubble", () => {
   it("renders an assistant message with the 'Assistant' label", () => {
     render(
       <MessageBubble
+        conversationId="c-1"
         message={makeMessage({
           role: "assistant",
           content: "Cortex uses pgvector for semantic retrieval…",
@@ -108,6 +114,7 @@ describe("MessageBubble", () => {
   it("renders a tool message with the 'Tool' label + monospace class", () => {
     render(
       <MessageBubble
+        conversationId="c-1"
         message={makeMessage({
           role: "tool",
           content: '{"chunks": [1, 2, 3]}',
@@ -128,7 +135,7 @@ describe("MessageBubble", () => {
 
 describe("MessageList", () => {
   it("renders the empty state when there are no messages", () => {
-    render(<MessageList messages={[]} stream={null} />)
+    render(<MessageList messages={[]} stream={null} conversationId="c-1" />)
     expect(
       screen.getByText(/ask anything about your knowledge base/i),
     ).toBeInTheDocument()
@@ -138,6 +145,7 @@ describe("MessageList", () => {
     render(
       <MessageList
         stream={null}
+        conversationId="c-1"
         messages={[
           makeMessage({ id: "m-1", role: "user", content: "Hi" }),
           makeMessage({ id: "m-2", role: "assistant", content: "Hello" }),
@@ -368,7 +376,7 @@ describe("ConversationHeader", () => {
 describe("ChatLayout", () => {
   it("composes header + empty state + input", () => {
     const onSend = vi.fn()
-    render(<ChatLayout title={null} onSend={onSend} />, {
+    render(<ChatLayout title={null} onSend={onSend} conversationId="c-1" />, {
       wrapper: makeWrapper(),
     })
     // Header (heading)
@@ -387,6 +395,7 @@ describe("ChatLayout", () => {
     render(
       <ChatLayout
         title="Architecture"
+        conversationId="c-1"
         messages={[
           makeMessage({ id: "m-1", role: "user", content: "Hi" }),
           makeMessage({ id: "m-2", role: "assistant", content: "Hello" }),
@@ -401,7 +410,7 @@ describe("ChatLayout", () => {
   it("passes the input through to onSend and clears the draft", async () => {
     const onSend = vi.fn()
     const user = userEvent.setup()
-    render(<ChatLayout title={null} onSend={onSend} />, {
+    render(<ChatLayout title={null} onSend={onSend} conversationId="c-1" />, {
       wrapper: makeWrapper(),
     })
     const textarea = screen.getByLabelText(/^message$/i)

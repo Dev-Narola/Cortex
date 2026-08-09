@@ -26,6 +26,9 @@ import {
   DocumentSelectionProvider,
   useDocumentSelection,
 } from "@/components/documents/DocumentSelectionProvider"
+import {
+  useDocumentSelectionStore,
+} from "@/components/documents/DocumentSelectionStore"
 import { DocumentStatusBadge } from "@/components/documents/DocumentStatusBadge"
 import { DocumentToolbar } from "@/components/documents/DocumentToolbar"
 import { DocumentsEmptyState } from "@/components/documents/DocumentsEmptyState"
@@ -49,6 +52,11 @@ function withSelection(ui: React.ReactNode) {
 }
 
 beforeEach(() => {
+  // F4 Part 3: the selection store is
+  // module-level so the chat citation
+  // panel can drive it from any tree.
+  // Tests must start from a clean state.
+  useDocumentSelectionStore.getState().reset()
   // TooltipRoot uses Radix which mounts a portal — silence
   // any console.error noise from happy-dom's missing
   // getBoundingClientRect on the portal host.
@@ -202,15 +210,24 @@ describe("DocumentsTable", () => {
 })
 
 describe("DocumentSelectionProvider", () => {
-  it("throws when useDocumentSelection is used outside the provider", () => {
-    // The Provider exposes the hook to test
-    // the error path explicitly.
+  it("works without a Provider (F4 Part 3 — global store)", () => {
+    // F4 Part 3 promoted the selection state
+    // to a module-level Zustand store so the
+    // chat citation panel can drive it from
+    // any tree. The hook no longer throws
+    // when used outside a Provider — the
+    // Provider is a no-op shim kept for
+    // backward compatibility with F3 JSX.
     function Probe() {
-      useDocumentSelection()
-      return null
+      const { selectedId, isOpen } = useDocumentSelection()
+      return (
+        <span data-testid="probe" data-selected={String(selectedId)} data-open={String(isOpen)} />
+      )
     }
-    // Render outside the provider — expect throw.
-    expect(() => render(<Probe />)).toThrow(/must be used inside/i)
+    render(<Probe />)
+    const probe = screen.getByTestId("probe")
+    expect(probe.getAttribute("data-selected")).toBe("null")
+    expect(probe.getAttribute("data-open")).toBe("false")
   })
 
   it("returns the initial null state", () => {

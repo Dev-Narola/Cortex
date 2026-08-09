@@ -2,56 +2,59 @@
  * StreamingMessage — the live assistant bubble
  * during a token-by-token stream.
  *
- * **F4 Part 2 (Tasks 20, 22, 23).** This
- * component is rendered in place of a normal
- * `MessageBubble` while a turn is in flight.
- * It reads the accumulator from the
- * conversation stream store and:
+ * **F4 Part 2 (Tasks 20, 22, 23) + Part 3.**
+ * This component is rendered in place of a
+ * normal `MessageBubble` while a turn is in
+ * flight. It reads the accumulator + the
+ * streamed citations from the conversation
+ * stream store and:
  *
  *   - Renders the partial content with a
  *     subtle streaming cursor.
+ *   - Renders citation chips inline once the
+ *     backend has emitted them. F4 Part 3
+ *     keeps the chips at the end of the
+ *     streaming bubble (rather than inline
+ *     in the text) because the V3 stream
+ *     doesn't insert `[1]` markers in the
+ *     token content; the chips are the
+ *     authoritative grounding markers.
  *   - Applies the "Spark Glow" treatment:
  *     a soft, breathing radial gradient
  *     behind the bubble. The glow settles
  *     flat when the turn completes.
  *   - Falls back to a normal `MessageBubble`
  *     once the server-authoritative row is
- *     in the cache (i.e. the conversation
- *     query has been invalidated +
- *     refetched by `useInvalidateOnStreamComplete`).
+ *     in the cache.
  *
  * **Why a separate component, not a flag on
- * MessageBubble.** The Spark Glow is a layout-
- * level treatment (absolute-positioned pseudo-
- * element behind the bubble) — it's a
- * fundamentally different visual. Keeping it
+ * MessageBubble.** The Spark Glow is a
+ * layout-level treatment; keeping it
  * isolated means the rest of the message
- * styles stay cheap (no per-render conditional
- * class strings).
+ * styles stay cheap.
  *
- * **The cursor (Task 23).** A single `▌`
- * glyph appended to the accumulator. The
- * glyph disappears when the store transitions
- * to `completed` (the user message is no
- * longer "active").
+ * **The cursor (Task 23).** A subtle block
+ * appended to the accumulator. Disappears
+ * when the store transitions to `completed`.
  *
- * **The Spark Glow (Task 22).** A soft Volt
- * radial gradient that breathes via Tailwind's
- * `animate-pulse` while `isStreaming` is
- * true. When the turn completes the
- * `data-streaming` attribute drops + the
- * keyframe animation pauses, leaving the
- * bubble flat. The intensity is deliberately
- * subtle — the spec calls out a calm,
- * authenticated workspace, not a fireworks
- * display.
+ * **Citation rendering.** Same data path as
+ * `MessageBubble` — both call
+ * `useResolvedCitations(message, conversationId)`.
+ * For the streaming bubble the "message"
+ * shape is synthesised from the store
+ * because we don't have a real `Message`
+ * row until the server persists it.
  */
 
 import { type ReactNode } from "react"
 
 import { cn } from "@cortex/ui"
 
+import { CitationChip } from "./citations/CitationChip"
 import { MessageBubble } from "./MessageBubble"
+import { useCitationPanelStore } from "@/hooks/chat"
+import { useResolvedCitations } from "@/hooks/chat/useResolvedCitations"
+
 import type { Message } from "@/types/conversation"
 
 export interface StreamingMessageProps {
@@ -59,21 +62,36 @@ export interface StreamingMessageProps {
    * The accumulator so far (joined `token`
    * events). Empty when the WS has just
    * accepted the send but no `message_start`
-   * has arrived yet — in that case the
-   * component renders a subtle "Generating…"
-   * placeholder.
+   * has arrived yet.
    */
   content: string
   /** True while the store is `streaming` or
-   *  `sending` (i.e. active). Drives the
-   *  cursor + the Spark Glow animation. */
+   *  `sending`. Drives the cursor + the
+   *  Spark Glow animation. */
   isActive: boolean
+  /**
+   * Conversation id — the citation resolver
+   * looks up streamed citations in the
+   * per-conversation store.
+   */
+  conversationId: string
+  /**
+   * The chunk ids the server has persisted
+   * on the assistant message. Empty while
+   * the turn is in flight (the server only
+   * writes the row on `message_complete`).
+   * For the live stream, the resolver
+   * falls back to "all streamed citations"
+   * so chips appear as soon as the WS
+   * delivers the first `citation` envelope.
+   */
+  retrievedChunkIds: string[]
   /**
    * Optional final message to fall back to
    * once the turn completes. The component
    * hands the rendering off to a normal
-   * `MessageBubble` when this is set + the
-   * stream is no longer active.
+   * `MessageBubble` when this is set +
+   * the stream is no longer active.
    */
   finalMessage?: Message | null
   className?: string
@@ -82,20 +100,46 @@ export interface StreamingMessageProps {
 export function StreamingMessage({
   content,
   isActive,
+  conversationId,
+  retrievedChunkIds,
   finalMessage,
   className,
 }: StreamingMessageProps): ReactNode {
   // When the server-authoritative row is
   // available AND the stream is no longer
-  // active, render a normal bubble. This
-  // is the moment the Spark Glow drops.
+  // active, render a normal bubble.
   if (!isActive && finalMessage) {
-    return <MessageBubble message={finalMessage} className={className} />
+    return (
+      <MessageBubble
+        message={finalMessage}
+        conversationId={conversationId}
+        className={className}
+      />
+    )
   }
 
-  // Active state: render the accumulator
-  // (or a "Generating…" placeholder if no
-  // token has arrived yet).
+  // The bubble always uses the real
+  // resolver; the resolver handles the
+  // case where the message has no
+  // retrievedChunkIds yet by falling back
+  // to the streamed list (the
+  // `useResolvedCitations` implementation
+  // covers that).
+  // The streaming bubble doesn't have a
+  // real Message yet — we synthesise a
+  // minimal one for the resolver's input.
+  const synthetic = {
+    id: "streaming",
+    retrievedChunkIds,
+  }
+  const { data: citations } = useResolvedCitations(
+    synthetic,
+    conversationId,
+  )
+  const selectedCitationId = useCitationPanelStore(
+    (s) => s.selectedCitationId,
+  )
+
   return (
     <article
       data-streaming={isActive ? "true" : "false"}
@@ -108,11 +152,6 @@ export function StreamingMessage({
         className,
       )}
     >
-      {/* Spark Glow — a soft Volt radial
-          gradient behind the bubble. The
-          element is always present; the
-          animation only runs while the data
-          attribute is "true". */}
       <span
         aria-hidden="true"
         className={cn(
@@ -135,7 +174,7 @@ export function StreamingMessage({
         ) : null}
       </div>
       <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">
-        {content || (isActive ? "" : "")}
+        {content}
         {isActive ? (
           <span
             aria-hidden="true"
@@ -143,6 +182,23 @@ export function StreamingMessage({
           />
         ) : null}
       </p>
+      {citations.length > 0 ? (
+        <div
+          className="mt-2 flex flex-wrap items-center gap-1.5"
+          data-citation-rail
+          data-citation-count={citations.length}
+        >
+          {citations.map((c) => (
+            <CitationChip
+              key={c.id}
+              id={c.id}
+              index={c.index}
+              documentTitle={c.documentTitle}
+              isActive={selectedCitationId === c.id}
+            />
+          ))}
+        </div>
+      ) : null}
     </article>
   )
 }

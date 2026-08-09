@@ -1,28 +1,44 @@
 /**
- * ChatLayout — the three-row composition:
- *   - ConversationHeader
- *   - MessageList (flex-1)
+ * ChatLayout — F4 Part 1 + 2 + 3.
+ *
+ * Composes the chat surface:
+ *   - ConversationHeader (top)
+ *   - MessageList (flex-1, conversation column)
+ *   - CitationPanel (right column, ~320px on
+ *     desktop; hidden on mobile until the
+ *     user taps a chip, then it overlays the
+ *     conversation)
  *   - MessageInput (pinned to the bottom)
  *
- * **F4 Part 1 (Task 8) + Part 2.** This is the
- * visual container. The page routes own the
- * data + mutations; this component only
- * arranges the chrome.
+ * **Streaming (Part 2).** Threads the
+ * `ActiveStream` to the message list so the
+ * in-flight streaming slot renders.
  *
- * **Streaming (Part 2).** The component now
- * takes an `ActiveStream` so the message list
- * can render the in-flight streaming slot.
- * It also passes `isBusy` to the input — the
- * input disables Send while a turn is in
- * flight (Task 24).
+ * **Citations (Part 3, Tasks 44, 45, 59).**
+ * The layout owns the panel's mount point.
+ * The conversation column shrinks to
+ * `flex-1`; the citation panel sits in a
+ * `w-full md:w-80 lg:w-96` right column
+ * (320-384px). On mobile (`< md`) the
+ * panel is an absolute overlay over the
+ * conversation — the spec calls for an
+ * overlay/sheet treatment at narrow
+ * viewports, and the conversation
+ * remains the primary surface.
  *
- * **The Send handler.** The parent page wires
- * the real mutation + WebSocket flow. This
- * component only forwards.
+ * **The panel is always mounted** so
+ * React doesn't re-create the focus trap
+ * or escape listener on every open. The
+ * `isOpen` flag in the store controls
+ * visibility via the `data-citation-panel`
+ * attribute. We do not conditionally
+ * unmount the panel — the slide-in is
+ * cheaper to render than the
+ * mount/unmount cost.
  *
- * **Responsive.** Single column at every
- * breakpoint. The 320px citation panel (Part 3)
- * is not yet reserved.
+ * **The Send handler.** The parent page
+ * wires the real mutation + WebSocket
+ * flow. This component only forwards.
  */
 
 "use client"
@@ -32,6 +48,7 @@ import { useState, type ReactNode } from "react"
 import type { Message } from "@/types/conversation"
 import type { ActiveStream } from "@/hooks/chat/conversationStreamStore"
 
+import { CitationPanel } from "./citations/CitationPanel"
 import { ConversationHeader } from "./ConversationHeader"
 import { MessageInput } from "./MessageInput"
 import { MessageList } from "./MessageList"
@@ -39,27 +56,18 @@ import { MessageList } from "./MessageList"
 export interface ChatLayoutProps {
   /** Conversation title (server-owned). */
   title?: string | null
-  /** Conversation messages (server-owned). May be
-   *  empty — the layout renders the empty state
-   *  in that case. */
+  /** Conversation messages (server-owned). */
   messages?: Message[]
-  /**
-   * Active stream for the conversation. Pass
-   * `null` when the page has no id yet (the
-   * new-conversation flow before the first
-   * message is sent). The MessageList uses
-   * this to render the streaming slot.
-   */
+  /** Active stream for the conversation. */
   stream?: ActiveStream | null
-  /**
-   * `true` while a turn is in flight. The
-   * input disables Send; the layout could
-   * also show a subtle "Generation in
-   * progress" affordance in the future.
-   */
+  /** Conversation id — the citation panel
+   *  and each bubble need this for the
+   *  resolver. */
+  conversationId: string
+  /** `true` while a turn is in flight. */
   isBusy?: boolean
   /** Called when the user submits a non-empty
-   *  message. The parent wires the real flow. */
+   *  message. */
   onSend?: (value: string) => void
 }
 
@@ -67,6 +75,7 @@ export function ChatLayout({
   title,
   messages = [],
   stream = null,
+  conversationId,
   isBusy = false,
   onSend,
 }: ChatLayoutProps): ReactNode {
@@ -79,9 +88,38 @@ export function ChatLayout({
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
+    <div
+      className="flex h-full min-h-0 flex-col"
+      data-chat-layout
+    >
       <ConversationHeader title={title} />
-      <MessageList messages={messages} stream={stream} />
+      <div className="relative flex min-h-0 flex-1 flex-col md:flex-row">
+        <div
+          className="flex min-h-0 min-w-0 flex-1 flex-col"
+          data-chat-conversation
+        >
+          <MessageList
+            messages={messages}
+            stream={stream}
+            conversationId={conversationId}
+          />
+        </div>
+        {/* Citation panel. Always mounted; the
+            store's `isOpen` flag drives the
+            slide/overlay visibility via the
+            `data-citation-panel-state` attribute
+            (mobile) and the inline `md:flex`
+            (desktop). */}
+        <div
+          className="absolute inset-0 z-20 flex bg-background md:static md:z-auto md:w-80 md:bg-transparent lg:w-96"
+          data-citation-panel-slot
+        >
+          <CitationPanel
+            conversationId={conversationId}
+            className="md:rounded-none"
+          />
+        </div>
+      </div>
       <MessageInput
         value={draft}
         onChange={setDraft}

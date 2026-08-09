@@ -162,6 +162,7 @@ export function ChatView(): ReactNode {
     <ChatLayout
       title={null}
       messages={[]}
+      conversationId="new"
       onSend={handleSend}
       isBusy={create.isPending || send.isPending}
     />

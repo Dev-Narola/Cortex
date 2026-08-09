@@ -42,6 +42,9 @@ import {
   DocumentSelectionProvider,
   useDocumentSelection,
 } from "@/components/documents/DocumentSelectionProvider"
+import {
+  useDocumentSelectionStore,
+} from "@/components/documents/DocumentSelectionStore"
 import { FileUploadTab } from "@/components/documents/upload/FileUploadTab"
 import { UploadDocumentModal } from "@/components/documents/upload/UploadDocumentModal"
 import { UrlUploadTab } from "@/components/documents/upload/UrlUploadTab"
@@ -121,6 +124,10 @@ function setFileOnInput(file: File): void {
 }
 
 beforeEach(() => {
+  // F4 Part 3: the selection store is
+  // module-level; reset before every test
+  // so the test order doesn't matter.
+  useDocumentSelectionStore.getState().reset()
   // Radix + happy-dom emit portal warnings we don't
   // care about in unit tests.
   vi.spyOn(console, "error").mockImplementation(() => {})

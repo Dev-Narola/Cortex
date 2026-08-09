@@ -155,6 +155,7 @@ export function ConversationView({
       title={data?.title ?? "Conversation"}
       messages={data?.messages ?? []}
       stream={stream.stream}
+      conversationId={conversationId}
       isBusy={stream.isBusy}
       onSend={handleSend}
     />

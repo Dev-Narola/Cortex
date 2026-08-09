@@ -2,36 +2,65 @@
  * MessageBubble — a single user/assistant/tool
  * message in the conversation.
  *
- * **F4 Part 1 (Task 11).** Three roles:
+ * **F4 Part 1 (Task 11) + Part 3.** Three roles:
  *   - `user`      — right-aligned, accent-on-mist
  *   - `assistant` — left-aligned, plain slate
- *   - `tool`      — left-aligned, monospaced (a
- *                   future agent trace; the spec
- *                   keeps the role in the type
- *                   model even if the UI is minimal)
+ *   - `tool`      — left-aligned, monospaced
  *
- * **No fake streaming, no fake citations, no
- * action buttons.** Those are F4 Part 2 +
- * Part 3 + Part 4 respectively.
+ * **Citation chips.** Assistant messages
+ * with `retrievedChunkIds` render an
+ * inline chip rail at the end of the
+ * content. Each chip opens the citation
+ * panel via the global panel store. The
+ * chips are real — they only render when
+ * the resolver has produced a citation
+ * (no fake markers, Task 40).
  *
- * **Whitespace.** Message content is rendered as
- * pre-wrapped text. The future streaming message
- * (Part 2) will append to the same `<p>` node.
+ * **Why chips at the end (not inline in
+ * the text).** The V3 backend does not
+ * insert `[1] [2] [3]` markers into the
+ * assistant text — the citation events
+ * arrive as separate envelopes with their
+ * own order. Future V4 may add inline
+ * markers (the spec's "Markdown / rich
+ * answer interaction" path), at which
+ * point we extend the bubble to render
+ * markers inline. Today's chips are the
+ * safe, traceable shape: every visible
+ * marker corresponds to a real chunk.
  *
- * **Accessibility.** Each bubble is a `<article>`
- * with `aria-label` that includes the role + a
- * timestamp. Screen readers announce "user
- * message, 3 minutes ago" etc.
+ * **Whitespace.** Message content is
+ * pre-wrapped text. The streaming message
+ * (Part 2) appends to the same `<p>`.
+ *
+ * **Accessibility.** Each bubble is a
+ * `<article>` with `aria-label` that
+ * includes the role + a timestamp. Screen
+ * readers announce "user message, 3
+ * minutes ago" etc.
  */
 
 import type { ReactNode } from "react"
 
 import { cn } from "@cortex/ui"
 
+import { CitationChip } from "./citations/CitationChip"
+import { useCitationPanelStore } from "@/hooks/chat"
+import { useResolvedCitations } from "@/hooks/chat/useResolvedCitations"
+
 import type { Message, MessageRole } from "@/types/conversation"
 
 export interface MessageBubbleProps {
   message: Message
+  /**
+   * Conversation id — used by the citation
+   * resolver to look up streamed citation
+   * data. Required because the resolver
+   * needs both the message's chunk ids
+   * AND the stream store's accumulated
+   * citation envelopes.
+   */
+  conversationId: string
   className?: string
 }
 
@@ -59,15 +88,29 @@ function formatTime(iso: string): string {
 
 export function MessageBubble({
   message,
+  conversationId,
   className,
 }: MessageBubbleProps): ReactNode {
   const style = ROLE_STYLES[message.role]
   const label = ROLE_LABEL[message.role]
+  const { data: citations } = useResolvedCitations(
+    message,
+    conversationId,
+  )
+  const selectedCitationId = useCitationPanelStore(
+    (s) => s.selectedCitationId,
+  )
+  // Only assistant messages show
+  // citations. The resolver still runs
+  // for user / tool but returns [].
+  const showChips =
+    message.role === "assistant" && citations.length > 0
   return (
     <article
       aria-label={`${label} message at ${formatTime(message.createdAt) || "unknown time"}`}
       className={cn("w-fit", style, className)}
       data-role={message.role}
+      data-message-id={message.id}
     >
       <div
         className={cn(
@@ -84,6 +127,23 @@ export function MessageBubble({
       <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">
         {message.content}
       </p>
+      {showChips ? (
+        <div
+          className="mt-2 flex flex-wrap items-center gap-1.5"
+          data-citation-rail
+          data-citation-count={citations.length}
+        >
+          {citations.map((c) => (
+            <CitationChip
+              key={c.id}
+              id={c.id}
+              index={c.index}
+              documentTitle={c.documentTitle}
+              isActive={selectedCitationId === c.id}
+            />
+          ))}
+        </div>
+      ) : null}
     </article>
   )
 }
