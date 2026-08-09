@@ -84,8 +84,10 @@ describe("MessageBubble", () => {
     render(
       <MessageBubble
         conversationId="c-1"
+        isBusy={false}
         message={makeMessage({ role: "user", content: "Hi" })}
       />,
+      { wrapper: makeWrapper() },
     )
     expect(screen.getByText("You")).toBeInTheDocument()
     expect(screen.getByText("Hi")).toBeInTheDocument()
@@ -97,11 +99,13 @@ describe("MessageBubble", () => {
     render(
       <MessageBubble
         conversationId="c-1"
+        isBusy={false}
         message={makeMessage({
           role: "assistant",
           content: "Cortex uses pgvector for semantic retrieval…",
         })}
       />,
+      { wrapper: makeWrapper() },
     )
     expect(screen.getByText("Assistant")).toBeInTheDocument()
     expect(
@@ -115,11 +119,13 @@ describe("MessageBubble", () => {
     render(
       <MessageBubble
         conversationId="c-1"
+        isBusy={false}
         message={makeMessage({
           role: "tool",
           content: '{"chunks": [1, 2, 3]}',
         })}
       />,
+      { wrapper: makeWrapper() },
     )
     expect(screen.getByText("Tool")).toBeInTheDocument()
     expect(screen.getByText(/chunks/)).toBeInTheDocument()
@@ -135,7 +141,15 @@ describe("MessageBubble", () => {
 
 describe("MessageList", () => {
   it("renders the empty state when there are no messages", () => {
-    render(<MessageList messages={[]} stream={null} conversationId="c-1" />)
+    render(
+      <MessageList
+        messages={[]}
+        stream={null}
+        conversationId="c-1"
+        isBusy={false}
+      />,
+      { wrapper: makeWrapper() },
+    )
     expect(
       screen.getByText(/ask anything about your knowledge base/i),
     ).toBeInTheDocument()
@@ -146,11 +160,13 @@ describe("MessageList", () => {
       <MessageList
         stream={null}
         conversationId="c-1"
+        isBusy={false}
         messages={[
           makeMessage({ id: "m-1", role: "user", content: "Hi" }),
           makeMessage({ id: "m-2", role: "assistant", content: "Hello" }),
         ]}
       />,
+      { wrapper: makeWrapper() },
     )
     expect(screen.getByText("Hi")).toBeInTheDocument()
     expect(screen.getByText("Hello")).toBeInTheDocument()

@@ -35,6 +35,7 @@ import { useEffect, useState, type ReactNode } from "react"
 
 import { OnboardingGuard, ProtectedRoute } from "@/components/auth"
 import { DocumentDetailHost } from "@/components/documents/DocumentDetailHost"
+import { RateLimitBanner } from "@/components/feedback/RateLimitBanner"
 import { AppSidebar, type AppSidebarState } from "@/components/navigation/AppSidebar"
 import { BreadcrumbProvider } from "@/components/navigation/BreadcrumbProvider"
 import { Topbar } from "@/components/navigation/Topbar"
@@ -131,6 +132,12 @@ function AppShell({ children }: { children: ReactNode }) {
             <UserMenu />
           </div>
         </div>
+        {/* RateLimitBanner is the (app) shell's
+            shared 429 surface (F4 Part 4, Task 97).
+            It mounts below the topbar so the count-down
+            is always visible. Sits `sticky` to stay put
+            while the user scrolls. */}
+        <RateLimitBanner />
         <main className="flex-1 overflow-y-auto p-6">{children}</main>
       </div>
     </div>

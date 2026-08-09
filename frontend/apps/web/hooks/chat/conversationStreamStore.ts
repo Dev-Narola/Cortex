@@ -78,7 +78,8 @@ export type StreamStatus =
   | "sending" // ws open, no message_start yet
   | "streaming" // message_start received, tokens arriving
   | "completed" // message_complete received, persisted
-  | "error" // terminal failure
+  | "interrupted" // WS dropped mid-stream (Task 94)
+  | "error" // terminal failure (server-emitted `error` envelope)
 
 export interface ActiveStream {
   /** Conversation id this stream belongs to. */
@@ -146,6 +147,17 @@ interface ConversationStreamState {
   resetTurn: (conversationId: string) => void
   /** Apply a parsed WS event. */
   applyEvent: (conversationId: string, event: ConversationEvent) => void
+  /**
+   * Mark the in-flight turn as interrupted. The
+   * socket dropped before `message_complete`
+   * arrived (Task 94). The store preserves the
+   * accumulator so the user can read the
+   * partial response. The page shows an
+   * "Interrupted" pill with a Retry action.
+   *
+   * No-op if no turn is in flight.
+   */
+  markInterrupted: (conversationId: string, reason?: string) => void
   /** Connection-state transition. */
   setConnectionState: (conversationId: string, state: WebSocketState) => void
   /**
@@ -255,6 +267,32 @@ export const useConversationStreamStore =
       })
     },
 
+    markInterrupted: (conversationId, reason) => {
+      set((s) => {
+        const current = s.streams.get(conversationId)
+        if (!current) return s
+        // Only meaningful if a turn is in
+        // flight. We don't downgrade a
+        // `completed` or `error` status.
+        if (
+          current.status !== "sending" &&
+          current.status !== "streaming"
+        ) {
+          return s
+        }
+        const nextStreams = new Map(s.streams)
+        nextStreams.set(conversationId, {
+          ...current,
+          status: "interrupted",
+          error: {
+            code: "INTERRUPTED",
+            ...(reason !== undefined ? { message: reason } : {}),
+          },
+        })
+        return { streams: nextStreams }
+      })
+    },
+
     clearPendingContent: (conversationId) => {
       set((s) => {
         const current = s.streams.get(conversationId)
@@ -290,6 +328,8 @@ export const conversationStreamStore = {
     useConversationStreamStore.getState().resetTurn(conversationId),
   applyEvent: (conversationId: string, event: ConversationEvent) =>
     useConversationStreamStore.getState().applyEvent(conversationId, event),
+  markInterrupted: (conversationId: string, reason?: string) =>
+    useConversationStreamStore.getState().markInterrupted(conversationId, reason),
   setConnectionState: (conversationId: string, state: WebSocketState) =>
     useConversationStreamStore.getState().setConnectionState(conversationId, state),
   /**

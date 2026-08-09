@@ -16,3 +16,6 @@ export {
   citationPanelStore,
   findCitation,
 } from "./citationPanelStore"
+export { useRegenerate } from "./useRegenerate"
+export { useFeedback, feedbackStore } from "./useFeedback"
+export { useStreamStatus } from "./useStreamStatus"

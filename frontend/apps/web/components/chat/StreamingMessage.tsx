@@ -113,6 +113,7 @@ export function StreamingMessage({
       <MessageBubble
         message={finalMessage}
         conversationId={conversationId}
+        isBusy={false}
         className={className}
       />
     )

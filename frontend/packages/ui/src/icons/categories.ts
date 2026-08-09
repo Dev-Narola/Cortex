@@ -54,6 +54,8 @@ export const ICON_ACTIONS = [
   "Link",
   "LogIn",
   "LogOut",
+  "ThumbsUp",
+  "ThumbsDown",
 ] as const
 
 export const ICON_NAVIGATION = [
@@ -81,8 +83,8 @@ export const ICON_NAVIGATION = [
 export const ICON_STATUS = [
   "CheckCircle2",
   "XCircle",
-  "AlertCircle",
-  "AlertTriangle",
+  "CircleAlert",
+  "TriangleAlert",
   "Info",
   "HelpCircle",
   "Loader2",
@@ -91,6 +93,7 @@ export const ICON_STATUS = [
   "CircleSlash",
   "Clock",
   "Calendar",
+  "ZapOff",
 ] as const
 
 export const ICON_DOCUMENTS = [

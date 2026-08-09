@@ -2,7 +2,8 @@
  * MessageBubble — a single user/assistant/tool
  * message in the conversation.
  *
- * **F4 Part 1 (Task 11) + Part 3.** Three roles:
+ * **F4 Part 1 (Task 11) + Part 3 + Part 4.** Three
+ * roles:
  *   - `user`      — right-aligned, accent-on-mist
  *   - `assistant` — left-aligned, plain slate
  *   - `tool`      — left-aligned, monospaced
@@ -29,6 +30,22 @@
  * safe, traceable shape: every visible
  * marker corresponds to a real chunk.
  *
+ * **Action row (Part 4, Tasks 76-88).** Below
+ * the citation rail on completed assistant
+ * messages, we render a `MessageActions` row
+ * with Copy / Regenerate / 👍 / 👎. The row
+ * is hidden while the conversation is busy
+ * (the same condition disables the input).
+ *
+ * **The preceding user message.** Regenerate
+ * needs the text of the most recent user
+ * message to re-send it. The list threads
+ * that in as `precedingUserMessage` — when
+ * missing (e.g. the assistant message is
+ * the first row, or the list couldn't
+ * resolve the predecessor), the Regenerate
+ * button is hidden.
+ *
  * **Whitespace.** Message content is
  * pre-wrapped text. The streaming message
  * (Part 2) appends to the same `<p>`.
@@ -45,6 +62,7 @@ import type { ReactNode } from "react"
 import { cn } from "@cortex/ui"
 
 import { CitationChip } from "./citations/CitationChip"
+import { MessageActions } from "./MessageActions"
 import { useCitationPanelStore } from "@/hooks/chat"
 import { useResolvedCitations } from "@/hooks/chat/useResolvedCitations"
 
@@ -61,6 +79,19 @@ export interface MessageBubbleProps {
    * citation envelopes.
    */
   conversationId: string
+  /**
+   * True while a turn is in flight. The
+   * action row is hidden in that case (the
+   * Regenerate button would otherwise be
+   * enabled and could fire a duplicate).
+   */
+  isBusy: boolean
+  /**
+   * The text of the preceding user message
+   * — Regenerate re-sends it. When `null`,
+   * the Regenerate button is hidden.
+   */
+  precedingUserMessage?: string | null
   className?: string
 }
 
@@ -89,6 +120,8 @@ function formatTime(iso: string): string {
 export function MessageBubble({
   message,
   conversationId,
+  isBusy,
+  precedingUserMessage,
   className,
 }: MessageBubbleProps): ReactNode {
   const style = ROLE_STYLES[message.role]
@@ -105,6 +138,12 @@ export function MessageBubble({
   // for user / tool but returns [].
   const showChips =
     message.role === "assistant" && citations.length > 0
+  // Action row only for completed assistant
+  // messages. "Completed" = not currently
+  // being streamed (the streaming bubble has
+  // its own component; if we're here, the
+  // message is the persisted row).
+  const showActions = message.role === "assistant"
   return (
     <article
       aria-label={`${label} message at ${formatTime(message.createdAt) || "unknown time"}`}
@@ -143,6 +182,19 @@ export function MessageBubble({
             />
           ))}
         </div>
+      ) : null}
+      {showActions ? (
+        <MessageActions
+          conversationId={conversationId}
+          messageId={message.id}
+          content={message.content}
+          isBusy={isBusy}
+          regenerateFor={
+            precedingUserMessage
+              ? { conversationId, content: precedingUserMessage }
+              : null
+          }
+        />
       ) : null}
     </article>
   )

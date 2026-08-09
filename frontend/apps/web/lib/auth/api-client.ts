@@ -30,6 +30,8 @@
 import { ApiClient } from "@cortex/api-client"
 import { publicEnv } from "@cortex/config"
 
+import { rateLimitStore } from "@/hooks/system/rateLimitStore"
+
 import { useAuthStore } from "./store"
 
 let cached: ApiClient | null = null
@@ -69,6 +71,14 @@ export function getApiClient(): ApiClient {
         })
       }
       return refreshPromise
+    },
+    onRateLimited: ({ retryAfterMs, message }) => {
+      // F4 Part 4 (Task 97): surface 429s via the
+      // shared rate-limit banner. The banner lives
+      // at the (app) layout level so every
+      // authenticated screen sees the same
+      // message.
+      rateLimitStore.set({ retryAfterMs, message: message ?? undefined })
     },
   })
   return cached

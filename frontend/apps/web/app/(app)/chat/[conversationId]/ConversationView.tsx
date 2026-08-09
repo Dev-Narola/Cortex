@@ -47,10 +47,11 @@
 
 import { useCallback, useEffect, type ReactNode } from "react"
 
-import { Spinner, toast } from "@cortex/ui"
+import { toast } from "@cortex/ui"
 
 import { ChatErrorState } from "@/components/chat/ChatErrorState"
 import { ChatLayout } from "@/components/chat/ChatLayout"
+import { ConversationSkeleton } from "@/components/chat/ConversationSkeleton"
 import {
   useConversation,
   useConversationStream,
@@ -122,15 +123,7 @@ export function ConversationView({
   )
 
   if (isLoading) {
-    return (
-      <div
-        className="flex h-full min-h-[40vh] items-center justify-center"
-        role="status"
-        aria-live="polite"
-      >
-        <Spinner size="lg" />
-      </div>
-    )
+    return <ConversationSkeleton pairCount={3} />
   }
 
   if (isError) {

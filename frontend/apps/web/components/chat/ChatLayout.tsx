@@ -102,6 +102,7 @@ export function ChatLayout({
             messages={messages}
             stream={stream}
             conversationId={conversationId}
+            isBusy={isBusy}
           />
         </div>
         {/* Citation panel. Always mounted; the

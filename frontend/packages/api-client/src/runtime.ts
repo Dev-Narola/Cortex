@@ -15,11 +15,23 @@ import { publicEnv } from "@cortex/config"
 
 export type AccessTokenProvider = () => string | null | Promise<string | null>
 export type RefreshHandler = () => Promise<boolean>
+/**
+ * Optional callback invoked when the server returns
+ * 429. The handler receives the parsed `Retry-After`
+ * header in milliseconds (when present) so the host
+ * app can surface a rate-limit banner. F4 Part 4
+ * (Task 97) wires this to the global rate-limit store.
+ */
+export type RateLimitedHandler = (input: {
+  retryAfterMs: number | null
+  message: string | null
+}) => void
 
 export interface ApiClientConfig {
   baseUrl?: string
   getAccessToken?: AccessTokenProvider
-  onUnauthorized?: () => Promise<boolean>
+  onUnauthorized?: RefreshHandler
+  onRateLimited?: RateLimitedHandler
 }
 
 export class ApiError extends Error {
@@ -38,11 +50,13 @@ export class ApiClient {
   private baseUrl: string
   private getAccessToken?: AccessTokenProvider
   private onUnauthorized?: RefreshHandler
+  private onRateLimited?: RateLimitedHandler
 
   constructor(config: ApiClientConfig = {}) {
     this.baseUrl = config.baseUrl ?? publicEnv.NEXT_PUBLIC_API_URL
     this.getAccessToken = config.getAccessToken
     this.onUnauthorized = config.onUnauthorized
+    this.onRateLimited = config.onRateLimited
   }
 
   async request<T = unknown>(
@@ -113,6 +127,24 @@ export class ApiClient {
 
     if (!res.ok) {
       const body = await res.json().catch(() => null)
+      // 429: parse the Retry-After header (seconds
+      // per RFC 9110) and notify the host. We
+      // don't throw here for the 429 — the banner
+      // + the per-call handler decide what to do.
+      if (res.status === 429 && this.onRateLimited) {
+        const retryHeader = res.headers.get("Retry-After")
+        const retrySeconds = retryHeader
+          ? Number.parseInt(retryHeader, 10)
+          : Number.NaN
+        const retryAfterMs = Number.isFinite(retrySeconds)
+          ? retrySeconds * 1000
+          : null
+        const bodyMessage =
+          body && typeof body === "object" && "message" in body
+            ? String((body as { message?: unknown }).message ?? "")
+            : null
+        this.onRateLimited({ retryAfterMs, message: bodyMessage })
+      }
       throw new ApiError(res.status, body)
     }
 

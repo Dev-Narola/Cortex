@@ -196,8 +196,27 @@ export function useConversationStream(
           .getState()
           .setConnectionState(conversationId, state)
       }
+      // F4 Part 4 (Task 94): the socket
+      // died before `message_complete`.
+      // Distinguish a user-initiated close
+      // (navigated away) from an unexpected
+      // drop. The latter flips the store
+      // to `interrupted` so the banner can
+      // render. The `wasClosedByUser` flag
+      // is the ConversationSocket's own
+      // discriminator.
+      const onClose = () => {
+        if (socket.wasClosedByUser()) return
+        useConversationStreamStore
+          .getState()
+          .markInterrupted(
+            conversationId,
+            "Lost the connection before the response finished.",
+          )
+      }
       socket.subscribe(onEvent)
       socket.subscribeState(onState)
+      socket.subscribeClose(onClose)
       // Sync the initial connection state in
       // case the socket is already open from
       // a previous mount.
