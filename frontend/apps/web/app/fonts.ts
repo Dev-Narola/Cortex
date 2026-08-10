@@ -1,32 +1,48 @@
 /**
  * Fonts — `next/font` configuration.
  *
- * **F0 scope (Task 13).** All three fonts are self-hosted via
- * `next/font` so the first paint renders correctly without a
- * runtime Google Fonts request. The CSS variables defined here
- * map directly to the `--font-display`, `--font-sans`, and
- * `--font-mono` variables in `tokens.css`.
+ * **Modern + retro pairing.** F4 P4+ picks a
+ * stack that reads as "contemporary SaaS with
+ * a retro accent" — the kind of typographic
+ * tension that makes a workspace feel
+ * crafted instead of default.
  *
- * **Why three exports.** The UI specification calls out three
- * roles:
- *   - `displayFont` — large headings, hero, branding. Bricolage
- *     Grotesque. Variable font, gives us the full weight range
- *     for free.
- *   - `bodyFont` — running text. General Sans is the design-spec
- *     choice but isn't on Google Fonts; we use Inter as the
- *     self-hostable substitute and keep the variable name neutral
- *     so swapping in the real one later is a one-line change.
- *   - `monoFont` — code, token strings, technical readouts.
- *     JetBrains Mono.
+ *   - `displayFont` — Bricolage Grotesque for
+ *     headings + brand. The variable axis
+ *     gives us the full weight range for
+ *     free, and the slightly humanist strokes
+ *     carry the "retro" half of the brief.
+ *   - `bodyFont` — Space Grotesk for running
+ *     text. The geometric forms + open
+ *     apertures feel distinctly modern; the
+ *     subtle retro proportions in the digits
+ *     echo the display font's voice without
+ *     copying it.
+ *   - `monoFont` — JetBrains Mono for code,
+ *     token strings, technical readouts. The
+ *     consistent choice for monospace across
+ *     the app (kept from F0 for continuity).
  *
- * **Why not a `<link>` to fonts.googleapis.com.** next/font
- * downloads the font files at build time and serves them from
- * the same origin — no third-party request, no FOUC, no extra
- * DNS lookup on the critical path. The spec is explicit about
- * self-hosting.
+ * **Why self-hosted.** `next/font` downloads
+ * the files at build time and serves them
+ * from the same origin — no third-party
+ * request, no FOUC, no extra DNS lookup on
+ * the critical path. The spec is explicit
+ * about self-hosting.
+ *
+ * **The weight sets.** Display goes heavier
+ * than body because the heading cuts are
+ * already large; the body needs the medium
+ * range for inline emphasis (links, code
+ * markers). Mono uses the standard 400/500/700
+ * set so terminal-style accents stay legible.
  */
 
-import { Bricolage_Grotesque, Inter, JetBrains_Mono } from "next/font/google"
+import {
+  Bricolage_Grotesque,
+  JetBrains_Mono,
+  Space_Grotesk,
+} from "next/font/google"
 
 export const displayFont = Bricolage_Grotesque({
   subsets: ["latin"],
@@ -35,7 +51,7 @@ export const displayFont = Bricolage_Grotesque({
   weight: ["300", "400", "500", "600", "700", "800"],
 })
 
-export const bodyFont = Inter({
+export const bodyFont = Space_Grotesk({
   subsets: ["latin"],
   variable: "--font-sans",
   display: "swap",

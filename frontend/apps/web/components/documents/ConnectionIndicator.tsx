@@ -41,12 +41,19 @@ export function ConnectionIndicator({
   className,
 }: ConnectionIndicatorProps): ReactNode | null {
   if (state === "idle") return null
+  // Render as a <span> (not <div>) so the
+  // indicator can live inside a <p> without
+  // triggering a React hydration warning
+  // ("<div> cannot be a descendant of <p>").
+  // The toolbar's description slot uses a
+  // <p> wrapper; an inline indicator is the
+  // right shape for that context.
   return (
-    <div
+    <span
       role="status"
       aria-live="polite"
       className={cn(
-        "flex items-center gap-1.5 text-xs text-muted-foreground",
+        "inline-flex items-center gap-1.5 align-middle text-xs text-muted-foreground",
         className,
       )}
     >
@@ -62,6 +69,6 @@ export function ConnectionIndicator({
         )}
       />
       <span>{COPY[state]}</span>
-    </div>
+    </span>
   )
 }

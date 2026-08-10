@@ -60,7 +60,7 @@ export default function ConversationError({
               <span>Try again</span>
             </Button>
             <Button
-              onClick={() => router.push("/app/chat" as never)}
+              onClick={() => router.push("/chat" as never)}
               variant="default"
               size="sm"
             >

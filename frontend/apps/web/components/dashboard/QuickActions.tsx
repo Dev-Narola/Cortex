@@ -44,7 +44,7 @@ export function QuickActions(): ReactNode {
   }
 
   function onAsk() {
-    router.push("/app/chat" as never)
+    router.push("/chat" as never)
   }
 
   return (

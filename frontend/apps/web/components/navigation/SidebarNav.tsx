@@ -46,7 +46,11 @@ interface NavItem {
 
 const NAV: readonly NavItem[] = [
   { href: "/app/dashboard", label: "Dashboard", icon: "House" },
-  { href: "/app/chat", label: "Chat", icon: "MessageSquare" },
+  // F4 P1: the chat route lives at `/chat` (the
+  // `(app)` group doesn't add a URL segment). The
+  // old `/app/chat` link in this sidebar 404'd
+  // because the route group is parens-only.
+  { href: "/chat", label: "Chat", icon: "MessageSquare" },
   { href: "/app/documents", label: "Documents", icon: "FileText" },
   { href: "/app/search", label: "Search", icon: "Search", comingSoon: true },
   {

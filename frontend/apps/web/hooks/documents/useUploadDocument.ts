@@ -45,6 +45,16 @@ export type UseUploadDocumentResult = UseMutationResult<
 
 export function useUploadDocument(): UseUploadDocumentResult {
   return useMutation<UploadDocumentAccepted, Error, UploadDocumentParams>({
+    // The `mutationKey` is required by TanStack
+    // Query v5 in two situations:
+    //   1. `useMutationState` selectors that look
+    //      up mutations by key.
+    //   2. The devtools panel needs a key to
+    //      attach to the mutation row.
+    // We always provide one so future callers
+    // (and the devtools) can find the upload
+    // mutation without guessing.
+    mutationKey: ["documents", "upload"],
     mutationFn: (params) => uploadDocument(params),
   })
 }

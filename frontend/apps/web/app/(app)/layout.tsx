@@ -68,21 +68,29 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 }
 
 function ThemeApplier({ children }: { children: ReactNode }) {
-  const { setTheme } = useTheme()
+  const { setTheme, resolvedTheme } = useTheme()
   const { setAnimatedTheme, isSupported } = useViewTransitions()
-  // (F2 Part 2, Task 18) — the light → dark transition
-  // fires on the first mount of the (app) layout. We
-  // use `document.startViewTransition` when available so
-  // the body background + text colour morph smoothly
-  // (~300ms). On browsers without the API we set
-  // synchronously to avoid a flash.
+  // (F2 Part 2, Task 18) — the (app) shell is
+  // always dark; the marketing shell is always
+  // light. We ONLY set the theme on the first
+  // mount when `resolvedTheme` is undefined
+  // (the provider hasn't restored a choice yet).
+  //
+  // The previous version ran on every mount and
+  // forced dark, which clobbered the user's
+  // light-mode toggle (they'd flip to light,
+  // navigate, and the layout snapped back to
+  // dark). Honouring an existing resolved theme
+  // is the right behaviour for a settings-
+  // persistent toggle.
   useEffect(() => {
+    if (resolvedTheme) return
     if (isSupported) {
       setAnimatedTheme("dark")
     } else {
       setTheme("dark")
     }
-  }, [isSupported, setAnimatedTheme, setTheme])
+  }, [resolvedTheme, isSupported, setAnimatedTheme, setTheme])
   return <>{children}</>
 }
 
