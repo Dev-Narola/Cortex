@@ -71,6 +71,39 @@ export interface Conversation {
   messages?: Message[]
 }
 
+/**
+ * The list shape returned by `GET /conversations`.
+ *
+ * **F5 Part 1.** The backend's
+ * `ConversationListResponse` is a paginated envelope:
+ *
+ * ```json
+ * {
+ *   "items": [...ConversationSchema],
+ *   "total": 42,
+ *   "limit": 50,
+ *   "offset": 0
+ * }
+ * ```
+ *
+ * **Ordering.** The backend orders by `updated_at`
+ * descending — the most recently active conversation
+ * is first. The frontend does NOT re-order; we
+ * trust the server's order so refresh + new
+ * conversation always slot in at the same place.
+ *
+ * **Pagination.** Part 1 renders a flat list
+ * (no paging controls yet). The envelope is still
+ * the right shape because Part 2's archive +
+ * search will need `total` + cursor support.
+ */
+export interface ConversationListResponse {
+  items: Conversation[]
+  total: number
+  limit: number
+  offset: number
+}
+
 export interface CreateConversationRequest {
   title: string
 }
