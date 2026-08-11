@@ -1,5 +1,7 @@
 export { createConversation, type CreateConversationParams } from "./createConversation"
+export { deleteConversation, type DeleteConversationParams } from "./deleteConversation"
 export { getConversation, type GetConversationParams } from "./getConversation"
 export { getConversationMessages, type GetConversationMessagesParams } from "./getConversationMessages"
 export { listConversations, type ListConversationsParams } from "./listConversations"
+export { renameConversation, type RenameConversationParams } from "./renameConversation"
 export { sendMessage, type SendMessageParams } from "./sendMessage"

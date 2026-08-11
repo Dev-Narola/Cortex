@@ -56,6 +56,9 @@ export const ICON_ACTIONS = [
   "LogOut",
   "ThumbsUp",
   "ThumbsDown",
+  "Ellipsis",
+  "EllipsisVertical",
+  "Pencil",
 ] as const
 
 export const ICON_NAVIGATION = [

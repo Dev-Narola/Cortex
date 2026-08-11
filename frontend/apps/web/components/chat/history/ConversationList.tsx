@@ -41,6 +41,15 @@ import { Button, Icon, Skeleton } from "@cortex/ui"
 import { ConversationListItem } from "./ConversationListItem"
 import type { Conversation } from "@/types/conversation"
 
+export interface ConversationListItemRowProps {
+  isRenaming: boolean
+  isDeleting: boolean
+  renameError: string | null
+  deleteError: string | null
+  onRenameSubmit: (title: string) => void
+  onDeleteConfirm: () => void
+}
+
 export interface ConversationListProps {
   conversations: Conversation[] | undefined
   /** True while the underlying query is loading. */
@@ -62,6 +71,17 @@ export interface ConversationListProps {
    * CTA so the empty state has an action.
    */
   onStartConversation: () => void
+  /**
+   * Per-conversation row props (rename +
+   * delete state + callbacks). The parent
+   * owns the mutations; the list just threads
+   * the per-id props through. A conversation
+   * without an entry here renders in
+   * `isRenaming=false, isDeleting=false,
+   * renameError=null, deleteError=null`
+   * — the "Normal" sub-state only.
+   */
+  itemPropsById?: Map<string, ConversationListItemRowProps>
   className?: string
 }
 
@@ -74,6 +94,7 @@ export function ConversationList({
   activeConversationId,
   onRetry,
   onStartConversation,
+  itemPropsById,
   className,
 }: ConversationListProps): ReactNode {
   if (isLoading) {
@@ -189,14 +210,23 @@ export function ConversationList({
         "flex flex-col gap-0.5 px-1.5 py-1 " + (className ?? "")
       }
     >
-      {conversations.map((c) => (
-        <li key={c.id} className="min-w-0">
-          <ConversationListItem
-            conversation={c}
-            activeConversationId={activeConversationId}
-          />
-        </li>
-      ))}
+      {conversations.map((c) => {
+        const rowProps = itemPropsById?.get(c.id)
+        return (
+          <li key={c.id} className="min-w-0">
+            <ConversationListItem
+              conversation={c}
+              activeConversationId={activeConversationId}
+              isRenaming={rowProps?.isRenaming ?? false}
+              isDeleting={rowProps?.isDeleting ?? false}
+              renameError={rowProps?.renameError ?? null}
+              deleteError={rowProps?.deleteError ?? null}
+              onRenameSubmit={rowProps?.onRenameSubmit}
+              onDeleteConfirm={rowProps?.onDeleteConfirm}
+            />
+          </li>
+        )
+      })}
     </ul>
   )
 }
