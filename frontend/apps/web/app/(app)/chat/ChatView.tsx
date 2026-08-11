@@ -67,6 +67,7 @@ function makeOptimisticUserMessage(
     content,
     tokenCount: 0,
     retrievedChunkIds: [],
+    agentRunId: null,
     modelName: null,
     createdAt: new Date().toISOString(),
   }

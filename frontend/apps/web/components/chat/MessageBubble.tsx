@@ -2,7 +2,7 @@
  * MessageBubble — a single user/assistant/tool
  * message in the conversation.
  *
- * **F4 Part 1 (Task 11) + Part 3 + Part 4.** Three
+ * **F4 Part 1 (Task 11) + Part 3 + Part 4 + F5 P3.** Three
  * roles:
  *   - `user`      — right-aligned, accent-on-mist
  *   - `assistant` — left-aligned, plain slate
@@ -37,6 +37,17 @@
  * is hidden while the conversation is busy
  * (the same condition disables the input).
  *
+ * **Agent trace (F5 P3, integrated in F5 P4).**
+ * If the assistant message carries an
+ * ``agentRunId``, the bubble renders the
+ * ``<AgentTrace />`` below the action row.
+ * The trace is collapsed by default and
+ * only fetches when the panel mounts. If
+ * ``agentRunId`` is missing (the V3 F4 chat
+ * path doesn't dispatch agent runs), the
+ * trace is not rendered — the bubble
+ * behaves exactly as it did before F5 P3.
+ *
  * **The preceding user message.** Regenerate
  * needs the text of the most recent user
  * message to re-send it. The list threads
@@ -61,6 +72,7 @@ import type { ReactNode } from "react"
 
 import { cn } from "@cortex/ui"
 
+import { AgentTrace } from "./agents/AgentTrace"
 import { CitationChip } from "./citations/CitationChip"
 import { MessageActions } from "./MessageActions"
 import { useCitationPanelStore } from "@/hooks/chat"
@@ -144,6 +156,19 @@ export function MessageBubble({
   // its own component; if we're here, the
   // message is the persisted row).
   const showActions = message.role === "assistant"
+  // Agent trace: only on completed assistant
+  // messages that carry an `agentRunId`. The
+  // V3 F4 chat path does not dispatch agent
+  // runs, so the field is currently always
+  // null and the trace never renders. The
+  // wiring is here so V4 (or a future chat
+  // path that hooks into the agent system)
+  // can populate the field and the bubble
+  // just works.
+  const showAgentTrace =
+    message.role === "assistant" &&
+    typeof message.agentRunId === "string" &&
+    message.agentRunId.length > 0
   return (
     <article
       aria-label={`${label} message at ${formatTime(message.createdAt) || "unknown time"}`}
@@ -195,6 +220,11 @@ export function MessageBubble({
               : null
           }
         />
+      ) : null}
+      {showAgentTrace && message.agentRunId ? (
+        <div className="mt-3" data-message-trace={message.agentRunId}>
+          <AgentTrace runId={message.agentRunId} />
+        </div>
       ) : null}
     </article>
   )
