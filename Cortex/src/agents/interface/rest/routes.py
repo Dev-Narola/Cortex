@@ -36,10 +36,13 @@ from src.agents.application.services import (
     CreateAgentService,
     DeleteAgentInput,
     DeleteAgentService,
+    GetAgentRunService,
     GetAgentService,
     ListAgentsService,
     UpdateAgentInput,
     UpdateAgentService,
+    flatten_run_tool_calls,
+    serialise_run,
 )
 from src.agents.domain.entities import Agent, AgentStatus
 from src.agents.domain.value_objects import AgentConfiguration
@@ -122,6 +125,98 @@ class ExecuteAgentResponse(BaseModel):
     iterations: int = 0
     tool_calls: int = 0
     stop_reason: str | None = None
+
+
+# ---------------------------------------------------------------------------
+# F5 Part 3 — Agent Trace response models
+# ---------------------------------------------------------------------------
+
+
+class AgentToolCallSchema(BaseModel):
+    """A single, UI-ready tool-call record.
+
+    Mirrors :class:`FlattenedToolCall` from the application
+    service. The frontend only needs the three fields the
+    UI/UX spec calls out (name, result_summary, latency_ms)
+    plus ``id`` for React keys, ``status`` for visual treatment
+    of failed calls, and ``error`` for surfacing the failure
+    reason in the trace.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    id: str
+    name: str
+    result_summary: str
+    latency_ms: int | None = None
+    # ``ok`` / ``error`` / ``unknown``. Kept as a string (not
+    # an enum) so future backend statuses don't break the
+    # frontend.
+    status: str = "ok"
+    error: str | None = None
+
+
+class AgentStepSchema(BaseModel):
+    """A raw :class:`AgentStep` record.
+
+    Returned as part of the full-run endpoint. The frontend
+    usually works with :class:`AgentToolCallSchema` instead;
+    this shape is for the operator who wants to inspect the
+    run's raw structure.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    iteration: int
+    output: str = ""
+    tool_calls: list[dict[str, Any]] = Field(default_factory=list)
+    error: str | None = None
+    started_at: str | None = None
+    completed_at: str | None = None
+    latency_ms: int | None = None
+
+
+class AgentRunSchema(BaseModel):
+    """The full state of an :class:`AgentRun`.
+
+    Returned by ``GET /agents/runs/{run_id}``. The
+    ``tool_calls`` field is a convenience that flattens
+    ``steps`` into a single list of tool-call records (with
+    the final-answer step appended as ``generate_answer``).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    id: uuid.UUID
+    agent_id: uuid.UUID
+    tenant_id: uuid.UUID
+    user_id: uuid.UUID
+    input: str
+    output: str = ""
+    status: str
+    iterations: int = 0
+    tool_call_count: int = 0
+    total_tokens: int = 0
+    started_at: str | None = None
+    completed_at: str | None = None
+    steps: list[AgentStepSchema] = Field(default_factory=list)
+    tool_calls: list[AgentToolCallSchema] = Field(default_factory=list)
+
+
+class AgentToolCallsResponse(BaseModel):
+    """The trace payload returned by ``GET /agents/runs/{run_id}/tool-calls``.
+
+    Wraps the tool calls in an envelope so future fields
+    (pagination, summary metadata) can be added without
+    breaking existing clients.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    run_id: uuid.UUID
+    agent_id: uuid.UUID
+    status: str
+    tool_calls: list[AgentToolCallSchema] = Field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
@@ -313,6 +408,111 @@ async def execute_agent(
         iterations=len(result.run.steps),
         tool_calls=sum(len(s.tool_calls) for s in result.run.steps),
         stop_reason=result.stop_reason,
+    )
+
+
+# ---------------------------------------------------------------------------
+# F5 Part 3 — Agent Trace read endpoints
+# ---------------------------------------------------------------------------
+#
+# These endpoints expose the per-step tool-call data the
+# frontend's ``AgentTrace`` consumes. The frontend never sees
+# the in-memory ``AgentRun`` object directly; the route layer
+# translates the run + steps into a wire shape with computed
+# latency + one-line result summaries.
+#
+# **Tenant isolation.** ``ExecutionRepository.get_run`` filters
+# by ``(tenant_id, run_id)`` so a run from a different tenant
+# surfaces as 404 (not 403). The service layer raises
+# ``AgentRunNotFound``; FastAPI's exception handler converts
+# it into the project's standard error envelope.
+#
+# **No agent_id required.** Runs are identified by their
+# ``run_id`` alone. The route returns the run's ``agent_id``
+# in the response so the frontend can build a "back to agent"
+# link without a second round trip. This matches the spec's
+# ``GET /agents/runs/{id}/tool-calls`` shape.
+#
+# **Audit.** Reading a run is not currently audited — a trace
+# view is a low-value audit event and would just clutter the
+# operator's filter. We can revisit when the "shared agent run
+# link" feature ships.
+
+
+@router.get(
+    "/runs/{run_id}",
+    response_model=AgentRunSchema,
+    summary="Fetch a single agent run (with steps and flattened tool calls)",
+    responses={
+        200: {"description": "Run fetched successfully"},
+        404: {"description": "Run not found in this tenant"},
+    },
+)
+def get_agent_run(
+    run_id: uuid.UUID,
+    db: Annotated[Session, Depends(get_db)],
+    current: Annotated[tuple, Depends(get_current_user)],
+) -> AgentRunSchema:
+    """Return the full state of an :class:`AgentRun`.
+
+    The response carries every step the agent took during the
+    run, plus a convenience ``tool_calls`` list that flattens
+    the steps into a single ordered list of tool-call records
+    (with the synthesis step appended as ``generate_answer``).
+    """
+    user, tenant = current
+    service = GetAgentRunService(db)
+    run = service.execute(tenant_id=tenant.id, run_id=run_id)
+    payload = serialise_run(run)
+    return AgentRunSchema.model_validate(payload)
+
+
+@router.get(
+    "/runs/{run_id}/tool-calls",
+    response_model=AgentToolCallsResponse,
+    summary="Fetch the tool-call trace for a run",
+    responses={
+        200: {"description": "Tool calls fetched successfully"},
+        404: {"description": "Run not found in this tenant"},
+    },
+)
+def get_agent_run_tool_calls(
+    run_id: uuid.UUID,
+    db: Annotated[Session, Depends(get_db)],
+    current: Annotated[tuple, Depends(get_current_user)],
+) -> AgentToolCallsResponse:
+    """Return the flattened tool-call list for an :class:`AgentRun`.
+
+    This is the endpoint the frontend's ``AgentTrace``
+    component reads. The list is in execution order, one
+    record per tool call the LLM invoked, plus a synthetic
+    ``generate_answer`` record when the run terminated with
+    a non-tool final step.
+
+    The payload is intentionally small: per-step latency, a
+    one-line result summary, and an error marker. The full
+    raw ``steps`` payload is available via
+    ``GET /agents/runs/{run_id}`` for the operator view.
+    """
+    user, tenant = current
+    service = GetAgentRunService(db)
+    run = service.execute(tenant_id=tenant.id, run_id=run_id)
+    flat = flatten_run_tool_calls(run)
+    return AgentToolCallsResponse(
+        run_id=run.id,
+        agent_id=run.agent_id,
+        status=run.status.value,
+        tool_calls=[
+            AgentToolCallSchema(
+                id=tc.id,
+                name=tc.name,
+                result_summary=tc.result_summary,
+                latency_ms=tc.latency_ms,
+                status=tc.status,
+                error=tc.error,
+            )
+            for tc in flat
+        ],
     )
 
 
