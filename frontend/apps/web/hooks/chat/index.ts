@@ -1,5 +1,6 @@
 export { useConversation } from "./useConversation"
 export { useCreateConversation } from "./useCreateConversation"
+export { useConversations } from "./useConversations"
 export { useInvalidateConversations } from "./useInvalidateConversations"
 export {
   useSendMessage,
@@ -19,3 +20,4 @@ export {
 export { useRegenerate } from "./useRegenerate"
 export { useFeedback, feedbackStore } from "./useFeedback"
 export { useStreamStatus } from "./useStreamStatus"
+export { conversationsKeys } from "./conversationKeys"

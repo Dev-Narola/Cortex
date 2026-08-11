@@ -104,7 +104,7 @@ describe("hooks/chat", () => {
       })
       await result.current.mutateAsync({ title: "x" })
       expect(invalidateQueries).toHaveBeenCalledWith({
-        queryKey: ["conversations"],
+        queryKey: ["conversations", "list"],
       })
     })
 
@@ -193,7 +193,7 @@ describe("hooks/chat", () => {
       })
       await result.current()
       expect(invalidateQueries).toHaveBeenCalledWith({
-        queryKey: ["conversations"],
+        queryKey: ["conversations", "list"],
       })
     })
   })
