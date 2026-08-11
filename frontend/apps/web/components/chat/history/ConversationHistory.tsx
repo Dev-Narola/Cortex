@@ -1,26 +1,33 @@
 /**
  * ConversationHistory — the left-hand history pane
- * (F5 Part 1, Task 7).
+ * (F5 Part 1, Task 7; Part 2 adds rename + delete
+ * + the post-delete navigation rule).
  *
  * **Container responsibilities.**
  *   1. Owns the `useConversations` query (so
  *      other surfaces — search, archive — can
  *      mount the same data layer later).
- *   2. Composes the title row, the "+ New chat"
+ *   2. Owns the `useRenameConversation` +
+ *      `useDeleteConversation` mutations (F5 P2).
+ *   3. Composes the title row, the "+ New chat"
  *      CTA, and the `ConversationList`.
- *   3. Knows the active conversation id (from
+ *   4. Knows the active conversation id (from
  *      the route via `useParams`).
- *   4. Exposes a `refetch` handle that the list
+ *   5. Exposes a `refetch` handle that the list
  *      can call from its error state.
- *   5. Scrolls the active item into view when
+ *   6. Scrolls the active item into view when
  *      the route changes.
+ *   7. Routes the user off a deleted conversation
+ *      (Task 30) — see `usePostDeleteNavigation`
+ *      below.
  *
  * **Why the container owns the data layer.** The
  * list is intentionally a "dumb" component
- * (Tasks 8 + 32). The query lives here so a
- * future search / archive surface can mount
- * the same `useConversations` and reuse the
- * `ConversationList` unchanged.
+ * (Tasks 8 + 32). The query + the mutations
+ * live here so a future search / archive
+ * surface can mount the same `useConversations`
+ * + the same `useRenameConversation` and reuse
+ * the `ConversationList` unchanged.
  *
  * **The "active item always in view" detail.**
  * When the user navigates to a different
@@ -35,26 +42,44 @@
  * **Mobile drawer integration.** The container
  * accepts an `onNavigate` callback that the
  * `NewConversationButton` + the `ConversationList`
- * trigger. The parent (a future `ChatSidebar` on
- * `(app)/chat/page.tsx`) can use it to dismiss
- * the mobile drawer before the route
- * transition lands. Part 1 wires the callback
- * when the mobile drawer is added.
+ * trigger. The parent (the future mobile
+ * drawer wrapper on `(app)/chat/page.tsx`)
+ * uses it to dismiss the drawer before the
+ * route transition lands. Part 1 wires the
+ * callback when the mobile drawer is added.
+ *
+ * **F5 Part 2 — per-item error tracking.** Each
+ * row can be in `renaming` or `deleting` mode
+ * (its own local state). When the parent's
+ * mutation fails, the item surfaces the
+ * error inline (rename → input helper
+ * text; delete → confirmation panel). The
+ * `errorsByConversationId` map keeps the
+ * error state per conversation, so the
+ * user can re-edit the same row without
+ * the error bleeding across rows.
  */
 
 "use client"
 
-import { useParams, usePathname } from "next/navigation"
+import { useParams, usePathname, useRouter } from "next/navigation"
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
+  useState,
   type ReactNode,
 } from "react"
 
 import { Icon, cn } from "@cortex/ui"
 
-import { useConversations } from "@/hooks/chat"
+import {
+  useConversations,
+  useDeleteConversation,
+  useRenameConversation,
+  type UseConversationsResult,
+} from "@/hooks/chat/useConversations"
 import type { Conversation } from "@/types/conversation"
 
 import { ConversationList } from "./ConversationList"
@@ -71,16 +96,65 @@ export interface ConversationHistoryProps {
   className?: string
 }
 
+interface ItemErrors {
+  rename?: string | null
+  delete?: string | null
+}
+
+/**
+ * Pick the next conversation to navigate to
+ * after a delete. Rules (Task 30):
+ *
+ *   1. If the deleted id is NOT the active
+ *      conversation, do nothing — the active
+ *      route is fine.
+ *   2. If the deleted id IS the active
+ *      conversation:
+ *      a. If another conversation exists in
+ *         the updated list, navigate to the
+ *         first one.
+ *      b. Otherwise, navigate to /chat (the
+ *         empty state).
+ *
+ * The caller is the post-delete effect; we
+ * only need the picker here, not the effect.
+ */
+function pickNextRouteAfterDelete(
+  deletedId: string,
+  activeId: string | null,
+  remaining: Conversation[],
+): { kind: "stay" } | { kind: "navigate"; href: string } {
+  if (activeId !== deletedId) return { kind: "stay" }
+  const next = remaining[0]
+  if (next) {
+    return {
+      kind: "navigate",
+      href: `/chat/${encodeURIComponent(next.id)}`,
+    }
+  }
+  return { kind: "navigate", href: "/chat" }
+}
+
 export function ConversationHistory({
   onNavigate,
   className,
 }: ConversationHistoryProps): ReactNode {
   const params = useParams<{ conversationId?: string }>()
   const pathname = usePathname()
+  const router = useRouter()
   const activeConversationId = params?.conversationId ?? null
 
-  const query = useConversations({ limit: 50 })
+  const query: UseConversationsResult = useConversations({ limit: 50 })
+  const rename = useRenameConversation()
+  const deleteMut = useDeleteConversation()
   const listRef = useRef<HTMLDivElement>(null)
+
+  // Per-conversation error state. Keyed by id
+  // so re-clicking Rename on the same row
+  // shows the same error. Cleared on the next
+  // user-driven interaction (rename submit or
+  // delete confirm).
+  const [errors, setErrors] = useState<Record<string, ItemErrors>>({})
 
   const handleRetry = useCallback(() => {
     void query.refetch()
@@ -88,12 +162,76 @@ export function ConversationHistory({
 
   const handleStartConversation = useCallback(() => {
     onNavigate?.()
-    // The button itself runs the create
-    // mutation + router.push; this callback
-    // is only the side-channel for the
-    // "list empty" CTA which delegates to
-    // the same hook via the button below.
   }, [onNavigate])
+
+  /**
+   * Rename submit. Receives the trimmed title
+   * (the InlineRename component has already
+   * validated non-empty).
+   */
+  const handleRenameSubmit = useCallback(
+    (id: string) => async (title: string) => {
+      // Clear any prior error for this row.
+      setErrors((prev) => ({
+        ...prev,
+        [id]: { ...prev[id], rename: null },
+      }))
+      try {
+        await rename.mutateAsync({ id, title })
+      } catch (err) {
+        setErrors((prev) => ({
+          ...prev,
+          [id]: {
+            ...prev[id],
+            rename:
+              err instanceof Error
+                ? err.message
+                : "Couldn't rename the conversation.",
+          },
+        }))
+      }
+    },
+    [rename],
+  )
+
+  /**
+   * Delete confirm. After a successful delete
+   * we patch the route per the rule in
+   * `pickNextRouteAfterDelete` (Task 30).
+   */
+  const handleDeleteConfirm = useCallback(
+    (id: string) => async () => {
+      setErrors((prev) => ({
+        ...prev,
+        [id]: { ...prev[id], delete: null },
+      }))
+      try {
+        await deleteMut.mutateAsync({ id })
+        // The cache patch in the mutation already
+        // removed the row from the list. Pick
+        // the next route from the *current*
+        // cache (the data passed in below) and
+        // navigate.
+        const remaining = query.data?.items.filter((c) => c.id !== id) ?? []
+        const next = pickNextRouteAfterDelete(id, activeConversationId, remaining)
+        if (next.kind === "navigate") {
+          router.push(next.href as never)
+        }
+      } catch (err) {
+        setErrors((prev) => ({
+          ...prev,
+          [id]: {
+            ...prev[id],
+            delete:
+              err instanceof Error
+                ? err.message
+                : "Couldn't delete the conversation.",
+          },
+        }))
+      }
+    },
+    [activeConversationId, deleteMut, query.data, router],
+  )
 
   // Scroll the active item into view when the
   // route changes OR when the list data lands
@@ -107,10 +245,50 @@ export function ConversationHistory({
     el.scrollIntoView({ block: "nearest", behavior: "smooth" })
   }, [activeConversationId, pathname, query.data])
 
-  // Items the list should render. We hand the
-  // list the `data` (or undefined while
-  // loading) + the four-state shape; the list
-  // owns its own loading/empty/error/success UI.
+  // Memoised row props so the list doesn't
+  // re-render every row on every parent
+  // render. The callbacks close over the
+  // per-id action.
+  const itemPropsById = useMemo(() => {
+    const map = new Map<
+      string,
+      {
+        isRenaming: boolean
+        isDeleting: boolean
+        renameError: string | null
+        deleteError: string | null
+        onRenameSubmit: (title: string) => void
+        onDeleteConfirm: () => void
+      }
+    >()
+    const renamingId = rename.isPending
+      ? (rename.variables as { id: string } | undefined)?.id
+      : undefined
+    const deletingId = deleteMut.isPending
+      ? (deleteMut.variables as { id: string } | undefined)?.id
+      : undefined
+    for (const c of query.data?.items ?? []) {
+      map.set(c.id, {
+        isRenaming: renamingId === c.id,
+        isDeleting: deletingId === c.id,
+        renameError: errors[c.id]?.rename ?? null,
+        deleteError: errors[c.id]?.delete ?? null,
+        onRenameSubmit: handleRenameSubmit(c.id),
+        onDeleteConfirm: handleDeleteConfirm(c.id),
+      })
+    }
+    return map
+  }, [
+    query.data,
+    rename.isPending,
+    rename.variables,
+    deleteMut.isPending,
+    deleteMut.variables,
+    errors,
+    handleRenameSubmit,
+    handleDeleteConfirm,
+  ])
+
   const conversations: Conversation[] | undefined = query.data?.items
 
   return (
@@ -155,6 +333,7 @@ export function ConversationHistory({
           activeConversationId={activeConversationId}
           onRetry={handleRetry}
           onStartConversation={handleStartConversation}
+          itemPropsById={itemPropsById}
         />
       </div>
     </aside>

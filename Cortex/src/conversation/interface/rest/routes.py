@@ -390,6 +390,110 @@ def delete_conversation(
     return None
 
 
+# ---------------------------------------------------------------------------
+# PATCH /conversations/{id}  —  rename (F5 Part 2)
+# ---------------------------------------------------------------------------
+#
+# The V3 domain entity already had a ``rename(new_title)`` mutator
+# (see ``src/conversation/domain/entities.py``) but the REST surface
+# never exposed it. F5 Part 2 wires it so the F4 chat history
+# can do an inline rename.
+#
+# **Why PATCH.** Rename is a partial update; the conversation
+# carries many fields (id, tenant, user, summary, timestamps)
+# that the client should NOT have to echo back. ``title`` is the
+# only field the user is allowed to set. A PUT that requires the
+# whole shape would push that noise to the client.
+#
+# **Response shape.** The updated conversation, with the
+# new ``title`` + the bumped ``updated_at`` — the client can
+# patch the conversation list cache in one round-trip without
+# a follow-up refetch.
+#
+# **Authorization.** Same as the other conversation routes:
+# load by id, check tenant + user. 404 (not 403) for
+# "not found OR not yours" to avoid leaking existence.
+#
+# **Audit.** CONVERSATION_RENAMED records the previous title in
+# ``metadata`` so an operator can see the rename history without
+# joining the entity table.
+
+
+class UpdateConversationRequest(BaseModel):
+    """Body for ``PATCH /conversations/{id}``.
+
+    Currently only ``title`` is mutable. New mutable fields
+    can be added here without breaking older clients
+    (extras are ignored on the server side).
+    """
+
+    title: str = Field(min_length=1, max_length=512)
+
+
+@router.patch(
+    "/{conversation_id}",
+    response_model=ConversationSchema,
+    status_code=status.HTTP_200_OK,
+    summary="Update a conversation (rename). Only ``title`` is mutable in V3.",
+    responses={
+        200: {"description": "Conversation renamed; updated record returned"},
+        404: {"description": "Conversation not found in this tenant"},
+        422: {"description": "Title is empty or too long"},
+    },
+)
+def update_conversation(
+    request: Request,
+    conversation_id: uuid.UUID,
+    payload: UpdateConversationRequest,
+    user_tenant: tuple[Any, Any] = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> ConversationSchema:
+    """
+    Rename a conversation. The entity validates the new title
+    (non-empty, length-bounded); the route persists via the
+    repository's generic ``update`` so the write is tenant-
+    scoped.
+    """
+    user, tenant = user_tenant
+    repo = ConversationRepository(db)
+    conversation = repo.get_by_id(conversation_id, tenant_id=tenant.id)
+    if conversation is None or conversation.user_id != user.id:
+        raise NotFoundException(
+            message="Conversation not found.",
+            code=404,
+            data={"conversation_id": str(conversation_id)},
+        )
+    previous_title = conversation.title
+    # ``Conversation.rename`` performs the title
+    # validation + sets ``updated_at``. We don't
+    # catch ValidationException here because an
+    # empty title is supposed to surface as 422
+    # to the client (the spec's rename validation
+    # rule), and the entity raises the right
+    # exception already.
+    conversation.rename(payload.title)
+    persisted = repo.update(conversation)
+    db.commit()
+    _safe_audit(
+        db,
+        tenant_id=tenant.id,
+        action=AuditAction.CONVERSATION_RENAMED,
+        actor_user_id=user.id,
+        resource_type="conversation",
+        resource_id=persisted.id,
+        # The previous title is the most useful
+        # piece of context for a security review.
+        # We deliberately do NOT log the new
+        # title — the audit log is append-only and
+        # the entity table is the source of truth
+        # for "what is the current title".
+        metadata={"previous_title": previous_title},
+        ip_address=_client_ip(request),
+    )
+    db.commit()
+    return _conv_to_schema(persisted)
+
+
 # Re-export the dependency so module-level tooling (e.g. test
 # fixtures) can override it without reaching into ``platform``.
 __all__ = ["router", "get_db"]

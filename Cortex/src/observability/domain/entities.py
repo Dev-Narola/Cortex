@@ -55,6 +55,7 @@ class AuditAction(str, Enum):
     # Conversation
     CONVERSATION_CREATED = "conversation_created"
     CONVERSATION_ACCESSED = "conversation_accessed"
+    CONVERSATION_RENAMED = "conversation_renamed"
     CONVERSATION_DELETED = "conversation_deleted"
     # Auth
     LOGIN_SUCCESS = "login_success"
