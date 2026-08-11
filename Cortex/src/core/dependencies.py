@@ -212,6 +212,41 @@ def require_member(current=Depends(get_current_user)):
     return _role_check(current, min_role=Role.MEMBER)
 
 
+def get_conversation_llm_provider():
+    """
+    Factory: return the conversation-context LLM provider
+    selected by ``settings.LLM_PROVIDER``.
+
+    Supported providers (V11):
+
+    * ``openai`` — the default OpenAI :class:`AsyncOpenAI`
+      adapter (``OPENAI_API_KEY``).
+    * ``nvidia`` — the NVIDIA NIM OpenAI-compatible adapter
+      (``NVIDIA_API_KEY`` + ``NVIDIA_BASE_URL``).
+
+    Adding a new provider is a new branch here + a new
+    adapter in ``conversation/infrastructure/llm/``.
+
+    **Why a factory, not a singleton.** Each request that
+    resolves the dependency tree gets a fresh adapter so
+    config overrides (e.g. test fixtures that pass an
+    explicit api key) don't leak between requests.
+    """
+    provider = settings.LLM_PROVIDER.lower()
+    if provider == "openai":
+        from src.conversation.infrastructure.llm.openai import OpenAIProvider
+
+        return OpenAIProvider(api_key=settings.OPENAI_API_KEY)
+    if provider == "nvidia":
+        from src.conversation.infrastructure.llm.nvidia import NVIDIAProvider
+
+        return NVIDIAProvider()
+    raise ValueError(
+        f"unknown LLM_PROVIDER: {settings.LLM_PROVIDER!r}. "
+        "Supported values: 'openai', 'nvidia'."
+    )
+
+
 def get_answer_query_service(db: Session = Depends(get_db)):
     """
     Sync factory for ``AnswerQueryService`` — V2-era, used by
@@ -221,7 +256,6 @@ def get_answer_query_service(db: Session = Depends(get_db)):
     event loop without crossing the sync/async boundary.
     """
     from src.conversation.application.services import AnswerQueryService
-    from src.conversation.infrastructure.llm.openai import OpenAIProvider
     from src.embedding.infrastructure.providers.openai import OpenAIEmbeddingProvider
     from src.retrieval.application.query.reciprocal_rank_fusion import ReciprocalRankFusion
     from src.retrieval.application.query.query_embedding import QueryEmbeddingService
@@ -231,7 +265,7 @@ def get_answer_query_service(db: Session = Depends(get_db)):
     from src.retrieval.infrastructure.reranker import IdentityReranker
     from src.retrieval.infrastructure.query.vector_search_repository import VectorSearchRepository
 
-    llm = OpenAIProvider(api_key=settings.OPENAI_API_KEY)
+    llm = get_conversation_llm_provider()
     embed = QueryEmbeddingService(provider=OpenAIEmbeddingProvider())
     search = HybridSearchService(
         query_embed_service=embed,
@@ -250,7 +284,6 @@ async def get_answer_query_service_async(db: AsyncSession = Depends(get_async_db
     any future async REST endpoint.
     """
     from src.conversation.application.services import AnswerQueryService
-    from src.conversation.infrastructure.llm.openai import OpenAIProvider
     from src.embedding.infrastructure.providers.openai import OpenAIEmbeddingProvider
     from src.retrieval.application.query.reciprocal_rank_fusion import ReciprocalRankFusion
     from src.retrieval.application.query.query_embedding import QueryEmbeddingService
@@ -260,7 +293,7 @@ async def get_answer_query_service_async(db: AsyncSession = Depends(get_async_db
     from src.retrieval.infrastructure.reranker import IdentityReranker
     from src.retrieval.infrastructure.query.vector_search_repository import VectorSearchRepository
 
-    llm = OpenAIProvider(api_key=settings.OPENAI_API_KEY)
+    llm = get_conversation_llm_provider()
     embed = QueryEmbeddingService(provider=OpenAIEmbeddingProvider())
     search = HybridSearchService(
         query_embed_service=embed,
@@ -392,18 +425,40 @@ def get_tool_registry() -> "ToolRegistry":
 
 
 def get_llm_provider() -> "LLMProvider":
-    """Return the process-wide LLM provider.
+    """Return the process-wide agent-context LLM provider.
 
-    Defaults to the OpenAI adapter; the settings object
-    carries the model name + API key. The provider is
-    constructed lazily so tests can swap it out via
+    Selects between the OpenAI and NVIDIA adapters based on
+    ``settings.LLM_PROVIDER``. The provider is constructed
+    lazily so tests can swap it out via
     :func:`reset_singletons` before importing the routes.
+
+    The conversation-context LLM provider is a separate
+    function (also called ``get_llm_provider`` but defined
+    earlier in this file); the agent executor uses this
+    one. Both share the same ``LLMProvider`` selection
+    logic so a config change is the only thing that
+    switches providers.
     """
     global _llm_provider_singleton
     if _llm_provider_singleton is None:
-        from src.agents.infrastructure.llm_provider import OpenAILLMProvider
+        provider = settings.LLM_PROVIDER.lower()
+        if provider == "openai":
+            from src.agents.infrastructure.llm_provider import (
+                OpenAILLMProvider,
+            )
 
-        _llm_provider_singleton = OpenAILLMProvider()
+            _llm_provider_singleton = OpenAILLMProvider()
+        elif provider == "nvidia":
+            from src.agents.infrastructure.llm_provider import (
+                NvidiaLLMProvider,
+            )
+
+            _llm_provider_singleton = NvidiaLLMProvider()
+        else:
+            raise ValueError(
+                f"unknown LLM_PROVIDER: {settings.LLM_PROVIDER!r}. "
+                "Supported values: 'openai', 'nvidia'."
+            )
     return _llm_provider_singleton
 
 
