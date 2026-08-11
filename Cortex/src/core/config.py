@@ -98,6 +98,13 @@ class Settings(BaseSettings):
     # ------------------------------------------------------------------
     # LLM provider (used for answer generation + summarization)
     # ------------------------------------------------------------------
+    # ``LLM_PROVIDER`` selects which adapter the dependency-injection
+    # factory instantiates. Supported values today:
+    #   - ``openai`` — the default OpenAI ``AsyncOpenAI`` client
+    #   - ``nvidia`` — the NVIDIA NIM endpoint (OpenAI-compatible)
+    # Adding a new provider is a new adapter in
+    # ``conversation/infrastructure/llm/`` + a new branch in
+    # ``core.dependencies.get_llm_provider``.
     LLM_PROVIDER: str = "openai"
     LLM_MODEL: str = "gpt-4o-mini"
     LLM_TEMPERATURE: float = 0.2
@@ -109,6 +116,19 @@ class Settings(BaseSettings):
     # budgeting math.
     LLM_CONTEXT_WINDOW_TOKENS: int = 128_000
     LLM_RESERVATION_TOKENS: int = 4_000
+
+    # NVIDIA NIM (OpenAI-compatible) provider — added so the
+    # platform can run on NVIDIA-hosted models when OpenAI credits
+    # are unavailable. The provider reuses the ``openai`` Python
+    # SDK as an HTTP client (the NIM REST surface mirrors
+    # OpenAI's ``/v1/chat/completions``), pointed at a custom
+    # ``base_url``.
+    # The credentials must be supplied via the environment /
+    # ``.env`` file (or ``start.sh``'s secrets render) and never
+    # committed to source.
+    NVIDIA_API_KEY: str | None = None
+    NVIDIA_BASE_URL: str = "https://integrate.api.nvidia.com/v1"
+    NVIDIA_MODEL: str = "openai/gpt-oss-20b"
 
     # ------------------------------------------------------------------
     # Reranker

@@ -250,6 +250,107 @@ class OpenAILLMProvider(LLMProvider):
         yield result
 
 
+# ---------------------------------------------------------------------------
+# NVIDIA concrete adapter
+# ---------------------------------------------------------------------------
+
+
+class NvidiaLLMProvider(LLMProvider):
+    """The NVIDIA NIM adapter for the agent loop.
+
+    NVIDIA's hosted inference endpoint
+    (``integrate.api.nvidia.com``) exposes an
+    OpenAI-compatible REST surface. We point the same
+    ``openai`` Python SDK at a different ``base_url`` —
+    no new dependency.
+
+    The provider mirrors :class:`OpenAILLMProvider`'s
+    surface so the agent loop is provider-agnostic.
+    Tenant boundaries are enforced at the
+    application/retrieval layer; the provider is a thin
+    HTTP client.
+    """
+
+    def __init__(
+        self,
+        api_key: str | None = None,
+        base_url: str | None = None,
+    ) -> None:
+        from openai import AsyncOpenAI
+
+        self._client = AsyncOpenAI(
+            api_key=api_key or settings.NVIDIA_API_KEY,
+            base_url=base_url or settings.NVIDIA_BASE_URL,
+        )
+
+    async def generate(
+        self,
+        *,
+        model: str,
+        system: str,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]] | None = None,
+        temperature: float = 0.2,
+        max_tokens: int = 1024,
+    ) -> LLMResult:
+        payload: dict[str, Any] = {
+            "model": model,
+            "temperature": float(temperature),
+            "max_tokens": int(max_tokens),
+            "messages": [{"role": "system", "content": system}, *messages],
+        }
+        if tools:
+            payload["tools"] = [
+                {"type": "function", "function": t} for t in tools
+            ]
+
+        response = await self._client.chat.completions.create(**payload)
+        choice = response.choices[0]
+        message = choice.message
+        tool_calls: tuple[ToolCallRequest, ...] = ()
+        if getattr(message, "tool_calls", None):
+            tool_calls = tuple(
+                ToolCallRequest(
+                    id=tc.id,
+                    name=tc.function.name,
+                    arguments=(
+                        json.loads(tc.function.arguments)
+                        if isinstance(tc.function.arguments, str)
+                        else (tc.function.arguments or {})
+                    ),
+                )
+                for tc in message.tool_calls
+            )
+        usage = response.usage or None
+        return LLMResult(
+            output=message.content or "",
+            tool_calls=tool_calls,
+            finish_reason=str(choice.finish_reason or "stop"),
+            prompt_tokens=int(usage.prompt_tokens) if usage else 0,
+            completion_tokens=int(usage.completion_tokens) if usage else 0,
+        )
+
+    async def stream(  # type: ignore[override]
+        self,
+        *,
+        model: str,
+        system: str,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]] | None = None,
+        temperature: float = 0.2,
+        max_tokens: int = 1024,
+    ) -> AsyncIterator[LLMResult]:
+        result = await self.generate(
+            model=model,
+            system=system,
+            messages=messages,
+            tools=tools,
+            temperature=temperature,
+            max_tokens=max_tokens,
+        )
+        yield result
+
+
 # A small ``json`` import is needed by ``generate`` to
 # parse the arguments string. Imported at module level so
 # the type checker is happy; the runtime cost is one
@@ -260,6 +361,7 @@ import json  # noqa: E402  (intentionally below the class so the SDK is loaded l
 __all__ = [
     "LLMProvider",
     "LLMResult",
+    "NvidiaLLMProvider",
     "OpenAILLMProvider",
     "ToolCallRequest",
 ]
