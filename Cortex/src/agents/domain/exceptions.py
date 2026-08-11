@@ -87,6 +87,24 @@ class InvalidAgentConfiguration(BaseAppException):
         super().__init__(message, code, False, data=data)
 
 
+class AgentRunNotFound(BaseAppException):
+    """Raised when an :class:`AgentRun` is not found for the requesting tenant.
+
+    Mirrors :class:`AgentNotFound`'s tenant-isolation rule: a run
+    that belongs to a different tenant is "not found" from the
+    caller's perspective, never "forbidden". The route layer
+    surfaces this as a 404.
+    """
+
+    def __init__(
+        self,
+        message: str = "agent run not found",
+        code: int = 404,
+        data: dict | None = None,
+    ) -> None:
+        super().__init__(message, code, False, data=data)
+
+
 class AgentExecutionFailed(BaseAppException):
     """Raised when an agent run fails for a runtime reason.
 
@@ -110,5 +128,6 @@ __all__ = [
     "AgentExecutionFailed",
     "AgentInactive",
     "AgentNotFound",
+    "AgentRunNotFound",
     "InvalidAgentConfiguration",
 ]

@@ -29,6 +29,15 @@ EXPECTED_REST_CONTRACTS: dict[str, list[str]] = {
     "GET /api/v1/graph/entities": ["items", "total"],
     "GET /api/v1/graph/relations": ["items", "total"],
     "POST /api/v1/agents/{id}/invoke": ["run_id", "status", "output"],
+    # F5 Part 3 — Agent Trace endpoints.
+    "GET /api/v1/agents/runs/{id}": [
+        "id", "agent_id", "tenant_id", "user_id", "input", "output",
+        "status", "iterations", "tool_call_count", "total_tokens",
+        "started_at", "completed_at", "steps", "tool_calls",
+    ],
+    "GET /api/v1/agents/runs/{id}/tool-calls": [
+        "run_id", "agent_id", "status", "tool_calls",
+    ],
     "GET /api/v1/billing/usage": ["day", "request_count", "storage_bytes"],
     "GET /api/v1/admin/audit": ["items", "total"],
     "POST /api/v1/mcp/tools/invoke": ["result", "error"],
