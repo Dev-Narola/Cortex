@@ -273,6 +273,7 @@ describe("Chat streaming integration (F4 Part 2, Tests B/C/D)", () => {
             tokenCount: 0,
             retrievedChunkIds: [],
             modelName: null,
+            agentRunId: null,
             createdAt: "2025-01-01T00:00:00.000Z",
           },
           {
@@ -283,6 +284,7 @@ describe("Chat streaming integration (F4 Part 2, Tests B/C/D)", () => {
             tokenCount: 5,
             retrievedChunkIds: [],
             modelName: "gpt-4o-mini",
+            agentRunId: null,
             createdAt: "2025-01-01T00:00:01.000Z",
           },
         ],

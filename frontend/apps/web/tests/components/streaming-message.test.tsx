@@ -34,6 +34,7 @@ function makeMessage(overrides: Partial<Message> = {}): Message {
     tokenCount: 0,
     retrievedChunkIds: [],
     modelName: null,
+    agentRunId: null,
     createdAt: "2025-01-01T00:00:00.000Z",
     ...overrides,
   }

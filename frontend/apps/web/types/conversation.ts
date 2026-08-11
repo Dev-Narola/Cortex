@@ -52,6 +52,20 @@ export interface Message {
   retrievedChunkIds: string[]
   /** LLM used to generate the assistant turn. */
   modelName: string | null
+  /**
+   * Agent run id — set when this message was
+   * produced by a multi-step agent execution
+   * (V6). The F5 P3 ``AgentTrace`` reads this
+   * to render the per-tool-call stepper.
+   *
+   * **F5 P4.** The V3 F4 chat path uses retrieval
+   * + direct LLM, not the agent system, so
+   * today's assistant messages have
+   * ``agentRunId === null``. The field is
+   * forward-compatible wiring: V4 will populate
+   * it when the chat dispatches agent runs.
+   */
+  agentRunId: string | null
   createdAt: string
 }
 

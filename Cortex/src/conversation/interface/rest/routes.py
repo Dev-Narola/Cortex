@@ -127,6 +127,17 @@ class MessageSchema(BaseModel):
     token_count: int
     retrieved_chunk_ids: list[uuid.UUID] = Field(default_factory=list)
     model_name: str | None = None
+    # **F5 Part 4 — Agent Trace wiring.** When
+    # the assistant message is the result of a
+    # V6 agent execution, this id is the agent
+    # run the frontend's ``<AgentTrace />``
+    # reads. ``None`` (the V3 default) means
+    # "no agent run; do not render the trace."
+    # The column is intentionally nullable so
+    # the schema is forward-compatible with the
+    # V4 work that will populate it without
+    # requiring a migration today.
+    agent_run_id: uuid.UUID | None = None
     created_at: str
 
 
@@ -181,6 +192,13 @@ def _msg_to_schema(m: Message) -> MessageSchema:
         token_count=m.token_count,
         retrieved_chunk_ids=list(m.retrieved_chunk_ids),
         model_name=m.model_name,
+        # F5 P4: the V4 model will add
+        # ``agent_run_id``; today the entity
+        # doesn't carry it, so we default to
+        # ``None``. The frontend's ``Message``
+        # type already has the field so the
+        # wire shape is stable.
+        agent_run_id=getattr(m, "agent_run_id", None),
         created_at=m.created_at.isoformat(),
     )
 
