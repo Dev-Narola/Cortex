@@ -26,6 +26,7 @@ from src.ingestion.application.services import (
 from src.ingestion.infrastructure.repositories import DocumentRepository
 from src.ingestion.infrastructure.s3_storage import S3Storage
 from src.ingestion.interface.rest.auth import (
+    DocumentWriteAuth,
     _verify_ingestion_auth,
     require_document_read,
     require_document_write,
@@ -155,7 +156,7 @@ def _resolve_actor(
         )
     except HTTPException:
         return (None, None)
-    if ctx.id != tenant_id:
+    if ctx.tenant_id != tenant_id:
         # Defence in depth — the caller already
         # passed the tenant-id check, but if the
         # re-derived tenant differs we don't trust
@@ -245,7 +246,7 @@ def _safe_audit(
 def create_document(
     request: Request,
     file: UploadFile,
-    tenant_id: Annotated[uuid.UUID, Depends(require_document_write)],
+    auth: Annotated[DocumentWriteAuth, Depends(require_document_write)],
     db: Session = Depends(get_db),
     service: CreateDocumentService = Depends(get_create_document_service),
 ):
@@ -256,8 +257,15 @@ def create_document(
         raise HTTPException(status_code=400, detail="Filename is missing")
 
     document = service.execute(
-        tenant_id=tenant_id,
-        created_by=tenant_id,
+        tenant_id=auth.tenant_id,
+        # ``created_by`` is a FK to ``users.id`` — it
+        # must be the caller's user id, NOT the
+        # tenant id. The previous version passed
+        # ``tenant_id`` here and the SQL INSERT
+        # blew up on the foreign-key violation.
+        # See the V11 hot-fix notes for the full
+        # stack trace.
+        created_by=auth.created_by,
         filename=file.filename,
         mime_type=file.content_type or "application/octet-stream",
         file_obj=file.file,
@@ -268,10 +276,12 @@ def create_document(
     # new document id, and the filename + size (not
     # the file content — that is never written to
     # the audit log).
-    actor_user_id, actor_api_key_id = _resolve_actor(request, db, tenant_id)
+    actor_user_id, actor_api_key_id = _resolve_actor(
+        request, db, auth.tenant_id
+    )
     _safe_audit(
         db,
-        tenant_id=tenant_id,
+        tenant_id=auth.tenant_id,
         action=AuditAction.DOCUMENT_CREATED,
         actor_user_id=actor_user_id,
         actor_api_key_id=actor_api_key_id,
