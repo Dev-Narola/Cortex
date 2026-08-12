@@ -39,10 +39,35 @@ let refreshPromise: Promise<boolean> | null = null
 
 async function performRefresh(): Promise<boolean> {
   try {
-    const res = await fetch(`${publicEnv.NEXT_PUBLIC_API_URL}/api/v1/auth/refresh`, {
-      method: "POST",
-      credentials: "include",
-    })
+    // **V11 hotfix.** The backend's ``POST /api/v1/auth/refresh``
+    // expects a JSON body with the refresh token:
+    //   { refresh_token: str }   (min_length=10)
+    // The previous version of this function sent an
+    // empty body, which the backend rejected with 422.
+    // The api-client's silent-refresh path then called
+    // ``logout()`` and the user was bounced to
+    // ``/login`` on every hard refresh. The refresh
+    // token lives in the Zustand auth store (not an
+    // httpOnly cookie — the backend has no cookie
+    // path today), so we read it from the store and
+    // send it in the body.
+    const refreshToken = useAuthStore.getState().refreshToken
+    if (!refreshToken) {
+      await useAuthStore.getState().logout()
+      return false
+    }
+    const res = await fetch(
+      `${publicEnv.NEXT_PUBLIC_API_URL}/api/v1/auth/refresh`,
+      {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({ refresh_token: refreshToken }),
+      },
+    )
     if (!res.ok) {
       await useAuthStore.getState().logout()
       return false
