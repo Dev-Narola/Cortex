@@ -1,7 +1,8 @@
+
 # =============================================================================
 # Cortex — production docker-compose
 # =============================================================================
-#
+  #
 # One EC2 host runs the full platform:
 #
 #     [public]  ──►  nginx  ──►  api (uvicorn, WORKERS replicas)
@@ -77,6 +78,9 @@ x-cortex-common: &cortex-common
   # Path is relative to this compose file's location (docker/).
   env_file:
     - ../.env
+  build:
+    context: ..
+    dockerfile: docker/Dockerfile
   image: ${CORTEX_IMAGE:-ghcr.io/cortex/cortex}:${CORTEX_IMAGE_TAG:-latest}
   restart: unless-stopped
   init: true
