@@ -17,6 +17,7 @@
 import { ApiError } from "@cortex/api-client"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
+import { useAuthStore } from "@/lib/auth/store"
 import { login, logout, refresh, register } from "@/services/auth"
 
 // Mock the api-client module so the services use a
@@ -79,10 +80,22 @@ describe("auth services", () => {
   beforeEach(() => {
     postMock.mockReset()
     getMock.mockReset()
+    // V11 hotfix 2 — the refresh service now
+    // reads the refresh token from the auth
+    // store. Seed it so the success test can
+    // exercise the post body path.
+    useAuthStore.setState({
+      refreshToken: "rt-seed-1",
+      accessToken: "jwt-seed-1",
+    })
   })
 
   afterEach(() => {
     vi.restoreAllMocks()
+    // Reset the auth store so cross-test
+    // leakage doesn't surprise the next
+    // describe block.
+    useAuthStore.getState().clear()
   })
 
   describe("login", () => {
@@ -180,7 +193,24 @@ describe("auth services", () => {
       postMock.mockResolvedValueOnce(refreshResponse)
       const data = await refresh()
       expect(data).toEqual(refreshResponse)
-      expect(postMock).toHaveBeenCalledWith("/api/v1/auth/refresh")
+      // V11 hotfix 2 — the body MUST carry the
+      // refresh token; the backend rejects an
+      // empty body with 422 and the
+      // ``useSessionRestore`` flow bounces the
+      // user to /login on every hard refresh.
+      expect(postMock).toHaveBeenCalledWith(
+        "/api/v1/auth/refresh",
+        { refresh_token: "rt-seed-1" },
+      )
+    })
+
+    it("throws when no refresh token is in the store", async () => {
+      useAuthStore.setState({ refreshToken: null })
+      await expect(refresh()).rejects.toThrow("No refresh token available")
+      // We must not have hit the network — the
+      // guard short-circuits before ``post()``
+      // would have been called.
+      expect(postMock).not.toHaveBeenCalled()
     })
   })
 
