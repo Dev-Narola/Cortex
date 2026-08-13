@@ -366,4 +366,202 @@ describe("useIngestionStatus (Task 49)", () => {
     expect(result.current.connectionState).toBe("closed")
     unmount()
   })
+
+  // -------------------------------------------------------------------
+  // V11.5 — polling fallback behaviour
+  // -------------------------------------------------------------------
+  // The hook watches the documents list cache
+  // for in-flight rows and, when the WebSocket
+  // is down, invalidates the list query on a
+  // 5s cadence so the UI keeps moving toward
+  // the terminal state. These tests pin:
+  //   1. With WS closed + no in-flight docs:
+  //      state is ``closed`` (not polling).
+  //   2. With WS closed + in-flight docs:
+  //      state is ``polling`` + list query is
+  //      invalidated on the cadence.
+  //   3. Once in-flight docs reach a terminal
+  //      state, polling stops and the state
+  //      returns to ``closed``.
+  //   4. When the WS is open, polling does not
+  //      run even if in-flight docs exist
+  //      (WS is the source of truth).
+  //   5. Without an access token, no polling
+  //      runs.
+  //
+  // **No fake timers.** ``vi.useFakeTimers()``
+  // breaks the real-clock polling that
+  // ``@testing-library/react``'s ``waitFor``
+  // uses internally, so we drive the cadence
+  // forward with real ``setTimeout`` calls.
+
+  it("V11.5 — reports 'polling' when WS is closed and in-flight docs exist", async () => {
+    const qc = new QueryClient()
+    // Seed a list with one in-flight doc.
+    qc.setQueryData(["documents", { limit: 50, offset: 0 }], {
+      items: [makeDoc({ id: "d-1", status: "pending" })],
+      total: 1,
+      limit: 50,
+      offset: 0,
+    })
+
+    const { result, unmount } = renderHook(() => useIngestionStatus(), {
+      wrapper: makeWrapper(qc),
+    })
+    // Drive the WS into the closed state.
+    await waitFor(() =>
+      expect(FakeSocket.instances).toHaveLength(1),
+    )
+    act(() => {
+      FakeSocket.instances[0]!.dispatch("open", {})
+      FakeSocket.instances[0]!.dispatch("close", { code: 1006 })
+    })
+    // The hook should fall back to polling now
+    // because the WS is down + we have an
+    // in-flight doc.
+    await waitFor(() =>
+      expect(result.current.connectionState).toBe("polling"),
+    )
+    unmount()
+  })
+
+  it("V11.5 — invalidates the documents list on a 5s cadence while polling", async () => {
+    const qc = new QueryClient()
+    qc.setQueryData(["documents", { limit: 50, offset: 0 }], {
+      items: [makeDoc({ id: "d-1", status: "pending" })],
+      total: 1,
+      limit: 50,
+      offset: 0,
+    })
+    // Spy on the invalidation call.
+    const invalidateSpy = vi.spyOn(qc, "invalidateQueries")
+    // Spy on setInterval so the test can pin the
+    // exact cadence without actually waiting 5s.
+    const setIntervalSpy = vi.spyOn(globalThis, "setInterval")
+
+    const { result, unmount } = renderHook(() => useIngestionStatus(), {
+      wrapper: makeWrapper(qc),
+    })
+    await waitFor(() =>
+      expect(FakeSocket.instances).toHaveLength(1),
+    )
+    act(() => {
+      FakeSocket.instances[0]!.dispatch("open", {})
+      FakeSocket.instances[0]!.dispatch("close", { code: 1006 })
+    })
+    await waitFor(() =>
+      expect(result.current.connectionState).toBe("polling"),
+    )
+    // The polling interval must be set up with
+    // the documented cadence (5_000ms). We don't
+    // actually wait for the timer to fire — that
+    // would add 5s to every CI run; the spy pin
+    // is the contract.
+    const intervalCall = setIntervalSpy.mock.calls.find(
+      (c) => c[1] === 5_000,
+    )
+    expect(intervalCall).toBeDefined()
+    // And the immediate refetch landed as soon
+    // as polling started (one invalidate per
+    // hook, before the interval is even armed).
+    expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: ["documents"],
+    })
+    setIntervalSpy.mockRestore()
+    unmount()
+  })
+
+  it("V11.5 — stops polling when all in-flight docs reach a terminal state", async () => {
+    const qc = new QueryClient()
+    qc.setQueryData(["documents", { limit: 50, offset: 0 }], {
+      items: [makeDoc({ id: "d-1", status: "pending" })],
+      total: 1,
+      limit: 50,
+      offset: 0,
+    })
+
+    const { result, unmount } = renderHook(() => useIngestionStatus(), {
+      wrapper: makeWrapper(qc),
+    })
+    await waitFor(() =>
+      expect(FakeSocket.instances).toHaveLength(1),
+    )
+    act(() => {
+      FakeSocket.instances[0]!.dispatch("open", {})
+      FakeSocket.instances[0]!.dispatch("close", { code: 1006 })
+    })
+    await waitFor(() =>
+      expect(result.current.connectionState).toBe("polling"),
+    )
+
+    // Simulate the doc reaching ``indexed``
+    // via a cache update (the same way the
+    // list refetch would land).
+    act(() => {
+      qc.setQueryData(["documents", { limit: 50, offset: 0 }], {
+        items: [makeDoc({ id: "d-1", status: "indexed" })],
+        total: 1,
+        limit: 50,
+        offset: 0,
+      })
+    })
+    // The hook should drop back to ``closed``
+    // because there are no in-flight docs
+    // anymore.
+    await waitFor(() =>
+      expect(result.current.connectionState).toBe("closed"),
+    )
+    unmount()
+  })
+
+  it("V11.5 — does not poll when the WebSocket is open", async () => {
+    const qc = new QueryClient()
+    qc.setQueryData(["documents", { limit: 50, offset: 0 }], {
+      items: [makeDoc({ id: "d-1", status: "pending" })],
+      total: 1,
+      limit: 50,
+      offset: 0,
+    })
+    const invalidateSpy = vi.spyOn(qc, "invalidateQueries")
+
+    const { result, unmount } = renderHook(() => useIngestionStatus(), {
+      wrapper: makeWrapper(qc),
+    })
+    await waitFor(() =>
+      expect(FakeSocket.instances).toHaveLength(1),
+    )
+    act(() => {
+      FakeSocket.instances[0]!.dispatch("open", {})
+    })
+    await waitFor(() =>
+      expect(result.current.connectionState).toBe("open"),
+    )
+    // No polling happened.
+    expect(invalidateSpy).not.toHaveBeenCalled()
+    // Give the cadence room to run — it must
+    // not start polling.
+    await new Promise((r) => setTimeout(r, 200))
+    expect(invalidateSpy).not.toHaveBeenCalled()
+    unmount()
+  })
+
+  it("V11.5 — does not poll without an access token", async () => {
+    useAuthStore.setState({ accessToken: null })
+    const qc = new QueryClient()
+    qc.setQueryData(["documents", { limit: 50, offset: 0 }], {
+      items: [makeDoc({ id: "d-1", status: "pending" })],
+      total: 1,
+      limit: 50,
+      offset: 0,
+    })
+    const invalidateSpy = vi.spyOn(qc, "invalidateQueries")
+
+    const { result, unmount } = renderHook(() => useIngestionStatus(), {
+      wrapper: makeWrapper(qc),
+    })
+    expect(result.current.connectionState).toBe("closed")
+    await new Promise((r) => setTimeout(r, 200))
+    expect(invalidateSpy).not.toHaveBeenCalled()
+    unmount()
+  })
 })

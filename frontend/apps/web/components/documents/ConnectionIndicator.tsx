@@ -1,13 +1,20 @@
 /**
  * ConnectionIndicator — a small pill that
- * surfaces the ingestion WebSocket state.
+ * surfaces the ingestion transport state.
  *
- * **F3 Part 4 (Task 42).** Per the spec, the
- * UI must show a non-intrusive indicator of the
- * WebSocket state. We render:
+ * **F3 Part 4 (Task 42) + V11.5 polling fallback.**
+ * Per the spec, the UI must show a non-intrusive
+ * indicator of the WebSocket state. We render:
  *
  *   - `open`       → small green dot + "Live"
  *   - `connecting` → small spinning dot + "Connecting…"
+ *   - `closing`    → small amber dot + "Closing…"
+ *   - `polling`    → small amber dot (steady) + "Polling…"
+ *                    (V11.5: the WS is down, but the
+ *                    hook is keeping the cache fresh
+ *                    via list-query refetch — the user
+ *                    should know status updates are
+ *                    still arriving, just slower)
  *   - `closed`     → small grey dot + "Offline"
  *   - `idle`       → hidden (the page just mounted;
  *                              connecting will fire next)
@@ -34,6 +41,11 @@ const COPY: Record<WebSocketState, string> = {
   open: "Live",
   closing: "Closing…",
   closed: "Offline",
+  // V11.5 — distinct label so the user can
+  // tell the difference between "the channel is
+  // fully offline" and "the channel is offline
+  // but we're still getting updates via polling".
+  polling: "Polling…",
 }
 
 export function ConnectionIndicator({
@@ -66,6 +78,10 @@ export function ConnectionIndicator({
             "bg-warning animate-pulse",
           state === "closed" && "bg-muted-foreground",
           state === "closing" && "bg-warning",
+          // V11.5 — steady amber, no pulse, so the
+          // user sees the difference between
+          // "trying to connect" and "polling".
+          state === "polling" && "bg-warning",
         )}
       />
       <span>{COPY[state]}</span>

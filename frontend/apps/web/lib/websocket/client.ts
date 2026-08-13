@@ -56,6 +56,19 @@ export type WebSocketState =
   | "open"
   | "closing"
   | "closed"
+  /**
+   * **V11.5 — Polling fallback state.** The WebSocket
+   * is down (the backend doesn't yet ship a
+   * ``/ws/ingestion`` endpoint, or the connection
+   * has been refused) but the hook is keeping the
+   * document status fresh via periodic list-query
+   * refetch. The UI shows a small "Polling…" pill
+   * so the user knows updates are still arriving,
+   * just on a slower cadence. Transitions to
+   * ``closed`` when all in-flight documents reach a
+   * terminal state.
+   */
+  | "polling"
 
 export type WebSocketReadyState = WebSocketState
 

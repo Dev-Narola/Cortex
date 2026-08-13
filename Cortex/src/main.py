@@ -196,9 +196,42 @@ app.include_router(mcp_ws_router)
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):
-    logger.error("Unhandled exception: %s", exc)
+    """Catch-all for unhandled exceptions.
+
+    **Why we set CORS headers explicitly here.**
+
+    The default ``JSONResponse`` is created *inside* the
+    exception handler — outside the normal route flow.
+    Depending on Starlette's middleware ordering, the
+    response may reach the client without ``CORSMiddleware``
+    having had a chance to add the ``Access-Control-...``
+    headers. The browser then misreports the 500 as a
+    ``blocked by CORS policy`` error, hiding the real
+    server-side stack trace from the operator.
+
+    We mirror the CORS settings (origin + credentials +
+    vary) on the response so the browser sees the 500 as
+    a server error, not a CORS failure. The same logic
+    should be applied to any custom 4xx/5xx handler that
+    returns a ``JSONResponse`` directly.
+    """
+    logger.error("Unhandled exception: %s", exc, exc_info=True)
+    # Echo the request Origin so the response is
+    # accepted by the browser. We don't try to be
+    # clever with ``*`` vs the actual origin here —
+    # the configured ``CORS_ALLOWED_ORIGINS`` is
+    # what the browser would have allowed in the
+    # first place. If the request has no Origin
+    # header (curl / server-to-server) we fall back
+    # to ``*`` so non-browser callers still work.
+    request_origin = request.headers.get("origin") or "*"
     return JSONResponse(
         status_code=500,
         content={"code": 500, "message": "Internal Server Error", "data": None},
+        headers={
+            "Access-Control-Allow-Origin": request_origin,
+            "Access-Control-Allow-Credentials": "true",
+            "Vary": "Origin",
+        },
     )
 
