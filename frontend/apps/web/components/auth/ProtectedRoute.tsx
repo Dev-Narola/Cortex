@@ -36,7 +36,7 @@ import { type ReactNode, useEffect, useState } from "react"
 import { Spinner } from "@cortex/ui"
 
 import { useSessionRestore } from "@/hooks/auth/useSessionRestore"
-import { useAuthStore } from "@/lib/auth/store"
+import { AUTH_HINT_COOKIE, useAuthStore } from "@/lib/auth/store"
 
 export interface ProtectedRouteProps {
   children: ReactNode
@@ -141,6 +141,22 @@ function AuthRequiredGate({
     if (!mounted || !hydrated || isRestoring) return
 
     if (!isAuthed) {
+      // **V11 hotfix.** The edge middleware reads the
+      // ``cortex_auth_hint`` cookie to decide whether
+      // the user has a session. If the cookie is set
+      // (e.g. from a previous browser session that
+      // expired) but the auth store has no tokens,
+      // the middleware keeps redirecting /login →
+      // /app in a loop and the user is stuck on the
+      // loading screen forever. Clear the cookie here
+      // so the next navigation to /login passes the
+      // edge check.
+      if (
+        typeof document !== "undefined" &&
+        document.cookie.includes(`${AUTH_HINT_COOKIE}=1`)
+      ) {
+        document.cookie = `${AUTH_HINT_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`
+      }
       const currentPath = `${window.location.pathname}${window.location.search}`
       if (
         window.location.pathname === loginPath ||
