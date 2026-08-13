@@ -222,6 +222,136 @@ describe("WebSocketClient", () => {
     expect(client.isOpen()).toBe(true)
     client.disconnect()
   })
+
+  // -----------------------------------------------------------------
+  // V11.5 — reconnection cap
+  // -----------------------------------------------------------------
+  // The cap exists so the client doesn't burn CPU
+  // + dev-console space hammering an endpoint that
+  // the server is going to reject forever (the
+  // canonical case: the V4 ingestion WS hasn't
+  // landed yet, /ws/ingestion returns 403, and we
+  // want the polling fallback to be the user's
+  // real path to status updates).
+
+  it("V11.5 — caps reconnect attempts at maxReconnectAttempts (default 3)", () => {
+    vi.useFakeTimers()
+    const client = new WebSocketClient({
+      url: "ws://test/ws/ingestion",
+      // Tight backoff so the test runs fast.
+      initialReconnectDelayMs: 10,
+      reconnectBackoffFactor: 1,
+      reconnectJitter: 0,
+    })
+    // First connect → 1st socket.
+    client.connect()
+    // Fail it 3 times. Each close schedules a
+    // reconnect; the 3rd close hits the cap.
+    for (let i = 0; i < 3; i++) {
+      const sock = FakeWebSocket.instances[i]!
+      // Handshake-time 4xx → abnormal close.
+      sock.dispatch("close", { code: 1006, reason: "" })
+      vi.advanceTimersByTime(20)
+    }
+    // Cap hit — no 4th socket should have been
+    // created.
+    expect(FakeWebSocket.instances).toHaveLength(3)
+    // Wait longer than the backoff — still no
+    // new socket. The client is permanently
+    // disabled.
+    vi.advanceTimersByTime(10_000)
+    expect(FakeWebSocket.instances).toHaveLength(3)
+  })
+
+  it("V11.5 — reset() re-arms the connection after the cap is hit", () => {
+    vi.useFakeTimers()
+    const client = new WebSocketClient({
+      url: "ws://test/ws/ingestion",
+      initialReconnectDelayMs: 10,
+      reconnectBackoffFactor: 1,
+      reconnectJitter: 0,
+    })
+    client.connect()
+    for (let i = 0; i < 3; i++) {
+      const sock = FakeWebSocket.instances[i]!
+      sock.dispatch("close", { code: 1006, reason: "" })
+      vi.advanceTimersByTime(20)
+    }
+    expect(FakeWebSocket.instances).toHaveLength(3)
+    // User clicks "Try again" (or the consumer
+    // decides the server is back up).
+    client.reset()
+    client.connect()
+    // A 4th socket was created.
+    expect(FakeWebSocket.instances).toHaveLength(4)
+  })
+
+  it("V11.5 — disconnect() clears the cap for the next connect()", () => {
+    vi.useFakeTimers()
+    const client = new WebSocketClient({
+      url: "ws://test",
+      initialReconnectDelayMs: 10,
+      reconnectBackoffFactor: 1,
+      reconnectJitter: 0,
+    })
+    client.connect()
+    for (let i = 0; i < 3; i++) {
+      const sock = FakeWebSocket.instances[i]!
+      sock.dispatch("close", { code: 1006, reason: "" })
+      vi.advanceTimersByTime(20)
+    }
+    expect(FakeWebSocket.instances).toHaveLength(3)
+    // A clean user disconnect clears the cap
+    // (the consumer is saying "I'm done with
+    // this socket, next connect is a fresh
+    // attempt").
+    client.disconnect()
+    client.connect()
+    // The 4th socket is the new connect — but
+    // it's after the cap reset, so the cap
+    // counter starts from 0 again.
+    expect(FakeWebSocket.instances).toHaveLength(4)
+  })
+
+  it("V11.5 — custom maxReconnectAttempts overrides the default", () => {
+    vi.useFakeTimers()
+    const client = new WebSocketClient({
+      url: "ws://test",
+      initialReconnectDelayMs: 10,
+      reconnectBackoffFactor: 1,
+      reconnectJitter: 0,
+      maxReconnectAttempts: 1,
+    })
+    client.connect()
+    const sock = FakeWebSocket.instances[0]!
+    sock.dispatch("close", { code: 1006, reason: "" })
+    vi.advanceTimersByTime(20)
+    // Cap was 1 → no second attempt.
+    expect(FakeWebSocket.instances).toHaveLength(1)
+  })
+
+  it("V11.5 — a successful open resets the attempt counter", () => {
+    vi.useFakeTimers()
+    const client = new WebSocketClient({
+      url: "ws://test",
+      initialReconnectDelayMs: 10,
+      reconnectBackoffFactor: 1,
+      reconnectJitter: 0,
+    })
+    client.connect()
+    // First attempt fails (handshake 403).
+    FakeWebSocket.instances[0]!.dispatch("close", { code: 1006, reason: "" })
+    vi.advanceTimersByTime(20)
+    // Second attempt SUCCEEDS.
+    FakeWebSocket.instances[1]!.dispatch("open", {})
+    expect(client.getState()).toBe("open")
+    // Now the server hangs up unexpectedly.
+    FakeWebSocket.instances[1]!.dispatch("close", { code: 1006, reason: "" })
+    vi.advanceTimersByTime(20)
+    // A 3rd socket is created (counter was
+    // reset to 0 by the successful open).
+    expect(FakeWebSocket.instances.length).toBeGreaterThanOrEqual(3)
+  })
 })
 
 describe("nextReconnectDelay", () => {

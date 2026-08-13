@@ -91,6 +91,32 @@ export interface WebSocketClientOptions {
   /** Optional jitter fraction (0..1). Default 0.2. */
   reconnectJitter?: number
   /**
+   * V11.5 — cap on consecutive reconnect attempts.
+   * Once the client has retried this many times
+   * in a row without a single successful open,
+   * it stops trying and parks in the
+   * ``"closed"`` state. The polling fallback
+   * (or a higher-level retry button) is then
+   * the user's only path to live updates.
+   *
+   * **Why a cap.** The backend's
+   * ``/ws/ingestion`` endpoint is the canonical
+   * example: the frontend was built ahead of the
+   * server side, the route doesn't exist, and the
+   * browser hands every handshake attempt back as
+   * 403. Without a cap, the reconnection loop
+   * spams the dev console indefinitely and burns
+   * CPU. With a cap, the client gives up cleanly
+   * after a few attempts and the user (and the
+   * poll-fallback hook) sees a stable ``closed``
+   * state.
+   *
+   * Default 3. Set to ``Infinity`` to disable
+   * the cap and fall back to the old "retry
+   * forever" behaviour.
+   */
+  maxReconnectAttempts?: number
+  /**
    * Called when the state transitions. Use
    * this for connection indicators, not for
    * message routing (use onMessage).
@@ -111,6 +137,7 @@ const DEFAULTS = {
   initialReconnectDelayMs: 500,
   reconnectBackoffFactor: 2,
   reconnectJitter: 0.2,
+  maxReconnectAttempts: 3,
 }
 
 /**
@@ -152,8 +179,17 @@ export class WebSocketClient {
     initialReconnectDelayMs: number
     reconnectBackoffFactor: number
     reconnectJitter: number
+    maxReconnectAttempts: number
   }
   private closedByUser = false
+  /**
+   * V11.5 — once the cap is hit, this is flipped
+   * to ``true`` and the client refuses to try
+   * again. The consumer (typically the polling
+   * fallback) is responsible for taking over
+   * status updates from here on.
+   */
+  private permanentlyDisabled = false
 
   constructor(options: WebSocketClientOptions) {
     this.opts = {
@@ -172,6 +208,11 @@ export class WebSocketClient {
       // SSR / test env. No-op.
       return
     }
+    // V11.5 — once the reconnection cap is hit
+    // we don't try again until the consumer
+    // explicitly resets via ``reset()`` (a future
+    // "Try again" button, for example).
+    if (this.permanentlyDisabled) return
     if (
       this.state === "open" ||
       this.state === "connecting"
@@ -180,6 +221,19 @@ export class WebSocketClient {
     }
     this.closedByUser = false
     this.openSocket()
+  }
+
+  /**
+   * V11.5 — re-arm the reconnection loop after
+   * the cap has been hit. The consumer typically
+   * wires this to a "Retry connection" button;
+   * the polling fallback is the implicit
+   * "your status updates are still working"
+   * surface.
+   */
+  reset(): void {
+    this.permanentlyDisabled = false
+    this.attempt = 0
   }
 
   /**
@@ -200,6 +254,13 @@ export class WebSocketClient {
     } else {
       this.setState("closed")
     }
+    // A clean user-initiated disconnect is the
+    // one time we should clear the cap — the
+    // consumer is saying "I'm done with this
+    // socket" and the next ``connect()`` should
+    // start fresh.
+    this.permanentlyDisabled = false
+    this.attempt = 0
   }
 
   /**
@@ -242,6 +303,7 @@ export class WebSocketClient {
 
   private openSocket(): void {
     if (typeof WebSocket === "undefined") return
+    if (this.permanentlyDisabled) return
     this.setState("connecting")
     try {
       this.socket = new WebSocket(
@@ -301,10 +363,6 @@ export class WebSocketClient {
       this.setState("closed")
       return
     }
-    // Unexpected close: schedule a reconnect.
-    // We don't gate on the close code — 1006
-    // (abnormal) is the common case and the
-    // backoff loop absorbs it.
     void event // referenced for debugging
     this.handleClose()
   }
@@ -313,13 +371,34 @@ export class WebSocketClient {
     this.setState("closed")
     this.socket = null
     if (this.closedByUser) return
+    // V11.5 — every close counts as one failed
+    // attempt. ``handleOpen`` resets the counter
+    // on a successful open, so a flaky
+    // (open → close → open → close) sequence
+    // doesn't trip the cap. A permanent refusal
+    // (the canonical case: the server returns
+    // 403 forever) does, which is what we want.
+    this.attempt += 1
     this.scheduleReconnect()
   }
 
   private scheduleReconnect(): void {
     if (this.reconnectTimer) return
-    const delay = nextReconnectDelay(this.attempt, this.opts)
-    this.attempt += 1
+    if (this.permanentlyDisabled) return
+    // V11.5 — honor the cap. After
+    // ``maxReconnectAttempts`` consecutive
+    // failed opens we park the client in the
+    // closed state and refuse to retry. The
+    // consumer can ``reset()`` to re-arm.
+    if (this.attempt >= this.opts.maxReconnectAttempts) {
+      this.permanentlyDisabled = true
+      return
+    }
+    // ``attempt - 1`` because ``attempt`` is
+    // the number of failures so far; the next
+    // attempt is the ``(attempt)th`` retry,
+    // 0-indexed.
+    const delay = nextReconnectDelay(this.attempt - 1, this.opts)
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null
       this.openSocket()
