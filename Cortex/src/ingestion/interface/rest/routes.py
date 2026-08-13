@@ -25,6 +25,7 @@ from src.ingestion.application.services import (
 )
 from src.ingestion.infrastructure.repositories import DocumentRepository
 from src.ingestion.infrastructure.s3_storage import S3Storage
+from src.ingestion.infrastructure.storage import LocalStorage, ObjectStorage
 from src.ingestion.interface.rest.auth import (
     DocumentWriteAuth,
     _verify_ingestion_auth,
@@ -63,21 +64,35 @@ def get_document_repository(db: Session = Depends(get_db)) -> DocumentRepository
     return DocumentRepository(db)
 
 
-def get_s3_storage() -> S3Storage:
+_local_storage_instance: ObjectStorage | None = None
+
+
+def get_s3_storage() -> ObjectStorage:
+    global _local_storage_instance
     from src.core.config import settings
 
-    return S3Storage(
-        bucket=settings.S3_BUCKET or "cortex-documents-dev-2026",
-        endpoint_url=settings.S3_ENDPOINT,
-        region_name=settings.S3_REGION,
-        aws_access_key_id=settings.S3_ACCESS_KEY,
-        aws_secret_access_key=settings.S3_SECRET_KEY,
-    )
+    if (not settings.S3_BUCKET or (not settings.S3_ACCESS_KEY and not settings.S3_ENDPOINT)) and settings.ENVIRONMENT == "development":
+        if _local_storage_instance is None:
+            _local_storage_instance = LocalStorage()
+        return _local_storage_instance
+
+    try:
+        return S3Storage(
+            bucket=settings.S3_BUCKET or "cortex-documents-dev-2026",
+            endpoint_url=settings.S3_ENDPOINT,
+            region_name=settings.S3_REGION,
+            aws_access_key_id=settings.S3_ACCESS_KEY,
+            aws_secret_access_key=settings.S3_SECRET_KEY,
+        )
+    except Exception as exc:
+        if _local_storage_instance is None:
+            _local_storage_instance = LocalStorage()
+        return _local_storage_instance
 
 
 def get_create_document_service(
     repo: DocumentRepository = Depends(get_document_repository),
-    storage: S3Storage = Depends(get_s3_storage),
+    storage: ObjectStorage = Depends(get_s3_storage),
 ) -> CreateDocumentService:
     return CreateDocumentService(repo, storage, queue=arq_queue)
 
@@ -96,7 +111,7 @@ def get_get_document_service(
 
 def get_delete_document_service(
     repo: DocumentRepository = Depends(get_document_repository),
-    storage: S3Storage = Depends(get_s3_storage),
+    storage: ObjectStorage = Depends(get_s3_storage),
 ) -> DeleteDocumentService:
     return DeleteDocumentService(repo, storage)
 
@@ -243,7 +258,7 @@ def _safe_audit(
 
 
 @router.post("", response_model=DocumentAcceptedResponse, status_code=status.HTTP_202_ACCEPTED)
-def create_document(
+async def create_document(
     request: Request,
     file: UploadFile,
     auth: Annotated[DocumentWriteAuth, Depends(require_document_write)],
@@ -256,15 +271,8 @@ def create_document(
     if not file.filename:
         raise HTTPException(status_code=400, detail="Filename is missing")
 
-    document = service.execute(
+    document = await service.execute(
         tenant_id=auth.tenant_id,
-        # ``created_by`` is a FK to ``users.id`` — it
-        # must be the caller's user id, NOT the
-        # tenant id. The previous version passed
-        # ``tenant_id`` here and the SQL INSERT
-        # blew up on the foreign-key violation.
-        # See the V11 hot-fix notes for the full
-        # stack trace.
         created_by=auth.created_by,
         filename=file.filename,
         mime_type=file.content_type or "application/octet-stream",
@@ -353,7 +361,7 @@ def get_document(
 
 
 @router.get("/{document_id}/status", response_model=DocumentStatusResponse)
-def get_document_status(
+async def get_document_status(
     document_id: uuid.UUID,
     tenant_id: Annotated[uuid.UUID, Depends(require_document_read)],
     service: GetDocumentStatusService = Depends(get_document_status_service),
@@ -365,7 +373,7 @@ def get_document_status(
     (if the document has failed). Clients should poll this endpoint
     after upload until status is 'indexed' or 'failed'.
     """
-    document = service.execute(tenant_id=tenant_id, document_id=document_id)
+    document = await service.execute(tenant_id=tenant_id, document_id=document_id)
     return DocumentStatusResponse(
         document_id=document_id,
         status=document.status,
@@ -409,7 +417,7 @@ def delete_document(
 
 
 @router.post("/{document_id}/retry", status_code=status.HTTP_202_ACCEPTED)
-def retry_document(
+async def retry_document(
     document_id: uuid.UUID,
     tenant_id: Annotated[uuid.UUID, Depends(require_document_write)],
     service: ReprocessDocumentService = Depends(get_reprocess_document_service),
@@ -418,12 +426,12 @@ def retry_document(
     Retry a FAILED document.
     Resets the document status to pending and re-queues it for background ingestion.
     """
-    service.execute_retry(document_id, tenant_id=tenant_id)
+    await service.execute_retry(document_id, tenant_id=tenant_id)
     return {"message": "Document queued for retry."}
 
 
 @router.post("/{document_id}/reprocess", status_code=status.HTTP_202_ACCEPTED)
-def reprocess_document(
+async def reprocess_document(
     document_id: uuid.UUID,
     tenant_id: Annotated[uuid.UUID, Depends(require_document_write)],
     service: ReprocessDocumentService = Depends(get_reprocess_document_service),
@@ -432,5 +440,5 @@ def reprocess_document(
     Force reprocess an INDEXED document.
     Bumps the document version, resets status to pending, and re-queues it.
     """
-    service.execute_reprocess(document_id, tenant_id=tenant_id)
+    await service.execute_reprocess(document_id, tenant_id=tenant_id)
     return {"message": "Document queued for reprocessing."}

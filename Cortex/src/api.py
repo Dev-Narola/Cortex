@@ -68,10 +68,13 @@ api_router.include_router(graph_router)
 from src.mcp.interface.rest.routes import router as mcp_router
 api_router.include_router(mcp_router)
 
-# WebSocket router is mounted at the top level (not under
-# ``/api/v1``) because WebSocket endpoints typically don't sit
-# behind a versioned API prefix.
-ws_router = conversation_ws_router
+from src.ingestion.interface.websocket.routes import (
+    router as ingestion_ws_router,
+)
+
+ws_router = APIRouter()
+ws_router.include_router(conversation_ws_router)
+ws_router.include_router(ingestion_ws_router)
 
 
 __all__ = ["api_router", "ws_router"]

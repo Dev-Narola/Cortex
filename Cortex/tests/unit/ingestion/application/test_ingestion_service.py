@@ -1,14 +1,11 @@
 import uuid
 import pytest
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch, AsyncMock
 from io import BytesIO
 
 from src.ingestion.application.services import CreateDocumentService
 from src.ingestion.domain.entities import Document, DocumentStatus
-from src.shared.exceptions import ValidationException
 
-
-from unittest.mock import Mock, patch, AsyncMock
 
 @pytest.fixture
 def repository():
@@ -24,7 +21,8 @@ def queue():
     q.enqueue = AsyncMock()
     return q
 
-def test_create_document_success(repository, storage, queue):
+@pytest.mark.asyncio
+async def test_create_document_success(repository, storage, queue):
     tenant_id = uuid.uuid4()
     created_by = uuid.uuid4()
     doc_id = uuid.uuid4()
@@ -44,34 +42,32 @@ def test_create_document_success(repository, storage, queue):
     
     file_obj = BytesIO(b"hello world")
     
-    with patch("asyncio.get_event_loop") as mock_get_loop:
-        result = service.execute(
-            tenant_id=tenant_id,
-            created_by=created_by,
-            filename="test.txt",
-            mime_type="text/plain",
-            file_obj=file_obj,
-        )
-        
-        assert result.id == doc_id
-        assert result.storage_uri == "s3://bucket/test.txt"
-        
-        repository.create.assert_called_once()
-        storage.upload.assert_called_once()
-        repository.update_storage_uri.assert_called_once_with(
-            doc_id, tenant_id=tenant_id, storage_uri="s3://bucket/test.txt"
-        )
-        
-        # Check that enqueue was called
-        queue.enqueue.assert_called_once_with(
-            "ingest_document_task",
-            document_id=str(doc_id),
-            tenant_id=str(tenant_id),
-        )
-        mock_get_loop.return_value.run_until_complete.assert_called_once()
+    result = await service.execute(
+        tenant_id=tenant_id,
+        created_by=created_by,
+        filename="test.txt",
+        mime_type="text/plain",
+        file_obj=file_obj,
+    )
+    
+    assert result.id == doc_id
+    assert result.storage_uri == "s3://bucket/test.txt"
+    
+    repository.create.assert_called_once()
+    storage.upload.assert_called_once()
+    repository.update_storage_uri.assert_called_once_with(
+        doc_id, tenant_id=tenant_id, storage_uri="s3://bucket/test.txt"
+    )
+    
+    queue.enqueue.assert_called_once_with(
+        "ingest_document_task",
+        document_id=str(doc_id),
+        tenant_id=str(tenant_id),
+    )
 
 
-def test_create_document_upload_failure(repository, storage, queue):
+@pytest.mark.asyncio
+async def test_create_document_upload_failure(repository, storage, queue):
     tenant_id = uuid.uuid4()
     created_by = uuid.uuid4()
     doc_id = uuid.uuid4()
@@ -94,9 +90,9 @@ def test_create_document_upload_failure(repository, storage, queue):
     file_obj = BytesIO(b"hello world")
     
     with pytest.raises(Exception, match="S3 error"):
-        service.execute(
+        await service.execute(
             tenant_id=tenant_id,
-            created_by=created_by,
+            created_by=tenant_id,
             filename="test.txt",
             mime_type="text/plain",
             file_obj=file_obj,

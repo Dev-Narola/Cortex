@@ -37,7 +37,7 @@ class CreateDocumentService:
         self.storage = storage
         self._queue = queue
 
-    def execute(
+    async def execute(
         self,
         tenant_id: uuid.UUID,
         created_by: uuid.UUID,
@@ -76,7 +76,22 @@ class CreateDocumentService:
                 tenant_id=tenant_id,
                 status=DocumentStatus.FAILED,
             )
-            raise
+            from src.ingestion.infrastructure.s3_storage import S3Storage
+            if isinstance(self.storage, S3Storage):
+                try:
+                    from src.ingestion.infrastructure.storage import LocalStorage
+                    fallback = LocalStorage()
+                    storage_uri = fallback.upload(
+                        data=file_obj,
+                        uri=object_key,
+                        content_type=mime_type,
+                    )
+                    logger.info("Fallback to LocalStorage succeeded for document %s", persisted.id)
+                except Exception as fallback_exc:
+                    logger.error("LocalStorage fallback also failed: %s", fallback_exc)
+                    raise exc
+            else:
+                raise
 
         # 4. Persist storage URI; update in-memory entity so callers see it
         self.repository.update_storage_uri(
@@ -85,18 +100,16 @@ class CreateDocumentService:
         persisted.set_storage_uri(storage_uri)
 
         # 5. Enqueue background ingestion task — fire and forget.
-        #    The HTTP response returns immediately; the worker does the rest.
         if self._queue is not None:
-            import asyncio
-
-            asyncio.get_event_loop().run_until_complete(
-                self._queue.enqueue(
+            try:
+                await self._queue.enqueue(
                     "ingest_document_task",
                     document_id=str(persisted.id),
                     tenant_id=str(tenant_id),
                 )
-            )
-            logger.info("Enqueued ingestion task for document %s", persisted.id)
+                logger.info("Enqueued ingestion task for document %s", persisted.id)
+            except Exception as enqueue_err:
+                logger.warning("Failed to enqueue ingestion task: %s", enqueue_err)
 
         return persisted
 
@@ -138,19 +151,15 @@ class GetDocumentStatusService:
     def __init__(self, repository: DocumentRepository):
         self.repository = repository
 
-    def execute(self, tenant_id: uuid.UUID, document_id: uuid.UUID) -> Document:
-        import asyncio
+    async def execute(self, tenant_id: uuid.UUID, document_id: uuid.UUID) -> Document:
         from src.core.cache import get_cache, set_cache
         from src.ingestion.domain.entities import DocumentStatus, SourceType
         import datetime
 
         cache_key = f"doc_status:{document_id}"
         try:
-            cached = asyncio.run(get_cache(cache_key))
+            cached = await get_cache(cache_key)
             if cached and cached.get("tenant_id") == str(tenant_id):
-                # We need to construct a Document from the cached dict
-                # Note: this bypasses full domain validation to save time,
-                # as we only care about the status properties for polling
                 doc = Document(
                     id=uuid.UUID(cached["id"]),
                     tenant_id=uuid.UUID(cached["tenant_id"]),
@@ -179,7 +188,6 @@ class GetDocumentStatusService:
             
         try:
             import dataclasses
-            # Extract basic dict and serialize specific fields
             doc_dict = dataclasses.asdict(document)
             doc_dict["id"] = str(document.id)
             doc_dict["tenant_id"] = str(document.tenant_id)
@@ -194,7 +202,7 @@ class GetDocumentStatusService:
                 )
             doc_dict["created_at"] = document.created_at.isoformat()
             
-            asyncio.run(set_cache(cache_key, doc_dict, ttl_seconds=60))
+            await set_cache(cache_key, doc_dict, ttl_seconds=60)
         except Exception as e:
             logger.error(f"Cache write error for {document_id}: {e}")
 

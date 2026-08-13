@@ -37,12 +37,13 @@ def tenant_id():
 # ---------------------------------------------------------------------------
 
 
-def test_create_document_service_success(mock_repo, mock_storage, tenant_id):
+@pytest.mark.asyncio
+async def test_create_document_service_success(mock_repo, mock_storage, tenant_id):
     service = CreateDocumentService(mock_repo, mock_storage)
     mock_storage.upload.return_value = "s3://bucket/tenants/x/documents/y/original/test.pdf"
 
     file_obj = io.BytesIO(b"test content")
-    doc = service.execute(
+    doc = await service.execute(
         tenant_id=tenant_id,
         created_by=tenant_id,
         filename="test.pdf",
@@ -60,14 +61,15 @@ def test_create_document_service_success(mock_repo, mock_storage, tenant_id):
     mock_repo.update_storage_uri.assert_called_once()
 
 
-def test_create_document_service_upload_fails(mock_repo, mock_storage, tenant_id):
+@pytest.mark.asyncio
+async def test_create_document_service_upload_fails(mock_repo, mock_storage, tenant_id):
     service = CreateDocumentService(mock_repo, mock_storage)
     mock_storage.upload.side_effect = Exception("S3 error")
 
     file_obj = io.BytesIO(b"test content")
 
     with pytest.raises(Exception, match="S3 error"):
-        service.execute(
+        await service.execute(
             tenant_id=tenant_id,
             created_by=tenant_id,
             filename="test.pdf",
