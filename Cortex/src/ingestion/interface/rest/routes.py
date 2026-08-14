@@ -71,7 +71,14 @@ def get_s3_storage() -> ObjectStorage:
     global _local_storage_instance
     from src.core.config import settings
 
-    if (not settings.S3_BUCKET or (not settings.S3_ACCESS_KEY and not settings.S3_ENDPOINT)) and settings.ENVIRONMENT == "development":
+    # Fall back to LocalStorage whenever S3 is not fully configured,
+    # regardless of ENVIRONMENT.  This prevents a 500 on upload when the
+    # server is running without S3 credentials (e.g. early prod setup).
+    s3_ready = bool(
+        settings.S3_BUCKET
+        and (settings.S3_ACCESS_KEY or settings.S3_ENDPOINT)
+    )
+    if not s3_ready:
         if _local_storage_instance is None:
             _local_storage_instance = LocalStorage()
         return _local_storage_instance
@@ -84,7 +91,7 @@ def get_s3_storage() -> ObjectStorage:
             aws_access_key_id=settings.S3_ACCESS_KEY,
             aws_secret_access_key=settings.S3_SECRET_KEY,
         )
-    except Exception as exc:
+    except Exception:
         if _local_storage_instance is None:
             _local_storage_instance = LocalStorage()
         return _local_storage_instance

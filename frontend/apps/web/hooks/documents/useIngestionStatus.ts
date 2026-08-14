@@ -142,11 +142,16 @@ function countInFlightDocs(qc: QueryClient): number {
 // ---------------------------------------------------------------------------
 
 let sharedSocket: IngestionSocket | null = null
+let sharedToken: string | null = null
 let refCount = 0
 
 function ensureSocket(accessToken: string): IngestionSocket {
-  if (!sharedSocket) {
+  if (!sharedSocket || sharedToken !== accessToken) {
+    if (sharedSocket) {
+      sharedSocket.disconnect()
+    }
     sharedSocket = new IngestionSocket({ accessToken })
+    sharedToken = accessToken
   }
   return sharedSocket
 }
@@ -299,6 +304,7 @@ export function useIngestionStatus(): UseIngestionStatusResult {
         // Last consumer unmounted → tear down.
         socket.disconnect()
         sharedSocket = null
+        sharedToken = null
       }
     }
   }, [accessToken, qc])
