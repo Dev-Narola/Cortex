@@ -45,11 +45,21 @@ class CreateDocumentService:
         mime_type: str,
         file_obj: BinaryIO,
     ) -> Document:
-        # 1. Validate file
-        FileValidator.validate_file(filename=filename, mime_type=mime_type, file_obj=file_obj)
+        # 1. Buffer the file bytes immediately before any I/O so the
+        #    stream is always available regardless of what happens next.
+        #    FastAPI's SpooledTemporaryFile is single-read — once S3's
+        #    upload() consumes it, seeking back raises
+        #    "I/O operation on closed file".
+        import io
         file_obj.seek(0)
+        file_bytes = file_obj.read()
+        buffered = io.BytesIO(file_bytes)
 
-        # 2. Build domain entity and persist immediately with PENDING status
+        # 2. Validate (operates on the buffered copy)
+        FileValidator.validate_file(filename=filename, mime_type=mime_type, file_obj=buffered)
+        buffered.seek(0)
+
+        # 3. Build domain entity and persist immediately with PENDING status
         document = Document.create(
             tenant_id=tenant_id,
             source_type="upload",
@@ -62,10 +72,10 @@ class CreateDocumentService:
         # tenants/{tenant_id}/documents/{document_id}/original/{filename}
         object_key = f"tenants/{tenant_id}/documents/{persisted.id}/original/{filename}"
 
-        # 3. Upload file; on failure mark the DB record as failed and re-raise
+        # 4. Upload file; on failure mark the DB record as failed and re-raise
         try:
             storage_uri = self.storage.upload(
-                data=file_obj,
+                data=buffered,
                 uri=object_key,
                 content_type=mime_type,
             )
@@ -76,30 +86,15 @@ class CreateDocumentService:
                 tenant_id=tenant_id,
                 status=DocumentStatus.FAILED,
             )
-            from src.ingestion.infrastructure.s3_storage import S3Storage
-            if isinstance(self.storage, S3Storage):
-                try:
-                    from src.ingestion.infrastructure.storage import LocalStorage
-                    fallback = LocalStorage()
-                    storage_uri = fallback.upload(
-                        data=file_obj,
-                        uri=object_key,
-                        content_type=mime_type,
-                    )
-                    logger.info("Fallback to LocalStorage succeeded for document %s", persisted.id)
-                except Exception as fallback_exc:
-                    logger.error("LocalStorage fallback also failed: %s", fallback_exc)
-                    raise exc
-            else:
-                raise
+            raise
 
-        # 4. Persist storage URI; update in-memory entity so callers see it
+        # 5. Persist storage URI; update in-memory entity so callers see it
         self.repository.update_storage_uri(
             persisted.id, tenant_id=tenant_id, storage_uri=storage_uri
         )
         persisted.set_storage_uri(storage_uri)
 
-        # 5. Enqueue background ingestion task — fire and forget.
+        # 6. Enqueue background ingestion task — fire and forget.
         if self._queue is not None:
             try:
                 await self._queue.enqueue(
