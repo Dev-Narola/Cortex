@@ -420,32 +420,33 @@ def login(
             )
 
             tenant_obj = (
-                TenantRepository(db).get_by_slug(body.tenant_slug)
+                TenantRepository(db).find_by_slug(body.tenant_slug)
                 if body.tenant_slug
                 else None
             )
-            tenant_id = tenant_obj.id if tenant_obj else uuid.UUID(int=0)
+            tenant_id = tenant_obj.id if tenant_obj else None
         except Exception:
-            # Fall back to a zero UUID; the row is
-            # tagged outcome=failed so the operator
-            # can filter for it.
-            tenant_id = uuid.UUID(int=0)
-        _safe_audit(
-            db,
-            tenant_id=tenant_id,
-            action=AuditAction.LOGIN_FAILURE,
-            resource_type="session",
-            resource_id=None,
-            metadata={
-                "tenant_slug": body.tenant_slug,
-                "email": body.email,
-            },
-            ip_address=_client_ip(request),
-        )
-        # Commit so the failure audit row is durable
-        # even when the underlying auth error is
-        # re-raised to the client.
-        db.commit()
+            tenant_id = None
+
+        if tenant_id:
+            _safe_audit(
+                db,
+                tenant_id=tenant_id,
+                action=AuditAction.LOGIN_FAILURE,
+                resource_type="session",
+                resource_id=None,
+                metadata={
+                    "tenant_slug": body.tenant_slug,
+                    "email": body.email,
+                },
+                ip_address=_client_ip(request),
+            )
+            # Commit so the failure audit row is durable
+            # even when the underlying auth error is
+            # re-raised to the client.
+            db.commit()
+        else:
+            db.rollback()
         raise
     _safe_audit(
         db,
