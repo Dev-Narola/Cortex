@@ -129,6 +129,20 @@ class Settings(BaseSettings):
     NVIDIA_API_KEY: str | None = None
     NVIDIA_BASE_URL: str = "https://integrate.api.nvidia.com/v1"
     NVIDIA_MODEL: str = "openai/gpt-oss-20b"
+    # NVIDIA NIM embedding model (OpenAI-compatible surface).
+    # ``nvidia/nv-embed-v1`` is the recommended free-tier generalist
+    # embedding model on NVIDIA Build (build.nvidia.com). It has a native
+    # output size that may differ from OpenAI's 1536; set
+    # ``NVIDIA_EMBEDDING_DIMENSIONS`` to match the model's actual output
+    # so the pgvector column size check passes.
+    #
+    # WARNING — the database column is currently Vector(1536). If you
+    # switch to NVIDIA and your model emits a different size, you MUST
+    # run an Alembic migration to change the column size and then
+    # re-ingest all documents. The worker will error loudly on a
+    # dimension mismatch rather than silently write bad vectors.
+    NVIDIA_EMBEDDING_MODEL: str = "nvidia/nv-embed-v1"
+    NVIDIA_EMBEDDING_DIMENSIONS: int = 1536  # nv-embed-v1 native output
 
     # ------------------------------------------------------------------
     # Reranker

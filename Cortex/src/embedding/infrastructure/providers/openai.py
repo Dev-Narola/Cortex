@@ -52,35 +52,47 @@ def _content_hash(text: str) -> str:
 
 class OpenAIEmbeddingProvider(EmbeddingProvider):
     """
-    OpenAI ``text-embedding-3-*`` implementation.
+    OpenAI-compatible embedding provider.
 
-    Honors the configured model and dimensions from
-    ``src.core.config.settings``. The ``dimensions`` value is the
-    authoritative one — if a caller mistakenly configures
-    ``EMBEDDING_DIMENSIONS=768`` against a model that emits 1536,
-    the resulting vectors won't fit the database column and every
-    retrieval will fail loudly. We refuse to call the API in that
-    case rather than silently write wrong-shaped data.
+    Works with the OpenAI ``text-embedding-3-*`` family and with any
+    OpenAI-compatible endpoint (NVIDIA NIM, Azure OpenAI, local servers).
+
+    ``dimensions`` is the authoritative expected vector length. After every
+    API call the returned vector length is compared against this value — a
+    mismatch means the database column would receive wrong-shaped data and
+    is rejected immediately as a permanent error.
+
+    ``supports_dimensions`` controls whether the ``dimensions`` kwarg is
+    forwarded to the API.  OpenAI's text-embedding-3 models accept it;
+    NVIDIA NIM and older OpenAI models silently ignore or reject it.
+    Set this to ``False`` when pointing at a provider that fixes its output
+    dimension and does not honour the parameter.
     """
 
     def __init__(
         self,
         *,
         api_key: str | None = None,
+        base_url: str | None = None,
         model: str | None = None,
         dimensions: int | None = None,
+        supports_dimensions: bool = True,
         timeout: float | None = None,
         max_retries: int | None = None,
         use_cache: bool = True,
     ) -> None:
         self.model = model or settings.EMBEDDING_MODEL
         self.dimensions = dimensions or settings.EMBEDDING_DIMENSIONS
+        self.supports_dimensions = supports_dimensions
         self.use_cache = use_cache
-        self._client = AsyncOpenAI(
-            api_key=api_key or settings.OPENAI_API_KEY or "dummy-key-for-tests",
-            timeout=timeout if timeout is not None else settings.EMBEDDING_TIMEOUT,
-            max_retries=max_retries if max_retries is not None else settings.EMBEDDING_MAX_RETRIES,
-        )
+        client_kwargs: dict = {
+            "api_key": api_key or settings.OPENAI_API_KEY or "dummy-key-for-tests",
+            "timeout": timeout if timeout is not None else settings.EMBEDDING_TIMEOUT,
+            "max_retries": max_retries if max_retries is not None else settings.EMBEDDING_MAX_RETRIES,
+        }
+        if base_url:
+            client_kwargs["base_url"] = base_url
+        self._client = AsyncOpenAI(**client_kwargs)
 
     # ------------------------------------------------------------------
     # Public API
@@ -180,14 +192,20 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
 
     async def _call_provider(self, texts: list[str]) -> list[list[float]]:
         """
-        Single batched call to OpenAI, with error classification.
+        Single batched call to the provider, with error classification.
+
+        ``dimensions`` is only forwarded when ``self.supports_dimensions``
+        is True — OpenAI text-embedding-3-* accepts it; NVIDIA NIM and
+        older models do not.
         """
+        create_kwargs: dict = {
+            "model": self.model,
+            "input": texts,
+        }
+        if self.supports_dimensions:
+            create_kwargs["dimensions"] = self.dimensions
         try:
-            response = await self._client.embeddings.create(
-                model=self.model,
-                input=texts,
-                dimensions=self.dimensions,
-            )
+            response = await self._client.embeddings.create(**create_kwargs)
         except AuthenticationError as exc:
             raise PermanentEmbeddingError(
                 f"OpenAI authentication failed: {exc}",

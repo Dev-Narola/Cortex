@@ -87,16 +87,42 @@ def get_embedding_provider():
     provider is reused across every worker invocation, and so the
     worker code never imports from ``src.embedding.infrastructure``
     directly.
+
+    Supported values for ``EMBEDDING_PROVIDER``:
+      - ``openai``  — OpenAI ``text-embedding-3-*`` models (default)
+      - ``nvidia``  — NVIDIA NIM endpoint (OpenAI-compatible surface).
+                      Uses ``NVIDIA_API_KEY`` and ``NVIDIA_BASE_URL``
+                      from settings. The model defaults to
+                      ``nvidia/nv-embedqa-e5-v5`` (1024 dims).
     """
+    from src.embedding.infrastructure.providers.openai import (
+        OpenAIEmbeddingProvider,
+    )
+
     provider = (settings.EMBEDDING_PROVIDER or "openai").lower()
+
     if provider == "openai":
-        from src.embedding.infrastructure.providers.openai import (
-            OpenAIEmbeddingProvider,
-        )
         return OpenAIEmbeddingProvider()
+
+    if provider == "nvidia":
+        if not settings.NVIDIA_API_KEY:
+            raise ValueError(
+                "EMBEDDING_PROVIDER=nvidia requires NVIDIA_API_KEY to be set."
+            )
+        return OpenAIEmbeddingProvider(
+            api_key=settings.NVIDIA_API_KEY,
+            base_url=settings.NVIDIA_BASE_URL,
+            model=settings.NVIDIA_EMBEDDING_MODEL,
+            dimensions=settings.NVIDIA_EMBEDDING_DIMENSIONS,
+            # NVIDIA NIM does not accept the ``dimensions`` kwarg; pass
+            # False so we skip it in the API call. The returned vector
+            # length is still validated against ``dimensions``.
+            supports_dimensions=False,
+        )
+
     raise ValueError(
         f"Unknown embedding provider: {settings.EMBEDDING_PROVIDER!r}. "
-        f"Supported: 'openai'."
+        f"Supported: 'openai', 'nvidia'."
     )
 
 # ---------------------------------------------------------------------------
