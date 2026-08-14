@@ -141,8 +141,8 @@ class Settings(BaseSettings):
     # run an Alembic migration to change the column size and then
     # re-ingest all documents. The worker will error loudly on a
     # dimension mismatch rather than silently write bad vectors.
-    NVIDIA_EMBEDDING_MODEL: str = "nvidia/llama-3.2-nv-embedqa-1b-v2"
-    NVIDIA_EMBEDDING_DIMENSIONS: int = 1536  # llama-3.2-nv-embedqa-1b-v2 supports dynamic dimensions
+    NVIDIA_EMBEDDING_MODEL: str = "nvidia/llama-nemotron-embed-1b-v2"
+    NVIDIA_EMBEDDING_DIMENSIONS: int = 1536  # llama-nemotron-embed-1b-v2 supports dynamic dimensions/Matryoshka slicing
 
     # ------------------------------------------------------------------
     # Reranker

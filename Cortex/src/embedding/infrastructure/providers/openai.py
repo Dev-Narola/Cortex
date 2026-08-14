@@ -202,7 +202,7 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
             "model": self.model,
             "input": texts,
         }
-        if "llama-3.2-nv-embedqa" in self.model:
+        if "llama-3.2-nv-embedqa" in self.model or "llama-nemotron-embed" in self.model:
             create_kwargs["extra_body"] = {
                 "input_type": input_type,
                 "truncate": "NONE",
@@ -242,14 +242,19 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
         vectors: list[list[float]] = [list(d.embedding) for d in sorted_data]
 
         expected = self.dimensions
-        for v in vectors:
+        for i, v in enumerate(vectors):
             if len(v) != expected:
-                raise PermanentEmbeddingError(
-                    f"Provider returned vector of length {len(v)}, "
-                    f"expected {expected} (model={self.model!r}). "
-                    f"Check EMBEDDING_DIMENSIONS in src/core/config.py.",
-                    code=_INTERNAL,
-                )
+                if len(v) > expected:
+                    # Matryoshka representation learning allows slicing the vector to the desired size.
+                    logger.info("Truncating returned vector from %d to %d dimensions.", len(v), expected)
+                    vectors[i] = v[:expected]
+                else:
+                    raise PermanentEmbeddingError(
+                        f"Provider returned vector of length {len(v)}, "
+                        f"expected {expected} (model={self.model!r}). "
+                        f"Check EMBEDDING_DIMENSIONS in src/core/config.py.",
+                        code=_INTERNAL,
+                    )
         return vectors
 
 
