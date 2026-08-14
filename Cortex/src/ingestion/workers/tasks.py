@@ -389,7 +389,6 @@ async def embed_chunks_task(
             raise TransientWorkerError(str(exc), original=exc) from exc
         except PermanentEmbeddingError as exc:
             raise PermanentWorkerError(
-                error_code="EMBEDDING_FAILED",
                 message=str(exc),
                 original=exc
             ) from exc

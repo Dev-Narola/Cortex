@@ -104,10 +104,10 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
                 "Cannot embed empty or whitespace-only text.",
                 code=_BAD_REQUEST,
             )
-        vectors = await self.embed_batch([text])
+        vectors = await self.embed_batch([text], input_type="query")
         return vectors[0]
 
-    async def embed_batch(self, texts: list[str]) -> list[list[float]]:
+    async def embed_batch(self, texts: list[str], *, input_type: str = "passage") -> list[list[float]]:
         if not texts:
             return []
 
@@ -161,7 +161,7 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
 
         # 3) Call the provider for whatever the cache didn't have.
         if missing_texts:
-            new_vectors = await self._call_provider(missing_texts)
+            new_vectors = await self._call_provider(missing_texts, input_type=input_type)
             for idx, vec in zip(missing_indices, new_vectors):
                 cached_vectors[idx] = vec
             if self.use_cache:
@@ -190,7 +190,7 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
     def _cache_key(self, text: str) -> str:
         return f"emb:{self.model}:{_content_hash(text)}"
 
-    async def _call_provider(self, texts: list[str]) -> list[list[float]]:
+    async def _call_provider(self, texts: list[str], *, input_type: str = "passage") -> list[list[float]]:
         """
         Single batched call to the provider, with error classification.
 
@@ -202,7 +202,13 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
             "model": self.model,
             "input": texts,
         }
-        if self.supports_dimensions:
+        if "llama-3.2-nv-embedqa" in self.model:
+            create_kwargs["extra_body"] = {
+                "input_type": input_type,
+                "truncate": "NONE",
+                "dimensions": self.dimensions,
+            }
+        elif self.supports_dimensions:
             create_kwargs["dimensions"] = self.dimensions
         try:
             response = await self._client.embeddings.create(**create_kwargs)
