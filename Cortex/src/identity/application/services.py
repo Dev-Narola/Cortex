@@ -145,15 +145,19 @@ class RegisterTenantService:
             owner_email=owner_email,
         )
 
-        # 3. Slug available (cheap in-process check before going to the DB).
-        #    Loop until we find an unused slug; the UUID suffix already
-        #    makes collisions astronomically unlikely, but the in-process
-        #    check is still cheap and prevents a 409 from racing the DB.
+        # 3. Slug available. If explicitly provided, we reject duplicates.
+        #    If auto-generated, we auto-suffix to avoid collisions.
         candidate_slug = derived_slug
-        while self._tenants.exists(slug=candidate_slug):
-            # Should not happen with UUID suffixes, but keep the loop
-            # defensive.
-            candidate_slug = f"{derived_slug}-{uuid.uuid4().hex[:6]}"
+        if tenant_slug is not None:
+            if self._tenants.exists(slug=candidate_slug):
+                raise ConflictException(
+                    message=f"Tenant slug '{candidate_slug}' is already in use.",
+                    code=409,
+                    data={"field": "slug", "value": candidate_slug},
+                )
+        else:
+            while self._tenants.exists(slug=candidate_slug):
+                candidate_slug = f"{derived_slug}-{uuid.uuid4().hex[:6]}"
 
         # 4. Create tenant
         tenant = Tenant.create(name=derived_name, slug=candidate_slug)
