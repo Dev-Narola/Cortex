@@ -192,7 +192,7 @@ class DocumentChunkModel(Base):
 
     embedding_model: Mapped[str | None] = mapped_column(String(64), nullable=True)
     embedding_version: Mapped[str | None] = mapped_column(String(16), nullable=True)
-    embedding: Mapped[list[float] | None] = mapped_column(Vector(1536), nullable=True)
+    embedding: Mapped[list[float] | None] = mapped_column(Vector(1024), nullable=True)
     tsv = mapped_column(TSVector, nullable=True)
 
     __table_args__ = (

@@ -89,7 +89,7 @@ class Settings(BaseSettings):
     EMBEDDING_MODEL: str = "text-embedding-3-small"
     # MUST match the model's actual output dimension. A mismatch will
     # be caught at embed time and rejected as a permanent error.
-    EMBEDDING_DIMENSIONS: int = 1536
+    EMBEDDING_DIMENSIONS: int = 1024
     EMBEDDING_BATCH_SIZE: int = 100
     EMBEDDING_TIMEOUT: float = 30.0
     EMBEDDING_MAX_RETRIES: int = 3
@@ -141,8 +141,8 @@ class Settings(BaseSettings):
     # run an Alembic migration to change the column size and then
     # re-ingest all documents. The worker will error loudly on a
     # dimension mismatch rather than silently write bad vectors.
-    NVIDIA_EMBEDDING_MODEL: str = "nvidia/llama-nemotron-embed-1b-v2"
-    NVIDIA_EMBEDDING_DIMENSIONS: int = 1536  # llama-nemotron-embed-1b-v2 supports dynamic dimensions/Matryoshka slicing
+    NVIDIA_EMBEDDING_MODEL: str = "baai/bge-m3"
+    NVIDIA_EMBEDDING_DIMENSIONS: int = 1024  # BAAI/bge-m3 outputs 1024 dimensions
 
     # ------------------------------------------------------------------
     # Reranker
