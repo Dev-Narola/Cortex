@@ -84,16 +84,27 @@ class S3Storage(ObjectStorage):
 
         return f"s3://{self.bucket}/{uri}"
 
+    def _resolve_key(self, uri: str) -> str:
+        """Strip the s3://bucket/ prefix from a URI if present to get the raw key."""
+        if uri.startswith("s3://"):
+            # Format: s3://bucket/key...
+            parts = uri.split("/", 3)
+            if len(parts) >= 4:
+                return parts[3]
+        return uri
+
     def delete(self, uri: str) -> bool:
-        if not self.exists(uri):
+        key = self._resolve_key(uri)
+        if not self.exists(key):
             return False
 
-        self.client.delete_object(Bucket=self.bucket, Key=uri)
+        self.client.delete_object(Bucket=self.bucket, Key=key)
         return True
 
     def exists(self, uri: str) -> bool:
+        key = self._resolve_key(uri)
         try:
-            self.client.head_object(Bucket=self.bucket, Key=uri)
+            self.client.head_object(Bucket=self.bucket, Key=key)
             return True
         except ClientError as e:
             error_code = e.response.get("Error", {}).get("Code", "")
@@ -102,8 +113,9 @@ class S3Storage(ObjectStorage):
             raise
 
     def download(self, uri: str) -> bytes:
+        key = self._resolve_key(uri)
         try:
-            response = self.client.get_object(Bucket=self.bucket, Key=uri)
+            response = self.client.get_object(Bucket=self.bucket, Key=key)
             return response["Body"].read()
         except ClientError as e:
             error_code = e.response.get("Error", {}).get("Code", "")
