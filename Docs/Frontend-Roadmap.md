@@ -307,6 +307,40 @@ Final notes: `Docs/frontend/knowledge-graph.md`. ADR: `Docs/adr/0031-react-three
 
 All shipped via direct local merges to `main` per the F6 P1/P2/P4 + F7 P1/P2/P3 precedent.
 
+**Status (2026-08-19 — updated):** **F7 complete.** Part 5 (Audit Log) shipped.
+* **Part 5** — Audit Log (the V4 observability surface at `GET /api/v1/audit-log`; keyset-paginated over `(created_at desc, id desc)`; 4 server-side filters (action / resource / date range / actor UUID); owner/admin only — the tab is HIDDEN for member/viewer, a friendly "no access" card covers the direct-URL 403 case; raw `ip_address` is NEVER rendered; `metadata` is filtered (no `password` / `token` / `api_key` / `secret` / `authorization` keys); read-only by construction — the service barrel exports no destructive helper, the panel never calls non-GET on the audit endpoint, the detail drawer has no edit/delete affordance; 39 new tests; route 5.67 kB / 304 kB First Load JS).
+
+**F7 Definition of Done — final acceptance flow:**
+```
+1. Invite teammate
+     ↓
+2. Change/verify role
+     ↓
+3. Generate API key
+     ↓
+4. Confirm one-time reveal
+     ↓
+5. Revoke API key
+     ↓
+6. Generate/use MCP credentials
+     ↓
+7. Perform real Cortex activity
+     ↓
+8. Open Usage
+     ↓
+9. See real usage
+     ↓
+10. Open Audit Log
+     ↓
+11. See the actions recorded
+     ↓
+12. Verify tenant isolation
+     ↓
+13. Verify audit events are read-only
+```
+
+**Next phase:** F8 — Marketing Site: Full Build-Out.
+
 ---
 
 ### F8 — Marketing Site: Full Build-Out *(2 weeks — deliberately last)*
