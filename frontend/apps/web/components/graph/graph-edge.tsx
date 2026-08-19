@@ -1,12 +1,12 @@
 /**
  * GraphEdge — a single relationship line.
  *
- * **F6 Part 1.** Renders an undirected line
- * between two nodes. The line is the spec's
- * default "subtle Slate" colour and stays static
- * for Part 1 — the Spark gradient pulse that
- * fires when a query traverses an edge is
- * deliberately deferred to Part 2.
+ * **F6 Part 1 + Part 3 + Part 4.** Renders an
+ * undirected line between two nodes. The line is
+ * the spec's default "subtle Slate" colour and
+ * stays static for Part 1 — the Spark gradient
+ * pulse that fires when a query traverses an edge
+ * is deliberately deferred to a future part.
  *
  * **Why a static colour.** Per the spec, the
  * edge-pulse is part of the *query feedback*
@@ -25,6 +25,21 @@
  * kills the "always-on" graph feel the spec
  * wants.
  *
+ * **Part 4 — performance.**
+ *   - ``React.memo`` with a position-aware
+ *     comparator — the edge only re-renders
+ *     when the source/target positions or the
+ *     ``isActive`` flag change.
+ *   - The cylinder geometry is shared across
+ *     every edge (the canvas passes one
+ *     ``CylinderGeometry`` down). At 2,000
+ *     edges this turns 2,000 allocations into
+ *     1.
+ *   - The dev-only ``console.warn`` for the
+ *     "missing node" path is gated on
+ *     ``process.env.NODE_ENV !== "production"``
+ *     so production builds stay silent.
+ *
  * **Tested via mocked Canvas.** Same constraint
  * as ``GraphNode`` — R3F can't render to
  * happy-dom, so tests pin the geometry-helper
@@ -34,8 +49,8 @@
 "use client"
 
 import { Html } from "@react-three/drei"
-import { useMemo } from "react"
-import { Euler, Quaternion, Vector3 } from "three"
+import { memo, useMemo } from "react"
+import { type BufferGeometry, Euler, Quaternion, Vector3 } from "three"
 
 import type { GraphEdge as GraphEdgeData, GraphNode } from "./types"
 
@@ -58,6 +73,14 @@ export interface GraphEdgeProps {
    * callers don't need it).
    */
   onSelect?: (relationId: string) => void
+  /**
+   * **F6 Part 4 — shared geometry.** The
+   * canvas passes one ``CylinderGeometry``
+   * down so every edge shares the same
+   * unit-Y tube (stretched per edge via
+   * ``scaleY``). Required.
+   */
+  geometry: BufferGeometry
 }
 
 /**
@@ -87,9 +110,7 @@ function findNode(nodes: GraphNode[], id: string): GraphNode | null {
  * The cylinder material is a single colour, so we
  * pick the dominant stop (the Volt-500) and lean
  * on the cylinder's ``emissiveIntensity`` +
- * opacity to make the active state pop. The Part
- * 4 work on the visualisation can swap the
- * cylinder for a true gradient tube if needed.
+ * opacity to make the active state pop.
  */
 const EDGE_COLOR = "#475569" // slate-600 — default
 const EDGE_COLOR_ACTIVE = "#f97316" // Ember-500 — active path
@@ -146,7 +167,7 @@ export function computeEdgeTransform(start: Vector3, end: Vector3): EdgeTransfor
   }
 }
 
-export function GraphEdge({ edge, nodes, isActive = false, onSelect }: GraphEdgeProps) {
+function GraphEdgeImpl({ edge, nodes, isActive = false, onSelect, geometry }: GraphEdgeProps) {
   // Memoize the curve so the geometry isn't
   // recomputed on every React render. The
   // dependency list is small (edge + nodes) so
@@ -158,10 +179,13 @@ export function GraphEdge({ edge, nodes, isActive = false, onSelect }: GraphEdge
       // Data bug: edge references a missing
       // node. Render a zero-length line so the
       // rest of the scene still works. The
-      // error path is loud in dev (console)
-      // because silent zero-edges are the
-      // worst kind of bug to track down in 3D.
-      if (typeof console !== "undefined") {
+      // error path is loud in dev because silent
+      // zero-edges are the worst kind of bug to
+      // track down in 3D; production builds
+      // stay silent (the edge count is also
+      // bounded upstream by the adapter's
+      // knownNodeIds filter).
+      if (process.env.NODE_ENV !== "production" && typeof console !== "undefined") {
         console.warn(`[graph] edge ${edge.id} references a missing node`, {
           source: edge.source,
           target: edge.target,
@@ -218,10 +242,16 @@ export function GraphEdge({ edge, nodes, isActive = false, onSelect }: GraphEdge
           position={transform.position}
           rotation={transform.rotation}
           scale={[1, transform.scaleY, 1]}
+          geometry={geometry}
           data-testid={`graph-edge-${edge.id}`}
           data-active={isActive || undefined}
         >
-          <cylinderGeometry args={[EDGE_TUBE_RADIUS, EDGE_TUBE_RADIUS, 1, 8, 1, true]} />
+          {/* **F6 Part 4 — material-only update.** The
+              geometry is shared (passed via prop).
+              The material is unique per edge (it
+              carries the colour + opacity) but R3F
+              de-duplicates materials with identical
+              props on the renderer side. */}
           <meshStandardMaterial
             color={color}
             transparent
@@ -242,6 +272,36 @@ export function GraphEdge({ edge, nodes, isActive = false, onSelect }: GraphEdge
     </group>
   )
 }
+
+/**
+ * **F6 Part 4 — memoized export.** Custom
+ * comparator: the edge only re-renders when
+ * the source/target positions actually move,
+ * the ``isActive`` flag toggles, or the
+ * relation-type label changes. The
+ * ``onSelect`` identity is the explorer's
+ * stable ``useCallback`` (Part 3).
+ */
+export const GraphEdge = memo(GraphEdgeImpl, (prev, next) => {
+  if (prev.isActive !== next.isActive) return false
+  if (prev.onSelect !== next.onSelect) return false
+  if (prev.geometry !== next.geometry) return false
+  if (prev.edge.id !== next.edge.id) return false
+  if (prev.edge.relationType !== next.edge.relationType) return false
+  // Find the source + target in the
+  // previous + next node maps. If the
+  // position changed, re-render.
+  const prevSource = prev.nodes.find((n) => n.id === prev.edge.source)
+  const nextSource = next.nodes.find((n) => n.id === next.edge.source)
+  const prevTarget = prev.nodes.find((n) => n.id === prev.edge.target)
+  const nextTarget = next.nodes.find((n) => n.id === next.edge.target)
+  if (!prevSource || !nextSource || !prevTarget || !nextTarget) return false
+  for (let i = 0; i < 3; i++) {
+    if (prevSource.position[i] !== nextSource.position[i]) return false
+    if (prevTarget.position[i] !== nextTarget.position[i]) return false
+  }
+  return true
+})
 
 /**
  * Floating label for the edge. Uses drei's

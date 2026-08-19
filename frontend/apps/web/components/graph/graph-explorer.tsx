@@ -59,6 +59,7 @@ import { EmptyState } from "@cortex/ui"
 
 import { useKGEntity, useKGEntityNeighbors, useKGEntityRelations, useKGSearch } from "@/hooks/graph"
 import { searchToGraph, toGraph } from "./adapters/kg-to-graph"
+import { applyGraphLimits } from "./graph-limits"
 import { GraphNodeDetail } from "./graph-node-detail"
 import { GraphSearch } from "./graph-search"
 import { GraphSearchResults } from "./graph-search-results"
@@ -186,7 +187,20 @@ export function GraphExplorer({ initialData, defaultQuery = "" }: GraphExplorerP
   // search graph. (When the user has selected
   // an entity, the root graph wins over the
   // stale search graph.)
-  const renderedGraph = graphData ?? rootGraph ?? searchGraph ?? initialData ?? null
+  const rawGraph = graphData ?? rootGraph ?? searchGraph ?? initialData ?? null
+
+  // **F6 Part 4 — apply the frontend render
+  // cap.** The cap is a defence-in-depth measure
+  // (the backend has its own pagination). When
+  // the cap kicks in the explorer surfaces a
+  // "Showing the most relevant connections"
+  // notice (see the JSX).
+  const limitResult = useMemo(() => (rawGraph ? applyGraphLimits(rawGraph) : null), [rawGraph])
+  const renderedGraph = limitResult?.graph ?? null
+  const isTruncated = limitResult?.truncated ?? false
+  const truncationMessage = limitResult
+    ? `Showing the most relevant connections (${limitResult.graph.nodes.length} of ${limitResult.originalNodeCount} nodes). Refine your query to explore further.`
+    : null
 
   // ----- Handlers --------------------------------------------------------
   const handleSearchChange = useCallback((next: string) => {
@@ -299,6 +313,16 @@ export function GraphExplorer({ initialData, defaultQuery = "" }: GraphExplorerP
           <output aria-live="polite" className="pointer-events-none absolute right-4 top-20 z-10">
             <div className="rounded-md border border-slate-700 bg-slate-800/90 px-3 py-1.5 text-xs text-paper-200 shadow-lg backdrop-blur">
               Loading entity…
+            </div>
+          </output>
+        ) : null}
+        {isTruncated && truncationMessage ? (
+          <output
+            aria-live="polite"
+            className="pointer-events-none absolute bottom-6 left-1/2 z-10 -translate-x-1/2"
+          >
+            <div className="max-w-md rounded-md border border-volt-500/30 bg-slate-800/90 px-3 py-1.5 text-center text-xs text-paper-200 shadow-lg backdrop-blur">
+              {truncationMessage}
             </div>
           </output>
         ) : null}

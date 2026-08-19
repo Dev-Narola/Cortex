@@ -14,6 +14,8 @@ export { GraphNode } from "./graph-node"
 export { GraphNodeDetail, openSourceDocument } from "./graph-node-detail"
 export { GraphSearch } from "./graph-search"
 export { GraphSearchResults } from "./graph-search-results"
+export { applyGraphLimits, GRAPH_RENDER_NODE_LIMIT, GRAPH_RENDER_EDGE_LIMIT } from "./graph-limits"
+export type { GraphLimitResult } from "./graph-limits"
 
 export type {
   GraphData,
