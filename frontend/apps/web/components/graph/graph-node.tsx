@@ -1,9 +1,11 @@
 /**
  * GraphNode — a single 3D node in the graph scene.
  *
- * **F6 Part 1.** The renderable primitive the
- * R3F `<Canvas>` mounts per node. Owns:
- *   - 3D geometry (sphere for now)
+ * **F6 Part 1 + Part 3 + Part 4.** The renderable
+ * primitive the R3F `<Canvas>` mounts per node. Owns:
+ *   - 3D geometry (sphere — Part 4 receives a shared
+ *     geometry from the canvas to keep allocations flat
+ *     regardless of node count)
  *   - material / colour
  *   - selection state visual
  *   - label (via `<Html>` from drei)
@@ -22,10 +24,24 @@
  * `selected` state shifts to `volt-300` (brighter
  * for visibility on the dark Void background)
  * and the dimmed state drops to `volt-900` at
- * 35% opacity. The active-path state uses the
- * Spark gradient (out of scope for Part 1; the
- * type is wired so Part 2 can render it without
- * changing this component's surface).
+ * 35% opacity. The active-path state uses
+ * Ember-500 (per UI spec — the bright Ember
+ * reads as "the thing the user is looking at").
+ *
+ * **Part 4 — performance.**
+ *   - ``React.memo`` wraps the export so unrelated
+ *     state changes (e.g. the search bar's input,
+ *     the detail card's open state) don't re-render
+ *     the whole graph. The custom comparator checks
+ *     ``state`` + ``node.id`` + the prop identities
+ *     that actually matter.
+ *   - The geometry is shared across every node
+ *     (the canvas passes one ``BufferGeometry``
+ *     down). R3F handles the per-node mesh; the
+ *     GPU sees a single geometry reference.
+ *   - The material's ``emissive`` + ``color`` are
+ *     derived from the ``state`` prop, so a state
+ *     change is one prop diff — not a re-mount.
  *
  * **Tested via mocked Canvas.** R3F can't render
  * to happy-dom (no WebGL). The component exports
@@ -39,7 +55,8 @@
 
 import { Html } from "@react-three/drei"
 import type { ThreeEvent } from "@react-three/fiber"
-import { useCallback } from "react"
+import { memo, useCallback } from "react"
+import type { BufferGeometry } from "three"
 
 import type { GraphNode as GraphNodeData, GraphNodeState } from "./types"
 
@@ -54,6 +71,14 @@ export interface GraphNodeProps {
    * ``node.id`` from the event to update it.
    */
   onSelect: (id: string) => void
+  /**
+   * **F6 Part 4 — shared geometry.** The canvas
+   * passes one ``BufferGeometry`` down so every
+   * node shares the same sphere geometry. Required
+   * (no fallback to an inline geometry — that
+   * would defeat the optimisation).
+   */
+  geometry: BufferGeometry
 }
 
 /**
@@ -121,7 +146,12 @@ function opacityFor(state: GraphNodeState): number {
   }
 }
 
-export function GraphNode({ node, state, onSelect }: GraphNodeProps) {
+/**
+ * Internal — re-exported via ``GraphNodeInternals``
+ * so tests can pin the colour / scale / opacity
+ * mapping without rendering the JSX.
+ */
+function GraphNodeImpl({ node, state, onSelect, geometry }: GraphNodeProps) {
   const handleClick = useCallback(
     (e: ThreeEvent<MouseEvent>) => {
       // Stop the click from reaching the orbit
@@ -165,11 +195,11 @@ export function GraphNode({ node, state, onSelect }: GraphNodeProps) {
       {/* biome-ignore lint/a11y/useKeyWithClickEvents: R3F's <mesh> doesn't accept onKeyDown */}
       <mesh
         scale={scale}
+        geometry={geometry}
         onClick={handleClick}
         userData={{ nodeId: node.id, state }}
         data-testid={`graph-node-${node.id}`}
       >
-        <sphereGeometry args={[1, 32, 32]} />
         <meshStandardMaterial
           color={color}
           emissive={color}
@@ -195,6 +225,28 @@ export function GraphNode({ node, state, onSelect }: GraphNodeProps) {
     </group>
   )
 }
+
+/**
+ * **F6 Part 4 — memoized export.** The default
+ * export is wrapped in ``React.memo`` with a custom
+ * comparator so the node only re-renders when the
+ * props that actually matter change (``state``,
+ * ``node.position``, ``node.id``). Unrelated state
+ * changes (the search bar's input, the detail
+ * card's open state, the camera's orbit state)
+ * skip the node render.
+ */
+export const GraphNode = memo(GraphNodeImpl, (prev, next) => {
+  if (prev.state !== next.state) return false
+  if (prev.onSelect !== next.onSelect) return false
+  if (prev.geometry !== next.geometry) return false
+  if (prev.node.id !== next.node.id) return false
+  if (prev.node.label !== next.node.label) return false
+  const [px, py, pz] = prev.node.position
+  const [nx, ny, nz] = next.node.position
+  if (px !== nx || py !== ny || pz !== nz) return false
+  return true
+})
 
 /**
  * Re-exports the visual-state helpers so tests

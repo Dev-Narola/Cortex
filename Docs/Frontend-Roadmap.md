@@ -282,6 +282,14 @@ Isolated as its own phase deliberately — it's the heaviest single technical li
 
 **Definition of done:** search for a real entity, see its connections highlight, click through to the source document it was extracted from — all at an acceptable frame rate on ordinary hardware.
 
+**Status (2026-08-19):** F6 complete. Parts 1–4 all shipped:
+* **Part 1** — 3D foundation (R3F + drei + three, code-split, Volt palette, Void background, full-bleed canvas)
+* **Part 2** — real KG backend integration (TanStack Query hooks, 5 endpoints, source-chunk + canonical-id exposure)
+* **Part 3** — exploration UX (active-path highlighting with Ember nodes + Spark-tinted edges, node detail panel, source-doc clickthrough via F3 drawer)
+* **Part 4** — performance + hardening (shared `BufferGeometry` per scene, `React.memo` on every renderable, `frameloop="demand"`, 500-node render cap, ADR-0031 for the 3D dependency, 34 new tests, production build verified, no other route pulls the graph bundle)
+
+Final notes: `Docs/frontend/knowledge-graph.md`. ADR: `Docs/adr/0031-react-three-fiber-for-knowledge-graph.md`.
+
 ---
 
 ### F7 — Settings *(1 week)*
