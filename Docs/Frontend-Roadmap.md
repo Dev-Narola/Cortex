@@ -299,6 +299,14 @@ Final notes: `Docs/frontend/knowledge-graph.md`. ADR: `Docs/adr/0031-react-three
 
 **Definition of done:** invite a teammate, generate an API key and confirm it's only ever shown in full once, and see the Usage tab reflect real `usage_events` rows.
 
+**Status (2026-08-19):** F7 in progress. Parts 1–4 shipped; Part 5 (Audit Log) is the final part.
+* **Part 1** — Settings shell + Team tab (route-driven 5-tab navigation, 28px / 1.25 line-height / 600 weight per UI spec, RBAC-aware Invite button, Zod-validated form, backend gap flagged in PR body)
+* **Part 2** — API Keys (real backend integration, one-time-reveal UX, masked-prefix synthesis, RBAC-hidden Generate/Revoke for member/viewer, 36 new tests)
+* **Part 3** — MCP (the 7 actual tools registered by the backend's `MCPToolRegistry`, "MCP token" = regular API key used as `X-API-Key`, endpoint URL composed from env config, spec's 4 stale tool names explicitly NOT in the list, 16 new tests)
+* **Part 4** — Usage & Billing (3 backend endpoints wired, 4 stat cards, per-event-type breakdown, recent-events history; "Documents indexed" + "Rate-limit" cards OMITTED per the spec's no-fake-numbers rule; cost precision preserves `$0.0042` instead of rounding to `$0.00`; 30 new tests)
+
+All shipped via direct local merges to `main` per the F6 P1/P2/P4 + F7 P1/P2/P3 precedent.
+
 ---
 
 ### F8 — Marketing Site: Full Build-Out *(2 weeks — deliberately last)*
