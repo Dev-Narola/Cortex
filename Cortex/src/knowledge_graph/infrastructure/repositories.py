@@ -95,6 +95,8 @@ def _model_to_entity(model: KGEntityModel) -> GraphEntity:
         properties=model.properties or {},
         created_at=_as_utc(model.created_at),
         updated_at=_as_utc(model.updated_at),
+        source_chunk_id=model.source_chunk_id,
+        canonical_id=model.canonical_id,
     )
 
 

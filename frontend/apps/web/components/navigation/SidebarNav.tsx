@@ -57,7 +57,6 @@ const NAV: readonly NavItem[] = [
     href: "/app/graph",
     label: "Knowledge Graph",
     icon: "Network",
-    comingSoon: true,
   },
   { href: "/app/agents", label: "Agents", icon: "Bot", comingSoon: true },
   { href: "/app/mcp", label: "MCP", icon: "Workflow", comingSoon: true },
