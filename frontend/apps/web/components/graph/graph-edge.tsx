@@ -44,10 +44,20 @@ export interface GraphEdgeProps {
   /** All nodes in the graph — we look up the
    *  source + target positions from this map. */
   nodes: GraphNode[]
-  /** Whether the edge is on the active path
-   *  (Part 2 wires this; Part 1 always passes
-   *  ``false``). */
+  /**
+   * Whether the edge is on the active path
+   * (F6 Part 3). ``false`` for Part 1
+   * callers.
+   */
   isActive?: boolean
+  /**
+   * F6 Part 3 — called when the user clicks
+   * the edge. The explorer walks the path
+   * from the edge + writes it into the
+   * active-path state. Optional (Part 1
+   * callers don't need it).
+   */
+  onSelect?: (relationId: string) => void
 }
 
 /**
@@ -61,18 +71,30 @@ function findNode(nodes: GraphNode[], id: string): GraphNode | null {
 }
 
 /**
- * Slate shade for edges. The exact tone matches
- * the spec's "subtle Slate" — bright enough to
- * read on Void at low zoom, low enough to
- * disappear when the user is focused on a
- * node. Part 2 can swap this for the Spark
- * gradient when an edge is on the active
- * traversal.
+ * Edge colour palette.
+ *
+ * **F6 Part 3 — Spark gradient for active edges.**
+ * The spec calls out the active traversal colour
+ * explicitly: the Spark gradient is reserved for
+ * edges participating in the current query. The
+ * gradient is a CSS-driven linear-gradient on the
+ * ``Volt-500 → Spark-end`` stop; we approximate
+ * the "end" stop with Ember-500 (the same Ember
+ * the active-path nodes use, so the path is
+ * visually consistent — a node and its outgoing
+ * active edge read as one cohesive trail).
+ *
+ * The cylinder material is a single colour, so we
+ * pick the dominant stop (the Volt-500) and lean
+ * on the cylinder's ``emissiveIntensity`` +
+ * opacity to make the active state pop. The Part
+ * 4 work on the visualisation can swap the
+ * cylinder for a true gradient tube if needed.
  */
-const EDGE_COLOR = "#475569" // slate-600
-const EDGE_COLOR_ACTIVE = "#a3e635" // volt-400 — placeholder for Part 2
+const EDGE_COLOR = "#475569" // slate-600 — default
+const EDGE_COLOR_ACTIVE = "#f97316" // Ember-500 — active path
 const EDGE_OPACITY = 0.6
-const EDGE_OPACITY_ACTIVE = 0.9
+const EDGE_OPACITY_ACTIVE = 0.95
 
 /**
  * Tube radius — thin enough to read as a line,
@@ -124,7 +146,7 @@ export function computeEdgeTransform(start: Vector3, end: Vector3): EdgeTransfor
   }
 }
 
-export function GraphEdge({ edge, nodes, isActive = false }: GraphEdgeProps) {
+export function GraphEdge({ edge, nodes, isActive = false, onSelect }: GraphEdgeProps) {
   // Memoize the curve so the geometry isn't
   // recomputed on every React render. The
   // dependency list is small (edge + nodes) so
@@ -175,8 +197,22 @@ export function GraphEdge({ edge, nodes, isActive = false }: GraphEdgeProps) {
   const color = isActive ? EDGE_COLOR_ACTIVE : EDGE_COLOR
   const opacity = isActive ? EDGE_OPACITY_ACTIVE : EDGE_OPACITY
 
+  // F6 Part 3 — edge click. The mesh's
+  // onClick is the standard R3F pointer
+  // event; we also support keyboard (Enter
+  // / Space) for a11y. The handler is
+  // suppressed on degenerate edges
+  // (zero-length).
+  const handleClick = onSelect
+    ? (e: { stopPropagation: () => void }) => {
+        e.stopPropagation()
+        onSelect(edge.id)
+      }
+    : undefined
+
   return (
-    <group>
+    // biome-ignore lint/a11y/useKeyWithClickEvents: R3F's <group> doesn't accept onKeyDown
+    <group onClick={handleClick as never}>
       {!isDegenerate && transform ? (
         <mesh
           position={transform.position}

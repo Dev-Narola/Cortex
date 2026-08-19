@@ -1,25 +1,32 @@
 /**
  * GraphSearch — the floating search bar.
  *
- * **F6 Part 1.** Per the spec, the search bar
- * floats top-left over the canvas, uses the
- * Slate surface, and remains visually
- * subordinate to the graph. It does not call the
- * backend in Part 1 — the input + the onQuery
- * callback are wired so Part 2 can drop in the
- * real search behaviour without changing the
- * component's surface.
+ * **F6 Part 2 (Task 12).** The bar now drives
+ * a TanStack Query (``useKGSearch``) — the
+ * debounce is handled by the explorer via
+ * ``useDeferredValue`` (so the hook can also
+ * drive the loading indicator). The bar is
+ * still a controlled input + clear button;
+ * the only changes from Part 1 are:
+ *   - ``onQuery`` is now a real change
+ *     notification (not a submit)
+ *   - ``value`` is the controlled string
+ *   - The empty Enter behaviour is removed
+ *     (the bar now drives an always-on search)
  *
- * **UX contract (Part 1).**
- *   - The bar is a single-line text field with
- *     a leading search icon.
- *   - The clear button appears once the user
- *     has typed something.
- *   - Pressing Enter or clearing the field fires
- *     the ``onQuery`` callback. The parent owns
- *     the actual filtering / backend call.
- *   - The bar is keyboard-accessible: Tab focuses
- *     the input, Esc clears it, Enter submits.
+ * **UX contract (Part 2).**
+ *   - Controlled input. The explorer owns the
+ *     string.
+ *   - Single-line text field with a leading
+ *     search icon + a clear button (when the
+ *     field has content).
+ *   - Escape clears the field.
+ *   - Submit (Enter) is intentionally a no-op
+ *     — the search runs on every keystroke
+ *     (debounced by the explorer's
+ *     ``useDeferredValue``). The TanStack
+ *     hook has a 2-char minimum + a 30s
+ *     staleTime so this isn't a flood.
  *
  * **Slate surface.** The bar uses a translucent
  * Slate background (Slate-700 at 80% alpha) with
@@ -27,33 +34,20 @@
  * here because the canvas behind it needs to
  * stay visible — the bar is a control surface,
  * not a content surface.
- *
- * **The base ``Input`` already supports prefix
- * + clearable**, so the search bar is mostly a
- * styled wrapper. We don't re-implement what
- * the UI primitive already gives us.
  */
 
 "use client"
 
-import { type ChangeEvent, type FormEvent, type KeyboardEvent, useState } from "react"
+import type { ChangeEvent, KeyboardEvent } from "react"
 
 import { Icon } from "@cortex/ui"
 
 export interface GraphSearchProps {
-  /**
-   * Fires on Enter or when the user clears the
-   * field. The empty string means "show me
-   * everything again" (the parent resets the
-   * graph to the un-filtered state).
-   */
+  /** The current query (controlled). */
+  value: string
+  /** Fires on every change (debounced upstream
+   *  by the explorer's ``useDeferredValue``). */
   onQuery: (query: string) => void
-  /**
-   * Controlled value — when provided, the
-   * input is fully driven by the parent. When
-   * omitted, the bar manages its own state.
-   */
-  value?: string
   /** Accessible label. Default "Search knowledge graph". */
   label?: string
   /** Placeholder text. Default "Search knowledge graph…". */
@@ -66,81 +60,50 @@ export function GraphSearch({
   label = "Search knowledge graph",
   placeholder = "Search knowledge graph…",
 }: GraphSearchProps) {
-  // Local state for the uncontrolled case.
-  // When the parent passes ``value`` the input
-  // is controlled and the local state is only
-  // used as a defaultValue on first render.
-  const [internal, setInternal] = useState(value ?? "")
-
-  // The displayed value is whichever the parent
-  // says OR what we hold locally. Mirrors the
-  // F2 form pattern.
-  const current = value ?? internal
-
   function handleChange(e: ChangeEvent<HTMLInputElement>) {
-    const next = e.target.value
-    if (value === undefined) setInternal(next)
-  }
-
-  function handleSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    onQuery(current)
+    onQuery(e.target.value)
   }
 
   function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
-    // Esc clears the field AND fires the
-    // callback with an empty string so the
-    // parent can reset the graph to the
-    // un-filtered state.
-    if (e.key === "Escape" && current !== "") {
+    if (e.key === "Escape" && value !== "") {
       e.preventDefault()
-      if (value === undefined) setInternal("")
       onQuery("")
     }
   }
 
   function handleClear() {
-    if (value === undefined) setInternal("")
     onQuery("")
   }
 
   return (
-    // ``role="search"`` on a <form> is the
-    // WCAG-recommended landmark for search;
-    // wrapping it in a <search> element is
-    // equivalent and avoids the lint warning.
-    // The semantic name comes from
-    // ``aria-label``.
     <search
       aria-label="Search the knowledge graph"
       data-testid="graph-search"
       className="pointer-events-auto w-full max-w-sm"
     >
-      <form onSubmit={handleSubmit}>
-        <div className="flex h-9 w-full items-center gap-2 rounded-md border border-slate-600 bg-slate-700/80 px-3 text-sm text-paper-50 shadow-sm backdrop-blur-sm focus-within:ring-2 focus-within:ring-volt-500/50">
-          <Icon name="Search" size="sm" tone="muted" aria-hidden />
-          <input
-            type="search"
-            name="graph-query"
-            aria-label={label}
-            placeholder={placeholder}
-            value={current}
-            onChange={handleChange}
-            onKeyDown={handleKeyDown}
-            className="h-full w-full min-w-0 flex-1 border-0 bg-transparent p-0 text-sm text-paper-50 placeholder:text-paper-200/40 outline-none focus:outline-none focus:ring-0"
-          />
-          {current ? (
-            <button
-              type="button"
-              onClick={handleClear}
-              aria-label="Clear search"
-              className="inline-flex shrink-0 items-center justify-center rounded-sm p-0.5 text-paper-200/60 transition-colors hover:bg-slate-600/50 hover:text-paper-50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-volt-500"
-            >
-              <Icon name="X" size="xs" />
-            </button>
-          ) : null}
-        </div>
-      </form>
+      <div className="flex h-9 w-full items-center gap-2 rounded-md border border-slate-600 bg-slate-700/80 px-3 text-sm text-paper-50 shadow-sm backdrop-blur-sm focus-within:ring-2 focus-within:ring-volt-500/50">
+        <Icon name="Search" size="sm" tone="muted" aria-hidden />
+        <input
+          type="search"
+          name="graph-query"
+          aria-label={label}
+          placeholder={placeholder}
+          value={value}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
+          className="h-full w-full min-w-0 flex-1 border-0 bg-transparent p-0 text-sm text-paper-50 placeholder:text-paper-200/40 outline-none focus:outline-none focus:ring-0"
+        />
+        {value ? (
+          <button
+            type="button"
+            onClick={handleClear}
+            aria-label="Clear search"
+            className="inline-flex shrink-0 items-center justify-center rounded-sm p-0.5 text-paper-200/60 transition-colors hover:bg-slate-600/50 hover:text-paper-50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-volt-500"
+          >
+            <Icon name="X" size="xs" />
+          </button>
+        ) : null}
+      </div>
     </search>
   )
 }

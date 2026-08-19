@@ -57,21 +57,30 @@ export interface GraphNodeProps {
 }
 
 /**
- * Map a node state → volt shade.
+ * Map a node state → palette colour.
  *
- * The exact shades are pinned so the visual
- * hierarchy is stable across renders. The dimmed
- * state drops opacity (handled separately in the
- * material) so the colour itself can stay close
- * to default — dimming is about presence, not
- * palette.
+ * **F6 Part 3 — Ember for active-path.** The
+ * spec calls out the visual rule: default nodes
+ * are Volt, active-query-path nodes are Ember.
+ * The active-path colour is the bright Ember-500
+ * (the same Ember used for accents + the
+ * auth-hint cookie path), so the eye picks it up
+ * even when the rest of the graph is at volt
+ * brightness.
+ *
+ * **The exact shades are pinned so the visual
+ * hierarchy is stable across renders.** The
+ * dimmed state drops opacity (handled separately
+ * in the material) so the colour itself can stay
+ * close to default — dimming is about presence,
+ * not palette.
  */
-function voltShadeFor(state: GraphNodeState): string {
+function nodeColorFor(state: GraphNodeState): string {
   switch (state) {
     case "selected":
       return "#bef264" // volt-300 — brightest
     case "active-path":
-      return "#a3e635" // volt-400 — slightly muted
+      return "#f97316" // Ember-500 — spec-defined for active traversal
     case "dimmed":
       return "#365314" // volt-900 — almost background
     default:
@@ -127,7 +136,7 @@ export function GraphNode({ node, state, onSelect }: GraphNodeProps) {
 
   // Pulled out so the test can pin the mapping
   // without rendering the JSX.
-  const color = voltShadeFor(state)
+  const color = nodeColorFor(state)
   const scale = scaleFor(state)
   const opacity = opacityFor(state)
 
@@ -195,7 +204,7 @@ export function GraphNode({ node, state, onSelect }: GraphNodeProps) {
  * though it isn't part of the React tree.
  */
 export const GraphNodeInternals = {
-  voltShadeFor,
+  nodeColorFor,
   scaleFor,
   opacityFor,
 }

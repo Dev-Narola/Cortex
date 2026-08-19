@@ -34,19 +34,19 @@ const sampleNode: GraphNodeData = {
 
 describe("GraphNode (state helpers)", () => {
   it("volt-500 is the default shade", () => {
-    expect(GraphNodeInternals.voltShadeFor("default")).toBe("#84cc16")
+    expect(GraphNodeInternals.nodeColorFor("default")).toBe("#84cc16")
   })
 
   it("selected uses the brightest volt shade for visibility", () => {
-    expect(GraphNodeInternals.voltShadeFor("selected")).toBe("#bef264")
+    expect(GraphNodeInternals.nodeColorFor("selected")).toBe("#bef264")
   })
 
-  it("active-path uses volt-400 as a placeholder for Part 2's Spark pulse", () => {
-    expect(GraphNodeInternals.voltShadeFor("active-path")).toBe("#a3e635")
+  it("F6 Part 3 — active-path uses Ember-500 (per the UI spec)", () => {
+    expect(GraphNodeInternals.nodeColorFor("active-path")).toBe("#f97316")
   })
 
   it("dimmed uses a near-background volt shade", () => {
-    expect(GraphNodeInternals.voltShadeFor("dimmed")).toBe("#365314")
+    expect(GraphNodeInternals.nodeColorFor("dimmed")).toBe("#365314")
   })
 
   it("scale grows on selection so the picked node reads as the focus", () => {

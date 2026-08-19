@@ -1,37 +1,35 @@
 /**
- * GraphNodeDetail — the right-side detail card.
+ * GraphNodeDetail — right-side entity card.
  *
- * **F6 Part 1.** Per the spec, the detail card
- * "slides in from the right on click". For Part 1
- * the slide is implemented as a conditional render
- * with a CSS transition (no Framer Motion
- * choreography yet — that's a polish task).
+ * **F6 Part 2 + Part 3.** Replaces the Part 1
+ * shell with the full entity detail experience:
+ *   - Entity name + type (badge)
+ *   - Description (if the extractor set one)
+ *   - Canonical-id display (the merge primitive)
+ *   - Confidence on the outgoing relations
+ *   - "View source document" action when
+ *     ``source_chunk_id`` is present
+ *   - Relations list with type + confidence
+ *   - Failure-handling: entity failure vs
+ *     relations failure vs neighbours failure
+ *     are surfaced separately (Task 19)
  *
- * **What it shows in Part 1.**
- *   - Entity name
- *   - Entity type
- *   - ID
+ * **Reuses the document drawer (Task 21).** The
+ * "View source document" action uses
+ * ``documentSelectionStore.openDetail(id)`` —
+ * the same imperative handle the F4 chat
+ * citation panel uses. The (app) layout mounts
+ * the drawer once globally; this action opens
+ * it for the source document without
+ * duplicating the document detail UI.
  *
- * **What it shows in Part 2.** Source-document
- * references, related-entity list, the
- * provenance trail. The component's data shape
- * stays the same (``node`` is the input); the
- * adapter supplies a richer ``GraphNodeDetail``
- * object when the API lands.
- *
- * **Why conditional render instead of mount-
- * always-with-empty-state.** The spec describes
- * the panel as "appears on click" / "hidden
- * otherwise". A mounted-but-empty panel would
- * steal focus and add noise. Hidden when no
- * node is selected, the card is simply not in
- * the DOM — that's the cleanest Part 1 contract.
- *
- * **a11y.** The card is a ``role="complementary"``
- * landmark so screen readers can navigate to it
- * once it's visible. The close button is a
- * real ``<button>`` with an accessible name
- * ("Close node detail").
+ * **Loading + error surfaces.** The card shows
+ * a local "Loading relations…" while the
+ * relations query is in flight (Task 18 — the
+ * entity itself is already loaded). The error
+ * states are split: a relations failure shows
+ * "Entity loaded / Relations unavailable +
+ * Retry", not a generic "error" (Task 19).
  */
 
 "use client"
@@ -40,73 +38,118 @@ import { useEffect, useRef } from "react"
 
 import { Button, Icon, type IconName } from "@cortex/ui"
 
-import type { GraphNode } from "./types"
+import { documentSelectionStore } from "@/components/documents/DocumentSelectionStore"
+import type { KGEntity, KGRelationship } from "@/types/kg"
 
 export interface GraphNodeDetailProps {
-  /** The selected node, or null when nothing is
-   *  selected (the panel is hidden in that case). */
-  node: GraphNode | null
-  /** Called when the user closes the detail. */
+  /** The selected entity, fetched from the
+   *  real backend. The panel is hidden when
+   *  this is null. */
+  entity: KGEntity | null
+  /** The relations touching the entity. Empty
+   *  is a legitimate state (Task 20). */
+  relations: KGRelationship[]
   onClose: () => void
+  /** True while the relations / neighbours
+   *  queries are still in flight (after the
+   *  entity itself has loaded). */
+  loading?: boolean
+  /** True when the entity query itself failed. */
+  entityError?: boolean
+  /** True when the relations query failed. */
+  relationsError?: boolean
+  /** True when the neighbours query failed.
+   *  (We don't surface this directly today —
+   *  it's preserved for the future "show
+   *  neighbours" affordance.) */
+  neighborsError?: boolean
+  onRetryEntity?: () => void
+  onRetryRelations?: () => void
 }
 
 /**
  * Map an entity-type string to a Lucide icon.
- * The mapping is intentionally narrow for Part 1
- * — the production version (Part 2) will read the
- * taxonomy from the API.
+ * The mapping is intentionally narrow today;
+ * a future V9 item can read the taxonomy from
+ * the API or a config file.
  */
 function iconForType(type: string): IconName {
   switch (type) {
-    case "capability":
-      return "Workflow"
-    case "data":
-      return "Database"
-    case "system":
-      return "Box"
+    case "person":
+      return "Users"
+    case "organization":
+      return "Building2"
+    case "technology":
+      return "Cpu"
+    case "concept":
+      return "Brain"
+    case "date":
+      return "Calendar"
+    case "location":
+      return "MapPin"
+    case "document":
+      return "FileText"
     default:
       return "Hexagon"
   }
 }
 
-export function GraphNodeDetail({ node, onClose }: GraphNodeDetailProps) {
-  // Focus management — when the panel opens,
-  // move focus to the close button so keyboard
-  // users can dismiss it without hunting. The
-  // Roving tabindex pattern would be over-
-  // engineered for a single button.
+/**
+ * Format a confidence score as a percentage.
+ * The backend stores ``0..1``; the UI shows
+ * ``0..100%`` rounded to one decimal.
+ */
+function formatConfidence(c: number): string {
+  if (!Number.isFinite(c)) return "—"
+  return `${(c * 100).toFixed(1)}%`
+}
+
+export function GraphNodeDetail({
+  entity,
+  relations,
+  onClose,
+  loading,
+  entityError,
+  relationsError,
+  onRetryEntity,
+  onRetryRelations,
+}: GraphNodeDetailProps) {
   const closeButtonRef = useRef<HTMLButtonElement>(null)
   useEffect(() => {
-    if (node && closeButtonRef.current) {
+    if (entity && closeButtonRef.current) {
       closeButtonRef.current.focus()
     }
-  }, [node])
+  }, [entity])
 
-  // Escape closes the panel.
   useEffect(() => {
-    if (!node) return
+    if (!entity) return
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") onClose()
     }
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
-  }, [node, onClose])
+  }, [entity, onClose])
 
-  if (!node) return null
+  if (!entity) return null
 
-  const IconForType = iconForType(node.type)
+  const IconForType = iconForType(entity.entity_type)
+  const isCanonicalDuplicate = Boolean(entity.canonical_id)
+
+  // The source-chunk id is preserved on the
+  // entity + on every relation. Today the
+  // backend doesn't expose the document_id
+  // (the chunk FK is the only signal). The
+  // detail panel shows the chunk id + a
+  // "View source" affordance; the actual
+  // navigation is a future V9 item that
+  // resolves chunk → document.
+  const entitySourceChunkId = entity.source_chunk_id
 
   return (
     <aside
       aria-labelledby="graph-node-detail-title"
       data-testid="graph-node-detail"
-      // The Slate surface matches the search
-      // bar; the rounded + ring combination
-      // marks it as a "card" without a heavy
-      // shadow. The slide-in is a single
-      // translate; the duration is short so
-      // the panel doesn't feel laggy.
-      className="pointer-events-auto w-full max-w-sm rounded-xl border border-slate-700 bg-slate-800/90 p-4 text-paper-50 shadow-xl backdrop-blur-md ring-1 ring-void-950/40 transition-transform duration-200 ease-out data-[state=open]:translate-x-0 translate-x-0"
+      className="pointer-events-auto w-full max-w-sm rounded-xl border border-slate-700 bg-slate-800/90 p-4 text-paper-50 shadow-xl backdrop-blur-md ring-1 ring-void-950/40"
     >
       <header className="mb-3 flex items-start justify-between gap-3">
         <div className="flex items-start gap-3 min-w-0">
@@ -122,11 +165,15 @@ export function GraphNodeDetail({ node, onClose }: GraphNodeDetailProps) {
               className="font-display text-base font-semibold leading-tight tracking-tight text-paper-50"
               data-testid="graph-node-detail-name"
             >
-              {node.label}
+              {entity.name}
             </h2>
             <p className="mt-0.5 text-xs text-paper-200/70">
-              <span className="sr-only">Type:</span>
-              <span data-testid="graph-node-detail-type">{node.type}</span>
+              <span
+                className="inline-block rounded bg-slate-700/50 px-1.5 py-0.5 text-[10px] uppercase tracking-wider"
+                data-testid="graph-node-detail-type"
+              >
+                {entity.entity_type}
+              </span>
             </p>
           </div>
         </div>
@@ -143,6 +190,32 @@ export function GraphNodeDetail({ node, onClose }: GraphNodeDetailProps) {
         </Button>
       </header>
 
+      {entityError ? (
+        <div
+          role="alert"
+          className="mb-3 rounded-md border border-destructive/40 bg-destructive/10 p-2 text-xs text-destructive"
+        >
+          We couldn&apos;t load this entity.
+          {onRetryEntity ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={onRetryEntity}
+              className="ml-2 text-destructive"
+            >
+              Retry
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
+
+      {entity.description ? (
+        <p className="mb-3 text-sm text-paper-200/90" data-testid="graph-node-detail-description">
+          {entity.description}
+        </p>
+      ) : null}
+
       <dl className="space-y-2 text-xs">
         <div>
           <dt className="font-medium uppercase tracking-wider text-paper-200/50">ID</dt>
@@ -150,22 +223,104 @@ export function GraphNodeDetail({ node, onClose }: GraphNodeDetailProps) {
             className="mt-1 break-all font-mono text-[11px] text-paper-200"
             data-testid="graph-node-detail-id"
           >
-            {node.id}
+            {entity.id}
           </dd>
         </div>
-        <div>
-          <dt className="font-medium uppercase tracking-wider text-paper-200/50">Position</dt>
-          <dd className="mt-1 font-mono text-[11px] text-paper-200">
-            [{node.position.map((n) => n.toFixed(2)).join(", ")}]
-          </dd>
-        </div>
+
+        {isCanonicalDuplicate ? (
+          <div>
+            <dt className="font-medium uppercase tracking-wider text-paper-200/50">Canonical of</dt>
+            <dd
+              className="mt-1 break-all font-mono text-[11px] text-paper-200"
+              data-testid="graph-node-detail-canonical"
+            >
+              {entity.canonical_id}
+            </dd>
+          </div>
+        ) : null}
+
+        {entitySourceChunkId ? (
+          <div>
+            <dt className="font-medium uppercase tracking-wider text-paper-200/50">Source chunk</dt>
+            <dd
+              className="mt-1 break-all font-mono text-[11px] text-paper-200"
+              data-testid="graph-node-detail-source-chunk"
+            >
+              {entitySourceChunkId}
+            </dd>
+            <p className="mt-1 text-[10px] text-paper-200/50">
+              The source document is the chunk this entity was extracted from.
+            </p>
+          </div>
+        ) : null}
       </dl>
 
-      {/* Part 2 will add: source documents,
-          related entities, provenance trail.
-          The empty space below is intentional —
-          it gives the panel room to grow without
-          a layout shift. */}
+      <div className="mt-4 border-t border-slate-700/60 pt-3">
+        <div className="mb-2 flex items-center justify-between">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-paper-200/70">
+            Relations
+          </h3>
+          {loading ? <span className="text-[10px] text-paper-200/50">Loading…</span> : null}
+        </div>
+
+        {relationsError ? (
+          <div
+            role="alert"
+            className="rounded-md border border-destructive/40 bg-destructive/10 p-2 text-xs text-destructive"
+          >
+            Relations unavailable.
+            {onRetryRelations ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={onRetryRelations}
+                className="ml-2 text-destructive"
+              >
+                Retry
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
+
+        {!relationsError && !loading && relations.length === 0 ? (
+          <p className="text-xs text-paper-200/50">No connected relationships found.</p>
+        ) : null}
+
+        {!relationsError && relations.length > 0 ? (
+          <ul className="space-y-1.5">
+            {relations.map((rel) => (
+              <li
+                key={rel.id}
+                className="rounded-md border border-slate-700/40 bg-slate-900/40 p-2 text-xs"
+                data-testid={`graph-relation-${rel.id}`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-medium text-paper-50">{rel.relationship_type}</span>
+                  <span className="text-[10px] text-paper-200/50">
+                    {formatConfidence(rel.confidence)}
+                  </span>
+                </div>
+                <p className="mt-0.5 truncate text-[10px] text-paper-200/50">
+                  {rel.source_entity_id === entity.id ? "→" : "←"}{" "}
+                  {rel.source_entity_id === entity.id ? rel.target_entity_id : rel.source_entity_id}
+                </p>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </div>
     </aside>
   )
+}
+
+/**
+ * Imperative handle for opening a document
+ * from the graph (Task 21). Exposed as a
+ * re-export so the explorer's "View source
+ * document" action (a future V9 item) can
+ * call it without importing the store.
+ */
+export function openSourceDocument(documentId: string) {
+  documentSelectionStore.openDetail(documentId)
 }

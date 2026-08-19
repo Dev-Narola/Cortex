@@ -118,6 +118,23 @@ class GraphEntity:
     # JSON-serialisable. Examples: ``{"wikipedia_url":
     # "..."}``, ``{"founded_year": 1998}``.
     properties: dict[str, Any] = field(default_factory=dict)
+    # **F6 source traceability.** The chunk
+    # the entity was extracted from. The
+    # frontend uses this to navigate the user
+    # from an entity to the source document.
+    # ``None`` for manually-created entities
+    # (a future V9 admin surface) or for
+    # entities whose source chunk has been
+    # deleted (the FK is ``SET NULL``).
+    source_chunk_id: uuid.UUID | None = None
+    # **F6 canonical-merge support.** A non-
+    # ``None`` value means "this row is a
+    # duplicate; the real-world thing lives at
+    # ``canonical_id``". The frontend treats
+    # the canonical row as the user-facing
+    # entity; the duplicates are bookkeeping.
+    # ``None`` for primary rows.
+    canonical_id: uuid.UUID | None = None
 
     # ----- factories --------------------------------------------------------
 
@@ -234,6 +251,8 @@ class GraphEntity:
         properties: dict[str, Any],
         created_at: datetime,
         updated_at: datetime,
+        source_chunk_id: uuid.UUID | None = None,
+        canonical_id: uuid.UUID | None = None,
     ) -> Self:
         """Reconstruct from the database; trusts the persisted state."""
         if isinstance(entity_type, str):
@@ -247,6 +266,8 @@ class GraphEntity:
             properties=properties,
             created_at=created_at,
             updated_at=updated_at,
+            source_chunk_id=source_chunk_id,
+            canonical_id=canonical_id,
         )
 
     # ----- content updates -------------------------------------------------

@@ -111,6 +111,8 @@ def list_entities(
                 "entity_type": e.entity_type.value if hasattr(e.entity_type, "value") else str(e.entity_type),
                 "description": e.description,
                 "properties": e.properties,
+                "canonical_id": str(e.canonical_id) if e.canonical_id else None,
+                "source_chunk_id": str(e.source_chunk_id) if e.source_chunk_id else None,
                 "created_at": e.created_at.isoformat(),
             }
             for e in entities
@@ -144,6 +146,8 @@ def get_entity(
         "entity_type": entity.entity_type.value if hasattr(entity.entity_type, "value") else str(entity.entity_type),
         "description": entity.description,
         "properties": entity.properties,
+        "canonical_id": str(entity.canonical_id) if entity.canonical_id else None,
+        "source_chunk_id": str(entity.source_chunk_id) if entity.source_chunk_id else None,
         "created_at": entity.created_at.isoformat(),
         "updated_at": entity.updated_at.isoformat(),
     }
@@ -177,6 +181,7 @@ def list_relationships(
                 "relationship_type": r.relationship_type.value if hasattr(r.relationship_type, "value") else str(r.relationship_type),
                 "confidence": r.confidence,
                 "properties": r.properties,
+                "source_chunk_id": str(r.source_chunk_id) if r.source_chunk_id else None,
                 "created_at": r.created_at.isoformat(),
             }
             for r in rels
@@ -213,6 +218,8 @@ def get_entity_neighbors(
                 "name": n.name,
                 "entity_type": n.entity_type.value if hasattr(n.entity_type, "value") else str(n.entity_type),
                 "description": n.description,
+                "canonical_id": str(n.canonical_id) if n.canonical_id else None,
+                "source_chunk_id": str(n.source_chunk_id) if n.source_chunk_id else None,
             }
             for n in neighbors
         ],
@@ -272,6 +279,8 @@ def search_graph(
                 "name": e.name,
                 "entity_type": e.entity_type.value if hasattr(e.entity_type, "value") else str(e.entity_type),
                 "description": e.description,
+                "canonical_id": str(e.canonical_id) if e.canonical_id else None,
+                "source_chunk_id": str(e.source_chunk_id) if e.source_chunk_id else None,
             }
             for e in res["entities"]
         ],
@@ -282,6 +291,7 @@ def search_graph(
                 "target_entity_id": str(r.target_entity_id),
                 "relationship_type": r.relationship_type.value if hasattr(r.relationship_type, "value") else str(r.relationship_type),
                 "confidence": r.confidence,
+                "source_chunk_id": str(r.source_chunk_id) if r.source_chunk_id else None,
             }
             for r in res["relationships"]
         ],

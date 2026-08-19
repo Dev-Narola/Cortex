@@ -59,6 +59,16 @@ export type GraphNodeState = "default" | "selected" | "active-path" | "dimmed"
  * dataset in ``data/demo-graph.ts`` uses fixed
  * positions, the production adapter will eventually
  * run a force-directed layout on the server.
+ *
+ * **F6 Part 2 — backend metadata preservation.**
+ * ``metadata`` carries the backend's own ids
+ * (canonical id, source chunk id) so the detail
+ * panel + the source-document click-through can
+ * reach the real entity + the real source without
+ * a second round-trip. The ``id`` field is the
+ * primary key (also the backend id); the
+ * ``metadata`` fields are optional overrides the
+ * backend uses for merges + provenance.
  */
 export interface GraphNode {
   /** Stable id (UUID from the backend, or a stable
@@ -71,6 +81,44 @@ export interface GraphNode {
   type: string
   /** World-space position. */
   position: [number, number, number]
+  /** **F6 Part 2 — backend provenance.** Optional
+   *  metadata preserved through the API →
+   *  rendering translation. The ``id`` field is
+   *  the row the user sees; ``metadata`` is the
+   *  backend's view of the same row + its
+   *  lineage. */
+  metadata?: GraphNodeMetadata
+}
+
+/**
+ * Backend metadata preserved on every node.
+ *
+ * **Why this lives on the rendering type.** The
+ * detail panel + the source-document click-through
+ * need the backend's ids (canonical id, source
+ * chunk id) at click-time. Threading them through
+ * the cache as part of the render model keeps the
+ * click handler pure (no async lookup, no
+ * refetch, no race with the search input).
+ */
+export interface GraphNodeMetadata {
+  /** The "merge" canonical id, if this node is
+   *  a duplicate of another. The frontend treats
+   *  the canonical row as the user-facing
+   *  primary. */
+  canonicalId: string | null
+  /** The source chunk the entity was extracted
+   *  from. ``null`` for manually-created entities
+   *  or after the source chunk was deleted. */
+  sourceChunkId: string | null
+  /** The original ``entity_type`` string. The
+   *  rendering type's ``type`` is the same
+   *  value today (the adapter doesn't transform
+   *  it) but the metadata is kept for future
+   *  per-type geometry work. */
+  entityType: string
+  /** Backend-extracted description, if any. */
+  description: string
 }
 
 /**
@@ -81,6 +129,12 @@ export interface GraphNode {
  * the adapter can decide whether to show an
  * arrowhead. ``source`` and ``target`` are node
  * ids.
+ *
+ * **F6 Part 2 — backend metadata preservation.**
+ * ``metadata`` carries the LLM's confidence score
+ * and the source-chunk id so the click-through
+ * + the future "highlight low-confidence" toggle
+ * have what they need.
  */
 export interface GraphEdge {
   id: string
@@ -90,6 +144,32 @@ export interface GraphEdge {
    *  (e.g. "contains", "cites"). Optional — when
    *  omitted the edge renders without a label. */
   relationType?: string
+  /** **F6 Part 2 — backend provenance.** Optional
+   *  metadata preserved through the API →
+   *  rendering translation. The ``id`` field
+   *  is the row the user sees; ``metadata``
+   *  carries the LLM's confidence + the source
+   *  chunk so the detail panel can render it. */
+  metadata?: GraphEdgeMetadata
+}
+
+/**
+ * Backend metadata preserved on every edge.
+ */
+export interface GraphEdgeMetadata {
+  /** The relationship_type as the backend
+   *  stored it (the same string the adapter
+   *  maps to ``relationType`` — kept here for
+   *  future per-type styling work). */
+  relationshipType: string
+  /** LLM confidence. ``0..1``. The detail panel
+   *  shows this as a small badge; the canvas
+   *  doesn't render it today. */
+  confidence: number
+  /** The source chunk the edge was extracted
+   *  from. ``null`` for manually-created
+   *  relationships. */
+  sourceChunkId: string | null
 }
 
 /**
