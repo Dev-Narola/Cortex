@@ -32,12 +32,16 @@
  * state, `bg-slate-700/60 text-paper-50` for the
  * active state). No new colors.
  *
- * **"Coming soon" tabs.** API Keys / MCP / Usage /
- * Audit Log are F7-Part 2/3/4/5 work. The
- * corresponding routes exist as placeholders, but the
- * tab itself doesn't show a "Soon" badge — every
- * tab is reachable today. The placeholder route
- * shows its own "Coming in F7-Part N" notice.
+ * **Per-tab RBAC (F7 Part 5).** The Audit Log tab is
+ * owner/admin only — the backend's
+ * `user.role.can_act_as(Role.ADMIN)` guard returns 403
+ * for member/viewer. We hide the tab for those roles
+ * (per the F7 Part 5 spec: "The frontend should
+ * additionally avoid rendering the navigation tab if
+ * the user cannot access it"). Other tabs remain
+ * visible to all roles; their per-action RBAC is
+ * owned by the panel itself (e.g. the Team panel
+ * hides the Invite button for member/viewer).
  */
 "use client"
 
@@ -46,6 +50,8 @@ import { usePathname } from "next/navigation"
 
 import { Icon, type IconName } from "@cortex/ui"
 
+import { useAuthStore } from "@/lib/auth/store"
+
 interface SettingsTab {
   /** Route path (under `/app/settings/`). */
   href: `/app/settings/${string}`
@@ -53,6 +59,16 @@ interface SettingsTab {
   label: string
   /** Lucide icon name. */
   icon: IconName
+  /**
+   * Optional role gate. When set, the tab
+   * is hidden if the user's role is not in
+   * `visibleTo`. Default: visible to all
+   * roles. The actual data fetch is gated
+   * independently by the backend; this is
+   * a UX nicety so a member doesn't see a
+   * tab that would 403 on click.
+   */
+  visibleTo?: ReadonlyArray<"owner" | "admin">
 }
 
 const TABS: readonly SettingsTab[] = [
@@ -60,7 +76,13 @@ const TABS: readonly SettingsTab[] = [
   { href: "/app/settings/api-keys", label: "API Keys", icon: "KeyRound" },
   { href: "/app/settings/mcp", label: "MCP", icon: "Workflow" },
   { href: "/app/settings/usage", label: "Usage & Billing", icon: "ChartLine" },
-  { href: "/app/settings/audit-log", label: "Audit Log", icon: "ScrollText" },
+  {
+    href: "/app/settings/audit-log",
+    label: "Audit Log",
+    icon: "ScrollText",
+    // F7 Part 5: audit log is owner/admin only.
+    visibleTo: ["owner", "admin"],
+  },
 ] as const
 
 /**
@@ -76,13 +98,43 @@ function isActive(pathname: string | null, href: string): boolean {
   return pathname === href
 }
 
+/**
+ * Returns true when the current user can
+ * see the tab. Mirrors the backend's
+ * `require_admin` for the audit endpoint
+ * (the same role gate is in
+ * `Cortex/src/observability/interface/rest/audit_routes.py:140-148`).
+ */
+function canSeeTab(
+  role: string | null | undefined,
+  tab: SettingsTab,
+): boolean {
+  if (!tab.visibleTo) return true
+  if (!role) return false
+  return tab.visibleTo.includes(role as "owner" | "admin")
+}
+
 export function SettingsTabs() {
   const pathname = usePathname() ?? ""
+  // The auth store is the source of truth
+  // for the current user's role. We
+  // intentionally read it without a hook
+  // selector so the tabs only re-render
+  // when the role actually changes
+  // (Zustand's default equality is
+  // identity-based, which is what we
+  // want here).
+  const role = useAuthStore((s) => s.user?.role)
+
+  const visibleTabs = TABS.filter((t) => canSeeTab(role, t))
 
   return (
     <nav aria-label="Settings sections" className="w-full md:w-56 md:shrink-0">
-      <ul className="flex flex-row gap-1 overflow-x-auto md:flex-col md:gap-0.5 md:overflow-visible">
-        {TABS.map((tab) => {
+      <ul
+        className="flex flex-row gap-1 overflow-x-auto md:flex-col md:gap-0.5 md:overflow-visible"
+        data-testid="settings-tabs-list"
+      >
+        {visibleTabs.map((tab) => {
           const active = isActive(pathname, tab.href)
           return (
             <li key={tab.href} className="shrink-0 md:shrink">

@@ -9,12 +9,40 @@
  *     the user can middle-click / open in new tab
  *   - The canonical tab list is exposed via
  *     `SETTINGS_TABS` for downstream consumers
+ *   - **F7 Part 5.** The Audit Log tab is
+ *     owner/admin only; the test sets the
+ *     role to `owner` so all 5 tabs are
+ *     visible. The role gating itself is
+ *     covered by the audit-log panel test
+ *     (`tests/settings/audit-log/audit-log-panel.test.tsx`).
  */
 
 import { render, screen } from "@testing-library/react"
-import { describe, expect, it } from "vitest"
+import { beforeEach, describe, expect, it } from "vitest"
 
 import { SETTINGS_TABS, SettingsTabs } from "@/components/settings/settings-tabs"
+import { useAuthStore } from "@/lib/auth/store"
+
+function setRole(role: "owner" | "admin" | "member" | "viewer") {
+  useAuthStore.setState({
+    user: { id: "u-1", email: "ada@cortex.dev", role, tenantId: "t-1" },
+    tenant: { id: "t-1", slug: "acme" },
+    accessToken: "jwt",
+    refreshToken: "rt",
+    isOnboarded: true,
+    expiresAt: Date.now() + 60_000,
+    hydrated: true,
+    restored: true,
+  })
+}
+
+beforeEach(() => {
+  // F7 Part 5: the Audit Log tab is owner/admin
+  // only. The default `useAuthStore` state has
+  // no user, so the tab would be hidden. Set
+  // the role to `owner` so all 5 tabs render.
+  setRole("owner")
+})
 
 describe("SettingsTabs", () => {
   it("renders the 5 canonical Settings tabs in the documented order", () => {
