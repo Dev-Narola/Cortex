@@ -55,10 +55,11 @@ describe("SidebarNav", () => {
   it("marks the 'Coming Soon' items as disabled + visible badge", () => {
     render(<SidebarNav />, { wrapper: makeWrapper() })
     const soonBadges = screen.getAllByText(/^soon$/i)
-    // F4 Part 1: 4 items are "coming soon"
-    // (Search, Knowledge Graph, Agents, MCP).
-    // Chat is now a live route.
-    expect(soonBadges.length).toBe(4)
+    // F4 Part 1: 3 items are "coming soon"
+    // (Search, Agents, MCP). Chat + Knowledge
+    // Graph are now live routes (the graph
+    // shipped in F6 Part 1).
+    expect(soonBadges.length).toBe(3)
   })
 
   it("marks the live items as links (active state wiring is exercised by `pathname === href`)", () => {
