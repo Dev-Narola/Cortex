@@ -56,10 +56,23 @@ export const apiConfig = {
     agentById: (id: string) => `/api/v1/agents/${id}`,
     agentInvoke: (id: string) => `/api/v1/agents/${id}/invoke`,
 
-    // MCP (V8)
-    mcpSessions: "/api/v1/mcp/sessions",
-    mcpTools: "/api/v1/mcp/tools",
-    mcpToolInvoke: "/api/v1/mcp/tools/invoke",
+    // MCP (V8) — JSON-RPC 2.0 over HTTP POST.
+    // The MCP server exposes a single endpoint;
+    // clients negotiate the session via the
+    // `initialize` JSON-RPC method and authenticate
+    // with either `X-API-Key: <api_key>` or
+    // `Authorization: Bearer <jwt>`. The actual
+    // tool list is returned by the `tools/list`
+    // JSON-RPC method (not a REST endpoint).
+    mcpJsonRpc: "/api/v1/mcp",
+    /**
+     * Build the full MCP URL the user copies
+     * into their client config. Composed from
+     * `apiConfig.mcpUrl` so the origin is driven
+     * by the env, not hardcoded in the page.
+     */
+    mcpJsonRpcUrl: (mcpUrl: string) =>
+      `${mcpUrl.replace(/\/$/, "")}/api/v1/mcp`,
 
     // Billing / Admin (V1)
     billingUsage: "/api/v1/billing/usage",
