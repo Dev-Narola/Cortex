@@ -90,6 +90,23 @@ export const apiConfig = {
     tenantUsageEvents: "/api/v1/tenants/me/usage/events",
     adminAudit: "/api/v1/admin/audit",
 
+    // Audit Log (V4 / F7 Part 5) — verified
+    // against `Cortex/src/observability/interface/rest/audit_routes.py`.
+    // The `audit_router` has no prefix; it
+    // mounts `GET /audit-log` directly under
+    // the `/api/v1` prefix configured in
+    // `Cortex/src/main.py:185`. The router's
+    // response shape is `AuditEventListResponse`
+    // (`{ items: AuditEvent[], next_cursor: str | null }`).
+    //
+    // RBAC: owner/admin only. Member/viewer
+    // receive a 403 from the backend. The
+    // frontend mirrors this in the
+    // SettingsTabs (the tab is hidden for
+    // member/viewer; a direct URL still gets
+    // 403 → ErrorState).
+    auditLog: "/api/v1/audit-log",
+
     // Health (V9)
     health: "/health",
     healthLive: "/health/live",
