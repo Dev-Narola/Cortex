@@ -76,6 +76,18 @@ export const apiConfig = {
 
     // Billing / Admin (V1)
     billingUsage: "/api/v1/billing/usage",
+
+    // Usage (V4 / F7 Part 4) — verified against
+    // `Cortex/src/billing/interface/rest/routes.py`.
+    // The `/tenants/me/usage` prefix is the
+    // tenant-scoped surface; the path is mounted
+    // by the billing router. Three endpoints:
+    //   - `/summary` — flat dashboard shape
+    //   - `/{id}`    — aggregate by event type
+    //   - `/events`  — raw events list
+    tenantUsageSummary: "/api/v1/tenants/me/usage/summary",
+    tenantUsage: "/api/v1/tenants/me/usage",
+    tenantUsageEvents: "/api/v1/tenants/me/usage/events",
     adminAudit: "/api/v1/admin/audit",
 
     // Health (V9)
