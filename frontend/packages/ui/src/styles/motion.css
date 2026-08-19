@@ -285,3 +285,38 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* ─────────────────────────────────────────────────────────────────
+ * F8 Marketing — hero keyframes.
+ *
+ * These animate the marketing-hero's
+ * abstract node field + the "query
+ * path" highlight edge. They are CSS-only
+ * (no GSAP) so the idle motion keeps
+ * playing without re-renders, and the
+ * `prefers-reduced-motion` block above
+ * (which targets `*` with !important)
+ * naturally disables them for users who
+ * request reduced motion. F8 Part 1
+ * (Tasks 26, 27).
+ * ───────────────────────────────────────────────────────────────── */
+
+@keyframes hero-field-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -6px, 0);
+  }
+}
+
+@keyframes hero-pulse {
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
