@@ -354,6 +354,11 @@ Replaces F2's placeholder landing page with the complete scroll-driven story fro
 
 **Definition of done:** full scroll-through matches the choreography in `UI-UX.md` §6; the live demo functions end to end; page-load sequence timing matches spec.
 
+**Status (2026-08-19):** F8 in progress. Part 1 shipped; Parts 2–6 are the remaining work.
+* **Part 1** — Marketing foundation + Hero (lightweight SVG node visual; GSAP-driven 1.4s load choreography with reduced-motion bypass; sticky public nav; Spark gradient on the "connected" word; F2 carryover sections stay in place below the fold with stable section IDs so the header's nav anchors keep working; 19 new tests; marketing route 2.8 kB / 285 kB First Load JS — the F6 R3F graph bundle is NOT loaded on the marketing surface)
+
+**Next phase:** F8 Part 2 — Problem + Solution + Hybrid Search.
+
 ---
 
 ### F9 — Motion, Responsive & Accessibility Pass *(1–1.5 weeks)*
