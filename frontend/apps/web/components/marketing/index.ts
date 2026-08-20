@@ -20,3 +20,19 @@ export { AgentsMcpSection } from "./features/agents-mcp"
 export { AgentsMcpVisual } from "./features/agents-mcp-visual"
 export { CitationsSection } from "./features/citations"
 export { CitationsVisual } from "./features/citations-visual"
+export { LiveDemoSection } from "./demo/live-demo-section"
+export { DemoChat } from "./demo/demo-chat"
+export { DemoInput } from "./demo/demo-input"
+export { DemoMessage } from "./demo/demo-message"
+export { DemoQuestionChips } from "./demo/demo-question-chips"
+export { DemoSourcePanel } from "./demo/demo-source-panel"
+export { DemoCitation as DemoCitationChip } from "./demo/demo-citation"
+export { useDemoStream } from "./demo/demo-stream"
+export {
+  DEMO_ENTRIES,
+  getSeededDemo,
+  parseAnswer,
+  type DemoEntry,
+  type DemoCitation,
+  type AnswerSegment,
+} from "./demo/demo-data"
