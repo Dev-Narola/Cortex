@@ -354,11 +354,12 @@ Replaces F2's placeholder landing page with the complete scroll-driven story fro
 
 **Definition of done:** full scroll-through matches the choreography in `UI-UX.md` §6; the live demo functions end to end; page-load sequence timing matches spec.
 
-**Status (2026-08-19):** F8 in progress. Parts 1–2 shipped; Parts 3–6 are the remaining work.
+**Status (2026-08-19):** F8 in progress. Parts 1–3 shipped; Parts 4–6 are the remaining work.
 * **Part 1** — Marketing foundation + Hero (lightweight SVG node visual; GSAP-driven 1.4s load choreography with reduced-motion bypass; sticky public nav; Spark gradient on the "connected" word; F2 carryover sections stay in place below the fold with stable section IDs so the header's nav anchors keep working; 19 new tests; marketing route 2.8 kB / 285 kB First Load JS — the F6 R3F graph bundle is NOT loaded on the marketing surface)
 * **Part 2** — Problem → Solution → Hybrid Search (Problem: plain text, no imagery, no icon, no word-by-word reveal — the contrast with the hero is intentional; Solution: one-sentence scattered → connected transformation, struck-through "scattered" + Spark-gradient "connected"; Hybrid Search: reusable `<FeatureSection>` wrapper for the future 3 feature beats, CSS-only "two lists merge into one" animation that explains the actual Cortex retrieval architecture (Postgres full-text + pgvector → RRF → cross-encoder reranking), plays once per session, the final state is understandable without the animation; 28 new tests; route 4.85 kB / 287 kB First Load JS)
+* **Part 3** — Knowledge Graph → Agents + MCP → Citations (Knowledge Graph: 9-node SVG graph with 5 categories + 1 Spark-highlighted relationship, plays once then settles; Agents + MCP: 6-stage vertical trace (Request → Agent → Plan → Retrieve → Tool [via MCP] → Result), the Tool stage is the Spark-accented "active" step, no specific vendor claims; Citations: answer + [1] marker + source card with "actually supports it" traceability message, fictional source name, no "AI you can trust" handwave; `<FeatureSection>` gets an `icon` prop (Spark-gradient treatment) reused by all 4 feature beats; marketing header nav updated to real F8 section IDs (`#product`, `#hybrid-search`, `#citations`); 39 new tests; route 6.39 kB / 289 kB First Load JS)
 
-**Next phase:** F8 Part 3 — Knowledge Graph → Agents + MCP → Citations/Trust.
+**Next phase:** F8 Part 4 — Live Demo.
 
 ---
 
