@@ -354,10 +354,11 @@ Replaces F2's placeholder landing page with the complete scroll-driven story fro
 
 **Definition of done:** full scroll-through matches the choreography in `UI-UX.md` §6; the live demo functions end to end; page-load sequence timing matches spec.
 
-**Status (2026-08-19):** F8 in progress. Part 1 shipped; Parts 2–6 are the remaining work.
+**Status (2026-08-19):** F8 in progress. Parts 1–2 shipped; Parts 3–6 are the remaining work.
 * **Part 1** — Marketing foundation + Hero (lightweight SVG node visual; GSAP-driven 1.4s load choreography with reduced-motion bypass; sticky public nav; Spark gradient on the "connected" word; F2 carryover sections stay in place below the fold with stable section IDs so the header's nav anchors keep working; 19 new tests; marketing route 2.8 kB / 285 kB First Load JS — the F6 R3F graph bundle is NOT loaded on the marketing surface)
+* **Part 2** — Problem → Solution → Hybrid Search (Problem: plain text, no imagery, no icon, no word-by-word reveal — the contrast with the hero is intentional; Solution: one-sentence scattered → connected transformation, struck-through "scattered" + Spark-gradient "connected"; Hybrid Search: reusable `<FeatureSection>` wrapper for the future 3 feature beats, CSS-only "two lists merge into one" animation that explains the actual Cortex retrieval architecture (Postgres full-text + pgvector → RRF → cross-encoder reranking), plays once per session, the final state is understandable without the animation; 28 new tests; route 4.85 kB / 287 kB First Load JS)
 
-**Next phase:** F8 Part 2 — Problem + Solution + Hybrid Search.
+**Next phase:** F8 Part 3 — Knowledge Graph → Agents + MCP → Citations/Trust.
 
 ---
 
