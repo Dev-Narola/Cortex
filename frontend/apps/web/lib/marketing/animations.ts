@@ -1,12 +1,13 @@
 /**
- * Marketing animations — GSAP helpers for the
- * F8 marketing site.
+ * Marketing animations — GSAP + scroll helpers
+ * for the F8 marketing site.
  *
- * **F8 Part 1.** The hero load choreography
- * (~1.4s) and the future scroll-driven
- * feature beats all flow through this
- * module. Centralising the GSAP setup
- * means:
+ * **F8 Part 1 + Part 2.** The hero load
+ * choreography (~1.4s, GSAP) and the
+ * scroll-triggered feature beats (F8 P2
+ * onward, GSAP + IntersectionObserver)
+ * all flow through this module.
+ * Centralising the setup means:
  *
  *   - There's one place to honour
  *     `prefers-reduced-motion` (the spec
@@ -23,37 +24,43 @@
  *     "graph nodes form" feel like one
  *     product, not five.
  *
- * **Why GSAP, not Framer Motion.** The
- * spec recommends GSAP for F8 because the
- * scroll choreography (Parts 2–6) needs
- * `ScrollTrigger`, which is the most
- * mature scroll-tied timeline system. Both
- * libraries are installed; the marketing
- * site is the GSAP surface. The F6 KG
- * Explorer stays on R3F; the app shell
- * doesn't use either.
+ * **Two triggers.**
+ *   1. **Mount** — the hero choreography
+ *      plays on component mount (the
+ *      visitor lands on the page; the
+ *      hero reveals).
+ *   2. **In view** — the feature beats
+ *      (Hybrid Search in P2; Graph,
+ *      Agents, Citations in P3) play when
+ *      the section scrolls into the
+ *      viewport. Each plays **once per
+ *      session** (no re-trigger on
+ *      scroll-back, per the F8 spec).
  *
- * **The hero timeline.** A 1.4-second
- * sequence:
- *
- *   0.00–0.40s  Ambient node field appears
- *   0.30–0.90s  Headline reveals word-by-word
- *   0.60–1.00s  Subheadline fades upward
- *   0.90–1.20s  CTA appears
- *   1.20s+      Hero visual enters idle loop
+ * **Why GSAP for mount, IntersectionObserver
+ * for in-view.** GSAP is great for
+ * mount-triggered timelines (the hero).
+ * For scroll-triggered animations that
+ * play once, IntersectionObserver is
+ * lighter, native, and doesn't require
+ * GSAP's `ScrollTrigger` (which would
+ * add a few KB per page). Both end up
+ * gated behind the same reduced-motion
+ * hook so the behaviour is consistent.
  *
  * **Reduced motion.** When the user has
  * `prefers-reduced-motion: reduce` set, the
- * timeline is bypassed entirely. The hero
- * renders in its final state immediately.
- * F9 will perform the full application-wide
- * pass; this module lays the wiring so the
- * later pass is a one-liner.
+ * mount timeline is bypassed entirely and
+ * the in-view animations snap to their
+ * final state. F9 will own the
+ * application-wide reduced-motion pass;
+ * this module lays the wiring so that
+ * pass is a one-liner.
  */
 
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, type RefObject } from "react"
 
 /**
  * `prefers-reduced-motion` as a React hook.
@@ -85,13 +92,79 @@ export function usePrefersReducedMotion(): boolean {
 }
 
 /**
+ * useInView — fires `onEnter` once when the
+ * referenced element first enters the
+ * viewport.
+ *
+ * **Plays once per session.** Per the F8
+ * spec: "Each plays once per session, no
+ * re-triggering on scroll-back." The hook
+ * unobserves the element after the first
+ * intersection event so the animation
+ * never replays.
+ *
+ * **Reduced motion.** When
+ * `prefers-reduced-motion: reduce` is
+ * set, `onEnter` fires immediately (on
+ * mount) so the visual lands in its
+ * final state without the scroll trigger
+ * — the animation is purely progressive
+ * enhancement.
+ *
+ * **SSR-safe.** The server render is
+ * always the "idle" state. The observer
+ * only attaches after hydration.
+ */
+export function useInView(
+  ref: RefObject<Element | null>,
+  onEnter: () => void,
+  options?: { rootMargin?: string; threshold?: number },
+): void {
+  const reducedMotion = usePrefersReducedMotion()
+
+  useEffect(() => {
+    // Reduced motion → call the callback
+    // once on mount and skip the observer.
+    if (reducedMotion) {
+      onEnter()
+      return
+    }
+    const el = ref.current
+    if (!el) return
+    if (typeof window === "undefined" || !("IntersectionObserver" in window)) {
+      // Browsers without IO support get
+      // the animation immediately (the
+      // visual lands in its final state).
+      onEnter()
+      return
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            onEnter()
+            observer.unobserve(entry.target)
+          }
+        }
+      },
+      {
+        rootMargin: options?.rootMargin ?? "0px 0px -10% 0px",
+        threshold: options?.threshold ?? 0.2,
+      },
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [onEnter, ref, reducedMotion, options?.rootMargin, options?.threshold])
+}
+
+/**
  * Animation vocabulary — single source of
- * truth. Hero + future feature beats all
- * use these constants so the page feels
- * like one product.
+ * truth. Hero + feature beats all use
+ * these constants so the page feels like
+ * one product.
  */
 export const MOTION = {
-  /** Hero load choreography (seconds). */
+  /** Hero load choreography (milliseconds). */
   hero: {
     /** The whole timeline. */
     totalMs: 1400,
@@ -117,4 +190,24 @@ export const MOTION = {
     /** "Weight" — used for the ambient field + idle motion. */
     inOut: "power2.inOut",
   },
+  /** Section reveal defaults (milliseconds). */
+  section: {
+    /** Single-section fade-up. */
+    fadeUpMs: 600,
+    /** Hybrid Search sub-stage windows
+     *  (the merge animation timeline). */
+    hybridSearch: {
+      keywordAppearStartMs: 0,
+      keywordAppearEndMs: 400,
+      semanticAppearStartMs: 250,
+      semanticAppearEndMs: 650,
+      mergeStartMs: 600,
+      mergeEndMs: 1100,
+      fusedAppearStartMs: 1000,
+      fusedAppearEndMs: 1350,
+      rerankSettleStartMs: 1250,
+      rerankSettleEndMs: 1600,
+    },
+  },
 } as const
+

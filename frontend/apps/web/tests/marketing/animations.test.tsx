@@ -1,5 +1,6 @@
 /**
  * usePrefersReducedMotion — F8 Part 1.
+ * useInView — F8 Part 2.
  *
  * Tests the F8 marketing animations
  * module:
@@ -9,15 +10,24 @@
  *     users who haven't set anything).
  *   - It flips to `true` when the OS
  *     reports "reduce".
+ *   - `useInView` fires the callback when
+ *     the element enters the viewport.
+ *   - `useInView` does NOT fire again on
+ *     a second intersection (plays once
+ *     per session, per the F8 spec).
+ *   - `useInView` fires immediately when
+ *     reduced motion is set.
  *   - The motion vocabulary exposes the
- *     hero timeline windows (the F8 Part
- *     1 spec's choreography).
+ *     hero + section timeline windows
+ *     (the F8 Part 1 + Part 2 spec's
+ *     choreography).
  */
 
 import { act, renderHook } from "@testing-library/react"
+import { useRef } from "react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
-import { MOTION, usePrefersReducedMotion } from "@/lib/marketing/animations"
+import { MOTION, useInView, usePrefersReducedMotion } from "@/lib/marketing/animations"
 
 describe("usePrefersReducedMotion", () => {
   let listeners: Array<(e: { matches: boolean }) => void> = []
@@ -81,6 +91,158 @@ describe("usePrefersReducedMotion", () => {
   })
 })
 
+describe("useInView", () => {
+  type ObservedCallback = (entries: Array<{ isIntersecting: boolean; target: Element }>) => void
+  let observerInstance: {
+    observe: ReturnType<typeof vi.fn>
+    unobserve: ReturnType<typeof vi.fn>
+    disconnect: ReturnType<typeof vi.fn>
+    trigger: (intersecting: boolean) => void
+  }
+
+  beforeEach(() => {
+    // The useInView hook internally
+    // calls usePrefersReducedMotion,
+    // which reads `window.matchMedia`.
+    // The default happy-dom env doesn't
+    // implement matchMedia; stub it to
+    // report "no preference" (matches:
+    // false) so the hook returns false.
+    Object.defineProperty(window, "matchMedia", {
+      writable: true,
+      value: vi.fn().mockImplementation((query: string) => ({
+        matches: false,
+        media: query,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    })
+    observerInstance = {
+      observe: vi.fn(),
+      unobserve: vi.fn(),
+      disconnect: vi.fn(),
+      trigger: (_intersecting: boolean) => {},
+    }
+    // IntersectionObserver is a class;
+    // we stub the constructor so each
+    // call returns a fresh spy. The
+    // `trigger` helper lets the test
+    // simulate the observer firing.
+    // After `unobserve` is called (the
+    // hook's "play once" semantic), the
+    // trigger becomes a no-op — matching
+    // real IO semantics.
+    ;(globalThis as { IntersectionObserver?: unknown }).IntersectionObserver = class {
+      private cb: ObservedCallback
+      private active = true
+      constructor(cb: ObservedCallback) {
+        this.cb = cb
+        observerInstance = {
+          observe: vi.fn((el: Element) => {
+            observerInstance.trigger = (intersecting: boolean) => {
+              if (!this.active) return
+              this.cb([{ isIntersecting: intersecting, target: el }])
+            }
+          }),
+          unobserve: vi.fn(() => {
+            this.active = false
+          }),
+          disconnect: vi.fn(() => {
+            this.active = false
+          }),
+          trigger: (_intersecting: boolean) => {},
+        }
+      }
+      observe(el: Element) {
+        observerInstance.observe(el)
+      }
+      unobserve(el: Element) {
+        observerInstance.unobserve(el)
+      }
+      disconnect() {
+        observerInstance.disconnect()
+      }
+    }
+  })
+
+  afterEach(() => {
+    delete (globalThis as { IntersectionObserver?: unknown }).IntersectionObserver
+  })
+
+  it("fires the callback when the element enters the viewport", () => {
+    const cb = vi.fn()
+    function Probe() {
+      const ref = useRef<HTMLDivElement>(null)
+      // Use a DOM element as the ref so
+      // the IO call observes something.
+      if (ref.current === null && typeof document !== "undefined") {
+        ref.current = document.createElement("div")
+      }
+      useInView(ref, cb)
+      return null
+    }
+    renderHook(() => Probe())
+    // Simulate the element entering the
+    // viewport.
+    observerInstance.trigger(true)
+    expect(cb).toHaveBeenCalledTimes(1)
+  })
+
+  it("does NOT re-fire on a second intersection (plays once per session)", () => {
+    const cb = vi.fn()
+    function Probe() {
+      const ref = useRef<HTMLDivElement>(null)
+      if (ref.current === null && typeof document !== "undefined") {
+        ref.current = document.createElement("div")
+      }
+      useInView(ref, cb)
+      return null
+    }
+    renderHook(() => Probe())
+    observerInstance.trigger(true)
+    observerInstance.trigger(true)
+    expect(cb).toHaveBeenCalledTimes(1)
+    // The element is unobserved after the
+    // first fire so the IO doesn't
+    // re-trigger.
+    expect(observerInstance.unobserve).toHaveBeenCalled()
+  })
+
+  it("fires immediately when reduced motion is set", () => {
+    // Override the beforeEach stub to
+    // report reduce.
+    Object.defineProperty(window, "matchMedia", {
+      writable: true,
+      value: vi.fn().mockImplementation((query: string) => ({
+        matches: true, // ← user prefers reduced motion
+        media: query,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    })
+    const cb = vi.fn()
+    function Probe() {
+      const ref = useRef<HTMLDivElement>(null)
+      if (ref.current === null && typeof document !== "undefined") {
+        ref.current = document.createElement("div")
+      }
+      useInView(ref, cb)
+      return null
+    }
+    renderHook(() => Probe())
+    // Reduced motion → the callback fires
+    // synchronously on mount. The
+    // IntersectionObserver is NOT used.
+    expect(cb).toHaveBeenCalledTimes(1)
+  })
+})
+
 describe("MOTION vocabulary", () => {
   it("exposes the F8 Part 1 hero timeline windows", () => {
     // The F8 spec pins these numbers
@@ -106,5 +268,21 @@ describe("MOTION vocabulary", () => {
   it("exposes the easing vocabulary", () => {
     expect(MOTION.easing.out).toBe("power3.out")
     expect(MOTION.easing.inOut).toBe("power2.inOut")
+  })
+
+  it("exposes the F8 Part 2 section timeline windows", () => {
+    expect(MOTION.section.fadeUpMs).toBe(600)
+    // The Hybrid Search merge animation.
+    const hs = MOTION.section.hybridSearch
+    expect(hs.keywordAppearStartMs).toBe(0)
+    expect(hs.keywordAppearEndMs).toBe(400)
+    expect(hs.semanticAppearStartMs).toBe(250)
+    expect(hs.semanticAppearEndMs).toBe(650)
+    expect(hs.mergeStartMs).toBe(600)
+    expect(hs.mergeEndMs).toBe(1100)
+    expect(hs.fusedAppearStartMs).toBe(1000)
+    expect(hs.fusedAppearEndMs).toBe(1350)
+    expect(hs.rerankSettleStartMs).toBe(1250)
+    expect(hs.rerankSettleEndMs).toBe(1600)
   })
 })
