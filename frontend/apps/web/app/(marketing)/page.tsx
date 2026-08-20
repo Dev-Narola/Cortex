@@ -9,15 +9,18 @@
  *   - Renders the public marketing story
  *     for everyone else.
  *
- * **F8 Part 3.** The four feature beats
- * are now in place: Hybrid Search,
- * Knowledge Graph, Agents + MCP, Citations.
- * The complete core Cortex story is told
- * in order — Find → Connect → Act →
- * Verify. The F2 carryover (features grid,
- * "how it works", final CTA, footer) stays
- * below the fold for the same reasons as
- * in F8 P1 + P2.
+ * **F8 Part 4.** The Live Demo section
+ * joins the marketing page. The complete
+ * core story is now:
+ *
+ *   Hero → Problem → Solution →
+ *   Hybrid Search → Knowledge Graph →
+ *   Agents + MCP → Citations → LIVE DEMO
+ *
+ * The F2 carryover (features grid, "how it
+ * works", final CTA, footer) stays below
+ * the fold for the same reasons as in
+ * F8 P1 + P2.
  *
  * **Auth check.** We read the
  * `cortex_auth_hint` cookie (the same
@@ -39,6 +42,7 @@ import {
   HeroSection,
   HybridSearchSection,
   KnowledgeGraphSection,
+  LiveDemoSection,
   MarketingHeader,
   ProblemSection,
   SolutionSection,
@@ -79,7 +83,10 @@ export default async function LandingPage() {
         <AgentsMcpSection />
         <CitationsSection />
 
-        {/* ─── F2 carryover — F8 Part 4+ will replace ────── */}
+        {/* F8 Part 4 — the live interactive demo. */}
+        <LiveDemoSection />
+
+        {/* ─── F2 carryover — F8 Part 5+ will replace ────── */}
         <section className="border-t border-border bg-background/40 py-16 md:py-24">
           <Container size="lg">
             <div className="mx-auto max-w-2xl text-center">
