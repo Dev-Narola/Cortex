@@ -1,5 +1,6 @@
 /**
- * HeroSection — F8 Part 1.
+ * HeroSection — F8 Part 1 (with Part 5
+ * updates).
  *
  * Tests the hero's surface contract:
  *   - Headline renders with the
@@ -15,8 +16,13 @@
  *   - The hero background is present and
  *     aria-hidden.
  *   - Heading hierarchy: the hero is the
- *     h1; downstream h2s land on the F2
- *     carryover sections.
+ *     h1; downstream h2s land on the F8
+ *     story sections.
+ *   - F8 Part 5: the section exposes
+ *     `id="product"` for the marketing
+ *     nav's Product anchor; the secondary
+ *     CTA became the "See it work ↓"
+ *     in-page anchor targeting `#demo`.
  *
  * **Animation timing is intentionally
  * NOT tested.** GSAP timeline durations
@@ -64,14 +70,34 @@ describe("HeroSection", () => {
     ).toBeInTheDocument()
   })
 
-  it("renders both CTA buttons with the right destinations", () => {
+  it("renders the primary CTA pointing to /register", () => {
     render(<HeroSection />)
     expect(
       screen.getByRole("link", { name: /start free/i }),
     ).toHaveAttribute("href", "/register")
+  })
+
+  it("renders the 'See it work' secondary CTA targeting the demo section", () => {
+    // F8 Part 5: the secondary CTA
+    // became an in-page anchor that
+    // scrolls down to the live demo. The
+    // sign-in route stays available via
+    // the marketing header.
+    render(<HeroSection />)
+    const seeItWork = screen.getByTestId("hero-see-it-work")
+    expect(seeItWork).toHaveAttribute("href", "#demo")
+    expect(seeItWork).toHaveTextContent(/see it work/i)
+  })
+
+  it("does not duplicate the sign-in link inside the hero", () => {
+    // The "Log in" link is owned by the
+    // MarketingHeader, not the hero. The
+    // hero used to ship its own "Sign in"
+    // CTA (F8 P1); F8 P5 removed it.
+    render(<HeroSection />)
     expect(
-      screen.getByRole("link", { name: /sign in/i }),
-    ).toHaveAttribute("href", "/login")
+      screen.queryByRole("link", { name: /^sign in$/i }),
+    ).not.toBeInTheDocument()
   })
 
   it("renders the hero visual and marks it decorative", () => {
@@ -98,5 +124,14 @@ describe("HeroSection", () => {
     // to the h1.
     const section = h1.closest("section")
     expect(section).toHaveAttribute("aria-labelledby", h1.id)
+  })
+
+  it("exposes id='product' for the marketing nav Product anchor", () => {
+    // F8 Part 5: the hero is the natural
+    // "Product" landing point. The header
+    // links #product here.
+    const { container } = render(<HeroSection />)
+    const product = container.querySelector("section#product")
+    expect(product).not.toBeNull()
   })
 })

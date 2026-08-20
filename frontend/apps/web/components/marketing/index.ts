@@ -36,3 +36,9 @@ export {
   type DemoCitation,
   type AnswerSegment,
 } from "./demo/demo-data"
+// F8 Part 5 — the closing trio of the
+// marketing page: the quiet technical
+// strip, the final CTA, and the footer.
+export { TechnicalCredibility } from "./technical-credibility"
+export { FinalCTA } from "./final-cta"
+export { Footer } from "./footer"
