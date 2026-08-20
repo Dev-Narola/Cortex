@@ -1,27 +1,31 @@
 /**
  * Marketing landing — `/`.
  *
- * **Server-rendered, ISR-friendly.** A clean, conversion-focused
- * landing page that:
- *   - Redirects already-authed users to `/app/dashboard` at the
- *     server level (so the redirect happens in a single round-trip,
- *     no client flicker).
- *   - Renders the public hero + features + CTA for everyone else.
+ * **Server-rendered, ISR-friendly.** A
+ * clean, conversion-focused landing page
+ * that:
+ *   - Redirects already-authed users to
+ *     `/app/dashboard` at the server level.
+ *   - Renders the public marketing story
+ *     for everyone else.
  *
- * **F8 Part 1.** The hero is now the real F8 hero
- * (`<HeroSection />`) — the new marketing
- * component lives at the top of the page. The
- * remaining sections (features, how-it-works,
- * final CTA, footer) carry over from F2 until
- * F8 Parts 2–5 replace them. We keep the F2
- * content for now so the public site stays
- * complete while the F8 story is rebuilt
- * section-by-section.
+ * **F8 Part 2.** The F8 marketing
+ * composition is now in place: Hero →
+ * Problem → Solution → Hybrid Search. The
+ * F2 carryover sections (features grid,
+ * "how it works", final CTA, footer) stay
+ * below the fold so the public site stays
+ * complete while F8 Parts 3–5 replace
+ * them. F8 Parts 2–5 will replace the
+ * F2 carryovers progressively, with stable
+ * section IDs so the marketing header's
+ * nav anchors keep working.
  *
- * **Auth check.** We read the `cortex_auth_hint`
- * cookie (the same hint the edge middleware uses)
- * and redirect to the dashboard if the user has
- * a session.
+ * **Auth check.** We read the
+ * `cortex_auth_hint` cookie (the same
+ * hint the edge middleware uses) and
+ * redirect to the dashboard if the user
+ * has a session.
  */
 
 import type { Metadata } from "next"
@@ -31,7 +35,13 @@ import { redirect } from "next/navigation"
 
 import { Button, Container, Heading, Text } from "@cortex/ui"
 
-import { HeroSection, MarketingHeader } from "@/components/marketing"
+import {
+  HeroSection,
+  HybridSearchSection,
+  MarketingHeader,
+  ProblemSection,
+  SolutionSection,
+} from "@/components/marketing"
 
 export const metadata: Metadata = {
   title: "Cortex — your company's private knowledge, on tap",
@@ -44,8 +54,7 @@ export const dynamic = "force-dynamic"
 
 export default async function LandingPage() {
   // Server-side auth check — bounce signed-in users to the
-  // dashboard before we even render. The `cortex_auth_hint`
-  // cookie is the same presence hint the edge middleware uses.
+  // dashboard before we even render.
   const cookieStore = await cookies()
   const hint = cookieStore.get("cortex_auth_hint")
   if (hint?.value === "1") {
@@ -56,14 +65,16 @@ export default async function LandingPage() {
     <>
       <MarketingHeader />
       <main id="main">
-        {/* F8 Part 1 — the new hero. */}
+        {/* F8 Part 1 — the hero. */}
         <HeroSection />
 
-        {/* ─── Features (F2 carryover; F8 P2/P3 replace) ─────── */}
-        <section
-          id="product"
-          className="border-t border-border bg-background/40 py-16 md:py-24"
-        >
+        {/* F8 Part 2 — problem → solution → first feature. */}
+        <ProblemSection />
+        <SolutionSection />
+        <HybridSearchSection />
+
+        {/* ─── F2 carryover — F8 Part 3+ will replace ────── */}
+        <section className="border-t border-border bg-background/40 py-16 md:py-24">
           <Container size="lg">
             <div className="mx-auto max-w-2xl text-center">
               <Heading level="h2" size="lg">
@@ -104,8 +115,7 @@ export default async function LandingPage() {
           </Container>
         </section>
 
-        {/* ─── How it works (F2 carryover; F8 P3 replaces) ──────── */}
-        <section id="how-it-works" className="py-16 md:py-24">
+        <section className="py-16 md:py-24">
           <Container size="md">
             <div className="mx-auto max-w-2xl text-center">
               <Heading level="h2" size="lg">
@@ -120,11 +130,7 @@ export default async function LandingPage() {
           </Container>
         </section>
 
-        {/* ─── Final CTA (F2 carryover; F8 P5 replaces) ─────────── */}
-        <section
-          id="technology"
-          className="border-t border-border bg-background/40 py-16 md:py-24"
-        >
+        <section className="border-t border-border bg-background/40 py-16 md:py-24">
           <Container size="md" className="text-center">
             <Heading level="h2" size="lg">
               Your knowledge deserves a brain.
@@ -144,7 +150,6 @@ export default async function LandingPage() {
           </Container>
         </section>
 
-        {/* ─── Footer (F2 carryover; F8 P5 replaces) ───────────── */}
         <footer className="border-t border-border py-10">
           <Container size="lg" className="flex flex-col items-center justify-between gap-4 text-sm text-muted-foreground md:flex-row">
             <div className="flex items-center gap-2">
