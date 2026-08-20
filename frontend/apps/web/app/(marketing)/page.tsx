@@ -9,17 +9,15 @@
  *   - Renders the public marketing story
  *     for everyone else.
  *
- * **F8 Part 2.** The F8 marketing
- * composition is now in place: Hero →
- * Problem → Solution → Hybrid Search. The
- * F2 carryover sections (features grid,
- * "how it works", final CTA, footer) stay
- * below the fold so the public site stays
- * complete while F8 Parts 3–5 replace
- * them. F8 Parts 2–5 will replace the
- * F2 carryovers progressively, with stable
- * section IDs so the marketing header's
- * nav anchors keep working.
+ * **F8 Part 3.** The four feature beats
+ * are now in place: Hybrid Search,
+ * Knowledge Graph, Agents + MCP, Citations.
+ * The complete core Cortex story is told
+ * in order — Find → Connect → Act →
+ * Verify. The F2 carryover (features grid,
+ * "how it works", final CTA, footer) stays
+ * below the fold for the same reasons as
+ * in F8 P1 + P2.
  *
  * **Auth check.** We read the
  * `cortex_auth_hint` cookie (the same
@@ -36,8 +34,11 @@ import { redirect } from "next/navigation"
 import { Button, Container, Heading, Text } from "@cortex/ui"
 
 import {
+  AgentsMcpSection,
+  CitationsSection,
   HeroSection,
   HybridSearchSection,
+  KnowledgeGraphSection,
   MarketingHeader,
   ProblemSection,
   SolutionSection,
@@ -73,7 +74,12 @@ export default async function LandingPage() {
         <SolutionSection />
         <HybridSearchSection />
 
-        {/* ─── F2 carryover — F8 Part 3+ will replace ────── */}
+        {/* F8 Part 3 — the remaining 3 feature beats. */}
+        <KnowledgeGraphSection />
+        <AgentsMcpSection />
+        <CitationsSection />
+
+        {/* ─── F2 carryover — F8 Part 4+ will replace ────── */}
         <section className="border-t border-border bg-background/40 py-16 md:py-24">
           <Container size="lg">
             <div className="mx-auto max-w-2xl text-center">

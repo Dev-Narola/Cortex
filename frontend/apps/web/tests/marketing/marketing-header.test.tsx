@@ -34,7 +34,7 @@ describe("MarketingHeader", () => {
     })
     expect(within(nav).getByText("Product")).toBeInTheDocument()
     expect(within(nav).getByText("How it works")).toBeInTheDocument()
-    expect(within(nav).getByText("Technology")).toBeInTheDocument()
+    expect(within(nav).getByText("Trust")).toBeInTheDocument()
   })
 
   it("renders the public CTAs", () => {
