@@ -56,6 +56,7 @@
 
 import Link from "next/link"
 import { useEffect, useRef } from "react"
+import { ArrowDown } from "lucide-react"
 
 import { Button, Container } from "@cortex/ui"
 
@@ -165,6 +166,7 @@ export function HeroSection() {
 
   return (
     <section
+      id="product"
       aria-labelledby="hero-headline"
       className="relative isolate overflow-hidden pb-20 pt-28 md:pb-28 md:pt-36 lg:pt-44"
     >
@@ -217,13 +219,28 @@ export function HeroSection() {
           <Button asChild size="lg" className="min-w-[180px]">
             <Link href="/register">Start free</Link>
           </Button>
+          {/*
+            F8 Part 5 — the secondary CTA
+            becomes the "See it work ↓"
+            anchor that scrolls the visitor
+            down to the Live Demo section
+            (the lower-commitment action for
+            skeptical visitors per the F8
+            spec). The header already
+            exposes the "Log in" link, so
+            the hero doesn't need to
+            duplicate it.
+          */}
           <Button
             asChild
             size="lg"
             variant="outline"
             className="min-w-[180px]"
           >
-            <Link href="/login">Sign in</Link>
+            <a href="#demo" data-testid="hero-see-it-work">
+              <span>See it work</span>
+              <ArrowDown className="ml-2 h-4 w-4" aria-hidden />
+            </a>
           </Button>
         </div>
 
