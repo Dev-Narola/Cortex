@@ -48,8 +48,8 @@ import { Button, Container } from "@cortex/ui"
 
 const NAV_LINKS = [
   { href: "#product", label: "Product" },
-  { href: "#how-it-works", label: "How it works" },
-  { href: "#technology", label: "Technology" },
+  { href: "#hybrid-search", label: "How it works" },
+  { href: "#citations", label: "Trust" },
 ] as const
 
 export function MarketingHeader() {
