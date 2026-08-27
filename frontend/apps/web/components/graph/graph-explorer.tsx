@@ -58,7 +58,9 @@ import { useCallback, useDeferredValue, useEffect, useMemo, useState } from "rea
 import { EmptyState } from "@cortex/ui"
 
 import { useKGEntity, useKGEntityNeighbors, useKGEntityRelations, useKGSearch } from "@/hooks/graph"
+import { useGraphCapability } from "@/lib/graph/graph-capability"
 import { searchToGraph, toGraph } from "./adapters/kg-to-graph"
+import { GraphCanvas2D } from "./graph-canvas-2d"
 import { applyGraphLimits } from "./graph-limits"
 import { GraphNodeDetail } from "./graph-node-detail"
 import { GraphSearch } from "./graph-search"
@@ -69,6 +71,10 @@ import type { GraphData } from "./types"
  * Lazy-load the R3F canvas. The skeleton keeps
  * the page from being a blank black rectangle
  * while the chunk fetches in the background.
+ * The 2D fallback (`GraphCanvas2D`) is imported
+ * directly above because it's a lightweight
+ * SVG component — no Three.js, no R3F, so no
+ * need to defer it.
  */
 const GraphCanvas = dynamic(() => import("./graph-canvas").then((m) => m.GraphCanvas), {
   ssr: false,
@@ -279,6 +285,14 @@ export function GraphExplorer({ initialData, defaultQuery = "" }: GraphExplorerP
     }
   }, [selectedEntityId, entity.error])
 
+  // ----- Capability (F9 Part 2) ----------------------------------------
+  // The capability hook decides whether to render the
+  // R3F canvas (desktop-class devices) or the 2D SVG
+  // fallback (mobile / reduced-motion / low-concurrency
+  // devices). The R3F canvas is lazy-loaded; the 2D
+  // fallback is a direct import.
+  const capability = useGraphCapability()
+
   // ----- JSX ------------------------------------------------------------
   const showEmpty = !renderedGraph && !search.data && !searchTerm
 
@@ -286,17 +300,29 @@ export function GraphExplorer({ initialData, defaultQuery = "" }: GraphExplorerP
     <section
       aria-label="Knowledge graph explorer"
       data-testid="graph-explorer"
+      data-capability={capability}
       className="relative isolate -m-6 flex h-[calc(100vh-3.5rem)] w-[calc(100%+3rem)] flex-col bg-void-950"
     >
       <div className="absolute inset-0 z-0">
         {renderedGraph ? (
-          <GraphCanvas
-            data={renderedGraph}
-            selectedNodeId={selectedEntityId}
-            activePathEntityIds={activePath.entityIds}
-            onSelect={handleNodeSelect}
-            onEdgeSelect={handleEdgeSelect}
-          />
+          capability === "2d" ? (
+            <GraphCanvas2D
+              data={renderedGraph}
+              selectedNodeId={selectedEntityId}
+              activePathEntityIds={activePath.entityIds}
+              activePathRelationIds={activePath.relationIds}
+              onSelect={handleNodeSelect}
+              onEdgeSelect={handleEdgeSelect}
+            />
+          ) : (
+            <GraphCanvas
+              data={renderedGraph}
+              selectedNodeId={selectedEntityId}
+              activePathEntityIds={activePath.entityIds}
+              onSelect={handleNodeSelect}
+              onEdgeSelect={handleEdgeSelect}
+            />
+          )
         ) : null}
         {showEmpty ? (
           <div className="flex h-full w-full items-center justify-center p-8">
