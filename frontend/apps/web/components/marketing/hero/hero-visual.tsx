@@ -55,15 +55,31 @@
 
 export function HeroVisual() {
   return (
-    <div
-      aria-hidden
-      data-testid="hero-visual"
-      className="relative mx-auto w-full max-w-2xl"
-    >
+    <div aria-hidden data-testid="hero-visual" className="relative mx-auto w-full max-w-2xl">
       <svg
         viewBox="0 0 600 320"
         xmlns="http://www.w3.org/2000/svg"
-        className="hero-visual-svg h-auto w-full text-spark motion-safe:animate-[hero-field-drift_18s_ease-in-out_infinite]"
+        aria-hidden="true"
+        focusable="false"
+        // **F9 Part 1 — visual fix.** The
+        // earlier `text-spark` class on the
+        // outer SVG set `color: transparent`
+        // (it's a text-fill utility). The
+        // edge gradient inside the SVG uses
+        // `stopColor="currentColor"`, so
+        // `transparent` would have made the
+        // edges effectively invisible. The
+        // nodes survive because they sit
+        // inside `<g className="text-foreground">`
+        // which overrides `color`. Removing
+        // the outer class restores the
+        // correct `currentColor` resolution
+        // (Ink / Paper depending on theme)
+        // and the edge web becomes visible
+        // again — the visual that should
+        // communicate "connected knowledge"
+        // now actually shows its connections.
+        className="hero-visual-svg h-auto w-full motion-safe:animate-[hero-field-drift_18s_ease-in-out_infinite]"
       >
         <defs>
           {/* Edge gradient — neutral to ember.
@@ -89,12 +105,7 @@ export function HeroVisual() {
         </defs>
 
         {/* ── Edges ──────────────────────────────────────────── */}
-        <g
-          stroke="url(#hero-edge)"
-          strokeWidth="1.25"
-          fill="none"
-          className="opacity-70"
-        >
+        <g stroke="url(#hero-edge)" strokeWidth="1.25" fill="none" className="opacity-70">
           {/* Sweep of straight + slightly curved
               connections. Positioned to form a
               "constellation" rather than a
@@ -151,18 +162,9 @@ export function HeroVisual() {
             larger and pulse to suggest
             "this is what a query looks
             like". */}
-        <g
-          fill="currentColor"
-          className="text-foreground"
-        >
+        <g fill="currentColor" className="text-foreground">
           {NODES.map((n) => (
-            <circle
-              key={`${n.x}-${n.y}`}
-              cx={n.x}
-              cy={n.y}
-              r={n.r}
-              opacity={n.opacity}
-            />
+            <circle key={`${n.x}-${n.y}`} cx={n.x} cy={n.y} r={n.r} opacity={n.opacity} />
           ))}
         </g>
       </svg>
