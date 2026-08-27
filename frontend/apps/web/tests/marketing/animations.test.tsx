@@ -30,14 +30,32 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { MOTION, useInView, usePrefersReducedMotion } from "@/lib/marketing/animations"
 
 describe("usePrefersReducedMotion", () => {
+  // F9 Part 1 — the canonical hook now
+  // uses `useSyncExternalStore` (see
+  // `lib/motion/reduced-motion.ts`).
+  // The test mock needs a single mutable
+  // `matches` field so `getSnapshot()`
+  // returns the updated value when the
+  // listener fires.
   let listeners: Array<(e: { matches: boolean }) => void> = []
+  let currentMatches = false
 
-  beforeEach(() => {
+  const setMatches = (next: boolean) => {
+    currentMatches = next
+    for (const cb of listeners) {
+      cb({ matches: next })
+    }
+  }
+
+  const installMatchMedia = (initial: boolean) => {
+    currentMatches = initial
     listeners = []
     Object.defineProperty(window, "matchMedia", {
       writable: true,
       value: vi.fn().mockImplementation((query: string) => ({
-        matches: false,
+        get matches() {
+          return currentMatches
+        },
         media: query,
         addEventListener: (_: string, cb: (e: { matches: boolean }) => void) => {
           listeners.push(cb)
@@ -48,6 +66,10 @@ describe("usePrefersReducedMotion", () => {
         dispatchEvent: vi.fn(),
       })),
     })
+  }
+
+  beforeEach(() => {
+    installMatchMedia(false)
   })
 
   afterEach(() => {
@@ -63,20 +85,7 @@ describe("usePrefersReducedMotion", () => {
   })
 
   it("flips to true when matchMedia reports 'reduce'", () => {
-    Object.defineProperty(window, "matchMedia", {
-      writable: true,
-      value: vi.fn().mockImplementation((query: string) => ({
-        matches: true,
-        media: query,
-        addEventListener: (_: string, cb: (e: { matches: boolean }) => void) => {
-          listeners.push(cb)
-        },
-        removeEventListener: vi.fn(),
-        addListener: vi.fn(),
-        removeListener: vi.fn(),
-        dispatchEvent: vi.fn(),
-      })),
-    })
+    installMatchMedia(true)
     const { result } = renderHook(() => usePrefersReducedMotion())
     expect(result.current).toBe(true)
   })
@@ -85,7 +94,7 @@ describe("usePrefersReducedMotion", () => {
     const { result } = renderHook(() => usePrefersReducedMotion())
     expect(result.current).toBe(false)
     act(() => {
-      listeners.forEach((cb) => cb({ matches: true }))
+      setMatches(true)
     })
     expect(result.current).toBe(true)
   })
@@ -169,7 +178,12 @@ describe("useInView", () => {
   })
 
   afterEach(() => {
-    delete (globalThis as { IntersectionObserver?: unknown }).IntersectionObserver
+    // Reset the test-global IO stub by
+    // assigning undefined rather than
+    // `delete` (biome flags delete for
+    // perf; the IO stub is local to the
+    // test environment anyway).
+    ;(globalThis as { IntersectionObserver?: unknown }).IntersectionObserver = undefined
   })
 
   it("fires the callback when the element enters the viewport", () => {

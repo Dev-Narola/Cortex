@@ -52,44 +52,36 @@
  * `prefers-reduced-motion: reduce` set, the
  * mount timeline is bypassed entirely and
  * the in-view animations snap to their
- * final state. F9 will own the
- * application-wide reduced-motion pass;
- * this module lays the wiring so that
- * pass is a one-liner.
+ * final state. F9 owns the application-
+ * wide reduced-motion pass; this module
+ * lays the wiring so that pass is a
+ * one-liner.
+ *
+ * **F9 Part 1 — hook consolidation.** The
+ * `usePrefersReducedMotion` hook used to
+ * be a `useState` + `useEffect`
+ * implementation local to this file. The
+ * canonical implementation in
+ * `apps/web/lib/motion/reduced-motion.ts`
+ * uses `useSyncExternalStore` (the React-
+ * recommended pattern for external
+ * stores) and is the single source of
+ * truth. This file re-exports it for
+ * backwards compatibility with the
+ * marketing code that imports it from
+ * here.
  */
 
 "use client"
 
-import { useEffect, useState, type RefObject } from "react"
+import { type RefObject, useEffect } from "react"
 
-/**
- * `prefers-reduced-motion` as a React hook.
- *
- * Returns `true` when the user has
- * `prefers-reduced-motion: reduce` set in
- * their OS settings. Defaults to `false` on
- * the server (the hero is server-rendered;
- * the first paint must look correct, so we
- * assume the *full* motion on the server
- * and refine on the client).
- */
-export function usePrefersReducedMotion(): boolean {
-  const [reduced, setReduced] = useState(false)
-  useEffect(() => {
-    if (typeof window === "undefined" || !window.matchMedia) return
-    const mql = window.matchMedia("(prefers-reduced-motion: reduce)")
-    const handler = (e: MediaQueryListEvent) => setReduced(e.matches)
-    setReduced(mql.matches)
-    // Modern + Safari < 14 fallback.
-    if (mql.addEventListener) {
-      mql.addEventListener("change", handler)
-      return () => mql.removeEventListener("change", handler)
-    }
-    mql.addListener(handler)
-    return () => mql.removeListener(handler)
-  }, [])
-  return reduced
-}
+import { usePrefersReducedMotion } from "@/lib/motion/reduced-motion"
+
+// Re-export the canonical hook so
+// marketing code keeps importing it
+// from the same place.
+export { usePrefersReducedMotion }
 
 /**
  * useInView — fires `onEnter` once when the
@@ -210,4 +202,3 @@ export const MOTION = {
     },
   },
 } as const
-

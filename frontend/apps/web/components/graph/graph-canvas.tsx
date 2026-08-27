@@ -63,9 +63,10 @@
 
 import { OrbitControls } from "@react-three/drei"
 import { Canvas } from "@react-three/fiber"
-import { useEffect, useMemo, useState } from "react"
+import { useMemo } from "react"
 import { type BufferGeometry, CylinderGeometry, SphereGeometry } from "three"
 
+import { usePrefersReducedMotion } from "@/lib/motion/reduced-motion"
 import { GraphEdge } from "./graph-edge"
 import { GraphNode } from "./graph-node"
 import type { GraphData, GraphNodeState } from "./types"
@@ -161,15 +162,14 @@ export function GraphCanvas({
   onSelect,
   onEdgeSelect,
 }: GraphCanvasProps) {
-  const [reducedMotion, setReducedMotion] = useState(false)
-  useEffect(() => {
-    if (typeof window === "undefined") return
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)")
-    setReducedMotion(mq.matches)
-    const onChange = (e: MediaQueryListEvent) => setReducedMotion(e.matches)
-    mq.addEventListener("change", onChange)
-    return () => mq.removeEventListener("change", onChange)
-  }, [])
+  // **F9 Part 1 — hook consolidation.**
+  // Replaced the inline `useState` +
+  // `useEffect` reduced-motion subscription
+  // with the canonical `useSyncExternalStore`
+  // hook from `lib/motion/reduced-motion`.
+  // Same behaviour, less code, single
+  // source of truth.
+  const reducedMotion = usePrefersReducedMotion()
 
   // ----- Shared geometry (Part 4) -----
   // One sphere geometry for the whole scene. Every
