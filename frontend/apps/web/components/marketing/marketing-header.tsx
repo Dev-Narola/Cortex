@@ -46,6 +46,8 @@ import Link from "next/link"
 
 import { Button, Container } from "@cortex/ui"
 
+import { MARKETING_CTA_CLICKED, track } from "@/lib/analytics"
+
 const NAV_LINKS = [
   { href: "#product", label: "Product" },
   { href: "#hybrid-search", label: "How it works" },
@@ -91,10 +93,24 @@ export function MarketingHeader() {
 
         <div className="order-2 flex items-center justify-end gap-2 md:order-3">
           <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
-            <Link href="/login">Log in</Link>
+            <Link
+              href="/login"
+              onClick={() => {
+                track(MARKETING_CTA_CLICKED, { location: "header_login" })
+              }}
+            >
+              Log in
+            </Link>
           </Button>
           <Button asChild size="sm">
-            <Link href="/register">Get started</Link>
+            <Link
+              href="/register"
+              onClick={() => {
+                track(MARKETING_CTA_CLICKED, { location: "header" })
+              }}
+            >
+              Get started
+            </Link>
           </Button>
         </div>
       </Container>

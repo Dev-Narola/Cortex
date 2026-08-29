@@ -32,7 +32,7 @@
 
 "use client"
 
-import { useEffect, useState, type ReactNode } from "react"
+import { type ReactNode, useEffect, useState } from "react"
 
 import {
   Button,
@@ -50,17 +50,13 @@ import {
   toast,
 } from "@cortex/ui"
 
-import {
-  useInvalidateDocuments,
-  useUploadDocument,
-} from "@/hooks/documents"
-import {
-  fileUploadSchema,
-  urlUploadSchema,
-} from "@/lib/documents/upload.schema"
+import { useInvalidateDocuments, useUploadDocument } from "@/hooks/documents"
+import { fileUploadSchema, urlUploadSchema } from "@/lib/documents/upload.schema"
 
 import { FileUploadTab } from "./FileUploadTab"
 import { UrlUploadTab } from "./UrlUploadTab"
+
+import { DOCUMENT_UPLOADED, track } from "@/lib/analytics"
 
 export interface UploadDocumentModalProps {
   open: boolean
@@ -81,8 +77,7 @@ export function UploadDocumentModal({
   const [url, setUrl] = useState("")
   const [fileError, setFileError] = useState<string | null>(null)
   const [urlError, setUrlError] = useState<string | null>(null)
-  const [abortController, setAbortController] =
-    useState<AbortController | null>(null)
+  const [abortController, setAbortController] = useState<AbortController | null>(null)
 
   const upload = useUploadDocument()
   const invalidate = useInvalidateDocuments()
@@ -123,6 +118,17 @@ export function UploadDocumentModal({
           title: "Upload successful",
           description: "Your document is queued for processing.",
           variant: "success",
+        })
+        // F10-Part 4: document_uploaded fires
+        // on the success path. The file
+        // type is included (pdf / docx / etc.)
+        // for funnel analysis; the file name
+        // is deliberately NOT included —
+        // filenames can leak project names,
+        // customer names, etc.
+        track(DOCUMENT_UPLOADED, {
+          source: "file",
+          file_type: result.data.file.type || "unknown",
         })
         await invalidate()
         onUploaded?.(accepted.id)
@@ -177,16 +183,12 @@ export function UploadDocumentModal({
         <DialogHeader>
           <DialogTitle>Upload document</DialogTitle>
           <DialogDescription>
-            Drop a file or paste a URL. The document is queued for processing
-            and appears in your list as soon as ingestion starts.
+            Drop a file or paste a URL. The document is queued for processing and appears in your
+            list as soon as ingestion starts.
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs
-          value={tab}
-          onValueChange={(v) => setTab(v as Tab)}
-          className="w-full"
-        >
+        <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="file" disabled={isDisabled}>
               <Icon name="FileText" className="mr-1.5 h-3.5 w-3.5" />
@@ -207,10 +209,7 @@ export function UploadDocumentModal({
               disabled={isDisabled}
             />
             {fileError ? (
-              <p
-                role="alert"
-                className="mt-2 text-sm text-destructive"
-              >
+              <p role="alert" className="mt-2 text-sm text-destructive">
                 {fileError}
               </p>
             ) : null}
@@ -230,29 +229,18 @@ export function UploadDocumentModal({
 
         <DialogFooter>
           {isUploading ? (
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => abortController?.abort()}
-            >
+            <Button type="button" variant="ghost" onClick={() => abortController?.abort()}>
               Cancel
             </Button>
           ) : (
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => onOpenChange(false)}
-            >
+            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
           )}
           <Button
             type="button"
             onClick={onSubmit}
-            disabled={
-              isDisabled ||
-              (tab === "file" ? !file : !url)
-            }
+            disabled={isDisabled || (tab === "file" ? !file : !url)}
             data-loading={isDisabled || undefined}
           >
             {isUploading ? (

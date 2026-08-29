@@ -50,18 +50,22 @@
  */
 "use client"
 
-import { useCallback, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
+import {
+  DEMO_SOURCE_VIEWED,
+  LIVE_DEMO_COMPLETED,
+  LIVE_DEMO_QUESTION_SUBMITTED,
+  LIVE_DEMO_STARTED,
+  track,
+} from "@/lib/analytics"
+
+import { DEMO_ENTRIES, type DemoEntry, getSeededDemo } from "./demo-data"
 import { DemoInput } from "./demo-input"
 import { DemoMessage } from "./demo-message"
 import { DemoQuestionChips } from "./demo-question-chips"
 import { DemoSourcePanel } from "./demo-source-panel"
 import { useDemoStream } from "./demo-stream"
-import {
-  DEMO_ENTRIES,
-  getSeededDemo,
-  type DemoEntry,
-} from "./demo-data"
 
 type DemoStatus = "idle" | "submitting" | "streaming" | "complete" | "error"
 
@@ -87,9 +91,31 @@ export function DemoChat() {
       // hasn't been replaced.
       if (runIdRef.current === runId) {
         setStatus("complete")
+        // F10-Part 4: live_demo_completed fires
+        // when the streamed answer resolves.
+        // Includes the citation count as a
+        // quality signal. The runId guard
+        // ensures stale completions don't
+        // double-count.
+        track(LIVE_DEMO_COMPLETED, {
+          section: "live_demo",
+          citation_count: activeEntry?.citations.length ?? 0,
+        })
       }
     },
   })
+
+  // F10-Part 4: live_demo_started fires once
+  // on first interaction. Subsequent questions
+  // in the same session emit
+  // live_demo_question_submitted instead.
+  const demoStartedRef = useRef(false)
+  useEffect(() => {
+    if (status === "submitting" && !demoStartedRef.current) {
+      demoStartedRef.current = true
+      track(LIVE_DEMO_STARTED, { section: "live_demo" })
+    }
+  }, [status])
 
   // The "submitting" state lasts a tick
   // — we don't want a jarring jump from
@@ -98,29 +124,32 @@ export function DemoChat() {
   // first chunk; we update status
   // immediately on submit so the input
   // disables.
-  const ask = useCallback(
-    (rawQuestion: string) => {
-      const q = rawQuestion.trim()
-      if (!q) return
-      const entry = getSeededDemo(q)
-      // If the question doesn't match a
-      // seeded entry, fall back to the
-      // first demo (so the visitor always
-      // sees *something* — the spec is
-      // explicit that the marketing demo
-      // should always function end-to-end).
-      const fallback = entry ?? DEMO_ENTRIES[0]
-      if (!fallback) return
-      const nextRunId = runIdRef.current + 1
-      setActiveDemoId(fallback.id)
-      setActiveCitationId(null)
-      setInputValue(fallback.question)
-      setActiveEntry(fallback)
-      setStatus("submitting")
-      setRunId(nextRunId)
-    },
-    [],
-  )
+  const ask = useCallback((rawQuestion: string) => {
+    const q = rawQuestion.trim()
+    if (!q) return
+    const entry = getSeededDemo(q)
+    // If the question doesn't match a
+    // seeded entry, fall back to the
+    // first demo (so the visitor always
+    // sees *something* — the spec is
+    // explicit that the marketing demo
+    // should always function end-to-end).
+    const fallback = entry ?? DEMO_ENTRIES[0]
+    if (!fallback) return
+    const nextRunId = runIdRef.current + 1
+    setActiveDemoId(fallback.id)
+    setActiveCitationId(null)
+    setInputValue(fallback.question)
+    setActiveEntry(fallback)
+    setStatus("submitting")
+    setRunId(nextRunId)
+    // F10-Part 4: every ask is a
+    // question_submitted (whether it's the
+    // first one or a follow-up). The
+    // live_demo_started event is emitted
+    // separately, once per session.
+    track(LIVE_DEMO_QUESTION_SUBMITTED, { section: "live_demo" })
+  }, [])
 
   const onChipSelect = useCallback(
     (entry: DemoEntry) => {
@@ -143,7 +172,19 @@ export function DemoChat() {
   }, [ask, inputValue])
 
   const onOpenCitation = useCallback((id: string) => {
-    setActiveCitationId((current) => (current === id ? null : id))
+    setActiveCitationId((current) => {
+      const next = current === id ? null : id
+      // F10-Part 4: source panel open fires
+      // demo_source_viewed. Closing the
+      // panel (next === null) does NOT fire —
+      // this is an open-counter, not a
+      // toggle-counter, so we don't
+      // over-count in the funnel.
+      if (next !== null) {
+        track(DEMO_SOURCE_VIEWED, { section: "live_demo" })
+      }
+      return next
+    })
   }, [])
 
   const onPanelOpenChange = useCallback((open: boolean) => {
@@ -165,16 +206,11 @@ export function DemoChat() {
 
   // ── Rendering ──────────────────────────────────────────
   const isBusy = status === "submitting" || isStreaming
-  const showMessage =
-    status !== "idle" && status !== "error" && activeEntry !== null
+  const showMessage = status !== "idle" && status !== "error" && activeEntry !== null
 
   return (
     <div data-testid="demo-chat" className="space-y-4">
-      <DemoQuestionChips
-        activeDemoId={activeDemoId}
-        disabled={isBusy}
-        onSelect={onChipSelect}
-      />
+      <DemoQuestionChips activeDemoId={activeDemoId} disabled={isBusy} onSelect={onChipSelect} />
 
       {/* The chat surface. A rounded card
           with a paper/slate background so the
@@ -197,10 +233,7 @@ export function DemoChat() {
         ) : null}
 
         {status === "submitting" ? (
-          <p
-            className="mt-2 text-xs text-muted-foreground"
-            data-testid="demo-submitting"
-          >
+          <p className="mt-2 text-xs text-muted-foreground" data-testid="demo-submitting">
             Cortex is thinking…
           </p>
         ) : null}
@@ -210,9 +243,7 @@ export function DemoChat() {
             data-testid="demo-error"
             className="mt-2 flex items-center justify-between gap-3 rounded-md border border-destructive/40 bg-destructive/5 p-3"
           >
-            <p className="text-xs text-destructive">
-              Something went wrong. Try the example again.
-            </p>
+            <p className="text-xs text-destructive">Something went wrong. Try the example again.</p>
             <button
               type="button"
               onClick={onRetry}
@@ -247,12 +278,9 @@ function DemoEmptyState() {
       data-testid="demo-empty-state"
       className="flex flex-col items-center gap-2 py-8 text-center"
     >
-      <p className="text-base font-medium text-foreground">
-        Ask Cortex a question
-      </p>
+      <p className="text-base font-medium text-foreground">Ask Cortex a question</p>
       <p className="max-w-md text-sm text-muted-foreground">
-        Search, connect, reason, and cite — pick an example above or
-        type your own.
+        Search, connect, reason, and cite — pick an example above or type your own.
       </p>
     </div>
   )

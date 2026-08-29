@@ -18,6 +18,23 @@ const publicSchema = z.object({
   NEXT_PUBLIC_GRAPHQL_URL: z.string().url().default("http://localhost:8000/graphql"),
   NEXT_PUBLIC_APP_NAME: z.string().default("Cortex"),
   NEXT_PUBLIC_APP_URL: z.string().url().default("http://localhost:3000"),
+  // F10-Part 4: analytics provider selection. The
+  // default `noop` means "no provider configured";
+  // the abstraction in `lib/analytics/provider/`
+  // dispatches to the matching client. Production
+  // values are `plausible` / `posthog` / `umami` /
+  // etc. — see the F10-Part 4 catalog doc.
+  NEXT_PUBLIC_ANALYTICS_PROVIDER: z.string().default("noop"),
+  // F10-Part 4: the analytics provider's site ID /
+  // API key / ingest token. Provider-specific; the
+  // provider implementation knows how to use it.
+  // Optional because the noop provider doesn't need
+  // one.
+  NEXT_PUBLIC_ANALYTICS_SITE_ID: z.string().optional(),
+  // F10-Part 4: the analytics provider's ingest host
+  // (e.g. `https://plausible.io` for the hosted
+  // Plausible, or a self-hosted URL). Optional.
+  NEXT_PUBLIC_ANALYTICS_HOST: z.string().url().optional(),
 })
 
 // Server-only env vars — never read on the client.
@@ -38,6 +55,9 @@ export const publicEnv = clientSchema.parse({
   NEXT_PUBLIC_GRAPHQL_URL: process.env.NEXT_PUBLIC_GRAPHQL_URL,
   NEXT_PUBLIC_APP_NAME: process.env.NEXT_PUBLIC_APP_NAME,
   NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+  NEXT_PUBLIC_ANALYTICS_PROVIDER: process.env.NEXT_PUBLIC_ANALYTICS_PROVIDER,
+  NEXT_PUBLIC_ANALYTICS_SITE_ID: process.env.NEXT_PUBLIC_ANALYTICS_SITE_ID,
+  NEXT_PUBLIC_ANALYTICS_HOST: process.env.NEXT_PUBLIC_ANALYTICS_HOST,
 })
 
 /**

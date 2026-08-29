@@ -39,6 +39,13 @@ import { resolvePostAuthDestination } from "@/lib/auth/post-auth-destination"
 import { toFrontendError } from "@/lib/http/errors"
 import { login, toAuthUser } from "@/services/auth"
 
+import {
+  LOGIN_COMPLETED,
+  LOGIN_FAILED,
+  LOGIN_STARTED,
+  track,
+} from "@/lib/analytics"
+
 export interface LoginFormProps {
   /** Path to navigate to on success. Default `?next=...` or `/app`. */
   nextPath?: string
@@ -61,6 +68,10 @@ export function LoginForm({ nextPath }: LoginFormProps = {}) {
 
   async function onSubmit(values: LoginInput) {
     setError(null)
+    // F10-Part 4: login_started fires on
+    // submit. No email / password / tenant
+    // slug in the payload.
+    track(LOGIN_STARTED)
     try {
       const data = await login(values)
       const session: AuthSession = {
@@ -71,6 +82,9 @@ export function LoginForm({ nextPath }: LoginFormProps = {}) {
         tenant: data.tenant,
       }
       storeLogin(session)
+      // F10-Part 4: login_completed fires on
+      // the success path.
+      track(LOGIN_COMPLETED)
       // Post-auth destination: with-tenant → /app/dashboard,
       // without-tenant → /workspace-setup. A `?next=...` query
       // parameter (validated by resolvePostAuthDestination)
@@ -80,6 +94,10 @@ export function LoginForm({ nextPath }: LoginFormProps = {}) {
       router.push(destination as never)
     } catch (err) {
       const fe = toFrontendError(err)
+      // F10-Part 4: login_failed fires with
+      // a sanitised `reason` — never the raw
+      // error string.
+      track(LOGIN_FAILED, { reason: fe.kind })
       // Per spec: "Invalid email, password, or workspace." is
       // the canonical login failure message — don't leak
       // which one was wrong.

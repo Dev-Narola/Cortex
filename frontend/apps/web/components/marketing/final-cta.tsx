@@ -52,6 +52,7 @@ import { useCallback, useRef } from "react"
 
 import { Button, Container, Text } from "@cortex/ui"
 
+import { MARKETING_CTA_CLICKED, track } from "@/lib/analytics"
 import { useInView } from "@/lib/marketing/animations"
 
 export function FinalCTA() {
@@ -100,11 +101,21 @@ export function FinalCTA() {
           */}
           <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row sm:gap-6">
             <Button asChild size="lg" className="min-w-[200px]">
-              <Link href="/register">Get started free</Link>
+              <Link
+                href="/register"
+                onClick={() => {
+                  track(MARKETING_CTA_CLICKED, { location: "final" })
+                }}
+              >
+                Get started free
+              </Link>
             </Button>
             <Link
               href="/login"
               className="text-sm font-medium text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline focus-visible:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-sm"
+              onClick={() => {
+                track(MARKETING_CTA_CLICKED, { location: "final_login" })
+              }}
             >
               I already have a workspace
             </Link>
