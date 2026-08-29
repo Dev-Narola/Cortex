@@ -33,14 +33,15 @@ import { Controller, useForm } from "react-hook-form"
 
 import { Button, Input, Label, Spinner, Text } from "@cortex/ui"
 
+import { useCreateWorkspace } from "@/hooks/onboarding"
+import { WORKSPACE_CREATED, track } from "@/lib/analytics"
 import { useAuthStore } from "@/lib/auth/store"
 import { toFrontendError } from "@/lib/http/errors"
 import {
+  type WorkspaceSetupInput,
   suggestSlug,
   workspaceSetupSchema,
-  type WorkspaceSetupInput,
 } from "@/lib/onboarding/workspace.schema"
-import { useCreateWorkspace } from "@/hooks/onboarding"
 
 export interface WorkspaceSetupFormProps {
   /** Where to navigate on success. Default `/app/dashboard`. */
@@ -99,6 +100,14 @@ export function WorkspaceSetupForm({
       })
       // 2. Mark onboarding complete.
       completeOnboarding()
+      // F10-Part 4: workspace_created fires
+      // on the success path. The slug IS
+      // included because the analytics
+      // cohort analysis needs it (cold
+      // signups vs invite signups, etc.)
+      // — but no PII, no tenant ID, no
+      // user data.
+      track(WORKSPACE_CREATED, { source: "signup" })
       // 3. Theme transition (handled by the (app) layout's
       //    ThemeTransition shell — the page just navigates
       //    to it). The transition fires on the `dark` class
@@ -203,11 +212,7 @@ export function WorkspaceSetupForm({
         </p>
       ) : null}
 
-      <Button
-        type="submit"
-        className="w-full"
-        disabled={isSubmitting || mutation.isPending}
-      >
+      <Button type="submit" className="w-full" disabled={isSubmitting || mutation.isPending}>
         {isSubmitting || mutation.isPending ? (
           <>
             <Spinner size="sm" />

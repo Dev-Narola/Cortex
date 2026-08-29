@@ -54,12 +54,13 @@
  */
 "use client"
 
+import { ArrowDown } from "lucide-react"
 import Link from "next/link"
 import { useEffect, useRef } from "react"
-import { ArrowDown } from "lucide-react"
 
 import { Button, Container } from "@cortex/ui"
 
+import { MARKETING_CTA_CLICKED, page, track } from "@/lib/analytics"
 import { MOTION, usePrefersReducedMotion } from "@/lib/marketing/animations"
 
 import { HeroBackground } from "./hero-background"
@@ -74,20 +75,22 @@ export function HeroSection() {
   const visualRef = useRef<HTMLDivElement>(null)
   const reducedMotion = usePrefersReducedMotion()
 
+  // F10-Part 4: fire the landing_page_view event on
+  // mount. One per page-load, not per scroll.
+  useEffect(() => {
+    page("/")
+  }, [])
+
   useEffect(() => {
     // Reduced motion → render the final
     // state immediately. No timeline.
     if (reducedMotion) {
-      ;[headlineRef.current, subheadlineRef.current, ctaRef.current].forEach(
-        (el) => {
-          if (!el) return
-          el.style.opacity = "1"
-          el.style.transform = "none"
-        },
-      )
-      const words = headlineRef.current?.querySelectorAll<HTMLSpanElement>(
-        "[data-hero-word]",
-      )
+      ;[headlineRef.current, subheadlineRef.current, ctaRef.current].forEach((el) => {
+        if (!el) return
+        el.style.opacity = "1"
+        el.style.transform = "none"
+      })
+      const words = headlineRef.current?.querySelectorAll<HTMLSpanElement>("[data-hero-word]")
       words?.forEach((w) => {
         w.style.opacity = "1"
         w.style.transform = "none"
@@ -116,9 +119,7 @@ export function HeroSection() {
       )
 
       // 0.30–0.90s: headline reveals word-by-word.
-      const words = headlineRef.current?.querySelectorAll<HTMLElement>(
-        "[data-hero-word]",
-      )
+      const words = headlineRef.current?.querySelectorAll<HTMLElement>("[data-hero-word]")
       if (words && words.length > 0) {
         tl.fromTo(
           words,
@@ -142,12 +143,7 @@ export function HeroSection() {
       )
 
       // 0.90–1.20s: CTA appears.
-      tl.fromTo(
-        ctaRef.current,
-        { autoAlpha: 0, y: 8 },
-        { autoAlpha: 1, y: 0, duration: 0.3 },
-        0.9,
-      )
+      tl.fromTo(ctaRef.current, { autoAlpha: 0, y: 8 }, { autoAlpha: 1, y: 0, duration: 0.3 }, 0.9)
 
       // 1.20s+: visual fades in. (Idle
       // motion is CSS — see HeroVisual.)
@@ -208,8 +204,8 @@ export function HeroSection() {
           ref={subheadlineRef}
           className="mx-auto mt-6 max-w-2xl text-base text-muted-foreground sm:text-lg"
         >
-          Hybrid search, a live knowledge graph, and agents that
-          reason over your docs — with citations, on every answer.
+          Hybrid search, a live knowledge graph, and agents that reason over your docs — with
+          citations, on every answer.
         </p>
 
         <div
@@ -217,7 +213,14 @@ export function HeroSection() {
           className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row"
         >
           <Button asChild size="lg" className="min-w-[180px]">
-            <Link href="/register">Start free</Link>
+            <Link
+              href="/register"
+              onClick={() => {
+                track(MARKETING_CTA_CLICKED, { location: "hero" })
+              }}
+            >
+              Start free
+            </Link>
           </Button>
           {/*
             F8 Part 5 — the secondary CTA
@@ -231,13 +234,14 @@ export function HeroSection() {
             the hero doesn't need to
             duplicate it.
           */}
-          <Button
-            asChild
-            size="lg"
-            variant="outline"
-            className="min-w-[180px]"
-          >
-            <a href="#demo" data-testid="hero-see-it-work">
+          <Button asChild size="lg" variant="outline" className="min-w-[180px]">
+            <a
+              href="#demo"
+              data-testid="hero-see-it-work"
+              onClick={() => {
+                track(MARKETING_CTA_CLICKED, { location: "hero_demo" })
+              }}
+            >
               <span>See it work</span>
               <ArrowDown className="ml-2 h-4 w-4" aria-hidden />
             </a>

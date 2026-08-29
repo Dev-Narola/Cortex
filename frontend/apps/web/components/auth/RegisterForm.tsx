@@ -31,11 +31,13 @@ import { Controller, useForm } from "react-hook-form"
 
 import { Button, Checkbox, Input, Label, Spinner, Text } from "@cortex/ui"
 
+import { resolvePostAuthDestination } from "@/lib/auth/post-auth-destination"
 import { type RegisterInput, registerSchema } from "@/lib/auth/register.schema"
 import { type AuthSession, useAuthStore } from "@/lib/auth/store"
-import { resolvePostAuthDestination } from "@/lib/auth/post-auth-destination"
 import { toFrontendError } from "@/lib/http/errors"
 import { register as registerUser, toAuthUser } from "@/services/auth"
+
+import { SIGNUP_COMPLETED, SIGNUP_FAILED, SIGNUP_STARTED, track } from "@/lib/analytics"
 
 export function RegisterForm() {
   const router = useRouter()
@@ -61,6 +63,13 @@ export function RegisterForm() {
 
   async function onSubmit(values: RegisterInput) {
     setServerError(null)
+    // F10-Part 4: signup_started fires on
+    // submit. Sensitive data (the actual
+    // email / name / password) is NOT
+    // included — only the metadata.
+    track(SIGNUP_STARTED, {
+      invite_token: new URLSearchParams(window.location.search).has("invite"),
+    })
     try {
       const data = await registerUser({
         name: values.name,
@@ -75,9 +84,19 @@ export function RegisterForm() {
         tenant: data.tenant,
       }
       storeLogin(session)
+      // F10-Part 4: signup_completed fires
+      // on the success path. The user is
+      // identified by an opaque ID only
+      // — never the email.
+      track(SIGNUP_COMPLETED)
       router.push(resolvePostAuthDestination(null) as never)
     } catch (err) {
+      // F10-Part 4: signup_failed fires on
+      // the failure path. The `reason`
+      // property is a sanitised enum —
+      // never the raw server error.
       const fe = toFrontendError(err)
+      track(SIGNUP_FAILED, { reason: fe.kind })
       // Inline validation: bind field-level errors to RHF.
       if (fe.fields.length > 0) {
         for (const f of fe.fields) {
@@ -107,10 +126,7 @@ export function RegisterForm() {
         // For 422 specifically, include the status so
         // the user knows it's a backend validation
         // issue, not a form issue.
-        const detail =
-          fe.status !== null
-            ? `${fe.message} (HTTP ${fe.status})`
-            : fe.message
+        const detail = fe.status !== null ? `${fe.message} (HTTP ${fe.status})` : fe.message
         setServerError(detail)
       }
     }
