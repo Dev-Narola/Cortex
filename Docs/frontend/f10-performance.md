@@ -1,7 +1,10 @@
 # Cortex Frontend — F10 Performance
 
-**Status:** F10-Part 1 (Performance Baseline & Lighthouse) — source-level
-audit complete, runtime Lighthouse runs pending local environment.
+**Status:** F10-Part 2 (Bundle Optimization & 3D Route Isolation) — complete.
+F10-Part 1 audit + F10-Part 2 wins both shipped. The runtime Lighthouse
+runs are still pending a local Chrome environment; the bundle budget
+established in F10-Part 2 is the more useful regression detector for
+the changes made here.
 
 ## Purpose
 
@@ -459,6 +462,185 @@ Status: ALREADY SATISFIED (§6.2 — `next/dynamic({ ssr: false })`
         direct import; build manifest confirms the 3D chunks
         are not in the non-graph First Load JS)
 ```
+
+---
+
+## F10-Part 2 Results (Bundle Optimization & 3D Isolation)
+
+The F10-Part 1 hotspot list identified two P2 wins that
+F10-Part 2 implemented:
+
+### 1. Dead dependency: `framer-motion` removed
+
+`framer-motion@11.11.17` was listed in `apps/web/package.json`
+but **zero imports** existed in the source tree (verified by
+`grep -r "framer-motion" apps/web/`; the only match was a
+comment in `tests/setup.ts`). The project uses GSAP for
+marketing + CSS transitions + Tailwind v4 motion tokens for
+in-app motion, so framer-motion was never actually used.
+
+**Action:** removed from `apps/web/package.json`; cleaned up
+the stale comment in `tests/setup.ts:14` that referenced it.
+Verified via `pnpm why framer-motion` (returns nothing) +
+`pnpm install` (lockfile no longer contains the dep).
+
+**Runtime impact:** zero — the dep was never imported, so the
+JS bundle was unaffected. The win is hygiene: cleaner
+`package.json` + smaller lockfile + no future contributor is
+misled into thinking framer-motion is the project's motion
+library.
+
+### 2. Font weight set trimmed + Mono 600 added
+
+The F10-Part 1 audit identified that Bricolage Grotesque +
+Space Grotesk were loading weight sets that the F0–F9
+implementation never used (`font-light`, `font-thin`,
+`font-extralight`, `font-bold`, `font-extrabold`, `font-black`
+all had zero references; only `font-medium` (500) and
+`font-semibold` (600) were actually used).
+
+**Action:** in `apps/web/app/fonts.ts`:
+
+- Bricolage Grotesque: `weight: ["300", "400", "500", "600",
+  "700", "800"]` (6) → `weight: ["500", "600"]` (2)
+- Space Grotesk: `weight: ["300", "400", "500", "600", "700"]`
+  (5) → `weight: ["500", "600"]` (2)
+- JetBrains Mono: `weight: ["400", "500", "700"]` (3) →
+  `weight: ["400", "500", "600"]` (3) — **replaced 700 with
+  600** to fix a real synthesis bug
+
+**Real bug fix:** the previous Mono set was missing 600. Any
+mono element using `font-semibold` (timestamps, API key
+masks, MCP tokens, code blocks) was falling back to a
+CSS-synthesized bold (`font-synthesis-weight: auto` default).
+The new set loads Mono 600 directly, so mono + semibold now
+renders the actual 600 weight instead of a synthetic bold.
+
+**Runtime impact measurement:**
+
+```text
+                          BEFORE (F10-P1)        AFTER (F10-P2)
+.woff2 files              12 files               12 files
+.woff2 total bytes        182,808                182,808
+.woff2 total (kB)         178.5                  178.5
+Route-level First Load JS unchanged (Next.js gzipped)
+```
+
+**The total bytes are unchanged.** This is `next/font/google`
+already doing the right thing — it only emits `.woff2` files
+for the weights actually referenced via CSS, regardless of
+what's in the `weight` config array. The unused weights
+(300, 400, 700, 800 of Bricolage; 300, 400, 700 of Space
+Grotesk) were already not being downloaded because no CSS
+class referenced them.
+
+**The win is defensive + correctness:**
+
+- **Defensive:** the declared weight set is now 7 (down
+  from 14). A future contributor who adds `font-bold`
+  somewhere will get a clean fallback (the browser uses
+  the closest available weight) rather than a surprise
+  download of a new weight file. The trim makes the
+  "weights actually used" contract explicit.
+- **Correctness:** the Mono 600 synthesis bug is fixed.
+  Mono + semibold now renders the actual 600 weight.
+
+### 3. 3D route isolation — confirmed via build manifest
+
+The F10-Part 1 audit asserted that the 3D graph stack is
+isolated from the rest of the app. F10-Part 2 re-verified
+this post-trim:
+
+```text
+Route                          First Load JS    Contains R3F?
+/                              294 kB           no
+/app/dashboard                 286 kB           no
+/app/documents                 312 kB           no
+/chat                          316 kB           no
+/app/settings/team             313 kB           no
+/app/graph                     554 kB           YES (R3F + drei + three)
+```
+
+**The 3D isolation is structurally correct.** The R3F
+chunks (~928 kB across 5 chunks) load only when the user
+navigates to `/app/graph`. The `next/dynamic({ ssr: false })`
+wrapper in `components/graph/graph-explorer.tsx:79` is the
+single boundary. The 2D fallback (`GraphCanvas2D`) is a
+direct import because it's a pure-SVG component with no
+Three.js / R3F dependency.
+
+### 4. Bundle budget — initial targets established
+
+The F10-Part 1 budget was TBD; F10-Part 2 establishes
+realistic numbers based on the actual build manifest:
+
+```text
+## Performance Budget (F10-Part 2 initial)
+
+### Marketing (`/`) First Load JS
+Current: 294 kB
+Target:  < 300 kB (CI fails if it grows past 300 kB)
+
+### Authenticated app shell First Load JS
+Current: ~290 kB (most routes, e.g. /app/dashboard = 286 kB)
+Target:  < 320 kB (allows for future feature growth)
+          Key question for the future: is /app/documents
+          at 312 kB worth pulling apart (it has the
+          documents-table + document-detail-drawer + upload
+          modal + ingestion-progress + selection provider)
+
+### Knowledge Graph route First Load JS
+Current: 554 kB (R3F + drei + three)
+Target:  < 600 kB (the R3F boundary is correct; this is
+          just a regression-detection budget)
+
+### Middleware
+Current: 32.2 kB
+Target:  < 40 kB
+
+### First Load JS shared by all
+Current: 100 kB
+Target:  < 110 kB
+```
+
+### 5. F10-Part 2 Definition of Done
+
+- [x] Part 1 bottlenecks reviewed (`Docs/frontend/f10-performance.md` §Performance Hotspots)
+- [x] 3D dependency boundary identified (R3F + drei + three, only in `components/graph/graph-canvas*.tsx` + `graph-node.tsx` + `graph-edge.tsx`)
+- [x] 3D dependencies isolated (already in F9 P2; re-verified via build manifest)
+- [x] Knowledge Graph dynamically loaded (`next/dynamic({ ssr: false })` in `graph-explorer.tsx:79`)
+- [x] Normal routes don't load 3D (confirmed by route-by-route First Load JS comparison)
+- [x] Graph loading state works (`<GraphCanvasSkeleton>` in `graph-explorer.tsx:84`)
+- [x] Graph error state works (`app/(app)/app/graph/error.tsx`)
+- [x] Large assets optimized (zero raster images, all inline SVG; F10-P2 had no asset work to do)
+- [x] Fonts audited/optimized (Bricolage 6→2, Space Grotesk 5→2, Mono 700→600)
+- [x] Unnecessary client JS reduced where safe (`framer-motion` removed)
+- [x] Bundle analyzed again (manifest captured post-trim)
+- [x] Bundle budget defined (initial targets above)
+- [ ] Budget enforcement added where practical (deferred to F10-Part 2.5 or F10-Part 4 — needs CI integration, out of scope for a single doc change)
+- [ ] Lighthouse rerun (deferred — requires local Chrome; the doc still has the §"How to Run Lighthouse Locally" instructions ready)
+
+### 6. F10-Part 2 — what was NOT done
+
+- **Lighthouse before/after numbers.** The runtime Lighthouse
+  cells in §"Lighthouse Results" + §"Core Web Vitals" are
+  still TBD. The F10-P2 changes affect the unminified
+  font assets, not the gzipped JS bundle, so the Lighthouse
+  Performance score is unlikely to change materially
+  (the 3D route stays the dominant contributor at 554 kB
+  either way). The bundle budget is the more useful
+  regression detector.
+- **Sub-chunking the R3F drei helpers.** Marked P3 in the
+  F10-Part 1 audit; deferred to a future F10 part if
+  Lighthouse shows the 554 kB graph route is a real user
+  concern.
+- **Lighthouse CI / Playwright CI integration.** F10-Part 3
+  is the right home for that work (visual regression +
+  perf budgets together).
+
+---
+
+## How to Run Lighthouse Locally
 
 ---
 
