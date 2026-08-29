@@ -285,7 +285,7 @@ describe("Reduced-motion behaviour catalogue (F9 P3)", () => {
     // `animate-pulse` is still in the
     // className is fine — the global
     // rule handles it.
-    expect(glow.className).toMatch(/opacity-100/)
+    expect(glow?.className ?? "").toMatch(/opacity-100/)
     // The dot caret is also present.
     expect(within(article).getAllByText(/assistant/i).length).toBeGreaterThan(0)
   })
