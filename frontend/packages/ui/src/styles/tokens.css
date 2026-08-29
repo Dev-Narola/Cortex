@@ -97,6 +97,26 @@
   --paper-800: oklch(0.3 0.019 80);
   --paper-900: oklch(0.2 0.021 80);
 
+  /* Mist — the cool-gray secondary text
+     colour called out in the UI/UX spec
+     as the body / caption / muted
+     foreground. Shades 50-900. Mid-tones
+     (Mist 500 / Mist 700) are the canonical
+     "Mist" used in the spec. Cool hue
+     (~250°) for a calm, slightly-blue
+     gray that stays readable in both
+     the light and dark themes. */
+  --mist-50: oklch(0.97 0.004 250);
+  --mist-100: oklch(0.93 0.006 250);
+  --mist-200: oklch(0.86 0.009 250);
+  --mist-300: oklch(0.78 0.011 250);
+  --mist-400: oklch(0.7 0.013 250);
+  --mist-500: oklch(0.617 0.014 250);
+  --mist-600: oklch(0.55 0.014 250);
+  --mist-700: oklch(0.494 0.014 250);
+  --mist-800: oklch(0.35 0.014 250);
+  --mist-900: oklch(0.25 0.014 250);
+
   /* Semantic */
   --background: var(--cloud-50);
   --foreground: var(--ink-900);

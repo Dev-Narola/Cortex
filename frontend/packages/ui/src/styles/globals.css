@@ -117,6 +117,17 @@
   --color-paper-800: var(--paper-800);
   --color-paper-900: var(--paper-900);
 
+  --color-mist-50: var(--mist-50);
+  --color-mist-100: var(--mist-100);
+  --color-mist-200: var(--mist-200);
+  --color-mist-300: var(--mist-300);
+  --color-mist-400: var(--mist-400);
+  --color-mist-500: var(--mist-500);
+  --color-mist-600: var(--mist-600);
+  --color-mist-700: var(--mist-700);
+  --color-mist-800: var(--mist-800);
+  --color-mist-900: var(--mist-900);
+
   /* Semantic */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
