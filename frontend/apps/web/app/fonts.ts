@@ -48,19 +48,32 @@ export const displayFont = Bricolage_Grotesque({
   subsets: ["latin"],
   variable: "--font-display",
   display: "swap",
-  weight: ["300", "400", "500", "600", "700", "800"],
+  // F10-Part 2: trimmed from 6 weights to 2. The F0–F9
+  // implementation only uses `font-medium` (500) and
+  // `font-semibold` (600) on display surfaces — the 300,
+  // 400, 700, 800 weights were never referenced.
+  weight: ["500", "600"],
 })
 
 export const bodyFont = Space_Grotesk({
   subsets: ["latin"],
   variable: "--font-sans",
   display: "swap",
-  weight: ["300", "400", "500", "600", "700"],
+  // F10-Part 2: trimmed from 5 weights to 2. The body
+  // text also only uses `font-medium` (500) and
+  // `font-semibold` (600) across the F0–F9 implementation.
+  weight: ["500", "600"],
 })
 
 export const monoFont = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-mono",
   display: "swap",
-  weight: ["400", "500", "700"],
+  // F10-Part 2: kept 400 + 500, ADDED 600. The F0–F9
+  // implementation uses `font-medium` and `font-semibold`
+  // on mono elements (timestamps, API key masks, MCP
+  // tokens, code blocks). The previous set was missing
+  // 600 entirely, so any mono + semibold element fell
+  // back to a CSS-synthesized bold.
+  weight: ["400", "500", "600"],
 })

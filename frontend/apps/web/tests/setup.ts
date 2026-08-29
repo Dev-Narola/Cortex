@@ -11,7 +11,7 @@
  *      (`toBeInTheDocument`, `toHaveTextContent`, etc.).
  *   2. Stubs `matchMedia` (not implemented in happy-dom).
  *   3. Stubs `IntersectionObserver` / `ResizeObserver` (not in
- *      happy-dom, used by framer-motion + future components).
+ *      happy-dom, used by scroll-spy hooks + future components).
  *   4. Stubs `crypto.randomUUID` for the rare Node test env that
  *      doesn't expose it.
  *   5. Auto-cleans up between tests so DOM state doesn't leak.
