@@ -32,7 +32,7 @@
  * (Task 35.)
  */
 
-import { CircleDot, TriangleAlert, Terminal } from "lucide-react"
+import { CircleDot, Terminal, TriangleAlert } from "lucide-react"
 
 import { formatLatency } from "./formatLatency"
 
@@ -61,15 +61,7 @@ export interface AgentTraceStepProps {
 }
 
 export function AgentTraceStep(props: AgentTraceStepProps) {
-  const {
-    name,
-    resultSummary,
-    latencyMs,
-    status = "ok",
-    error,
-    isLast = false,
-    index,
-  } = props
+  const { name, resultSummary, latencyMs, status = "ok", error, isLast = false, index } = props
 
   const isError = status === "error"
 
@@ -91,15 +83,13 @@ export function AgentTraceStep(props: AgentTraceStepProps) {
           aria-hidden="true"
           className={cn(
             "z-10 flex h-2.5 w-2.5 items-center justify-center rounded-full",
-            isError
-              ? "bg-[var(--warning,#f59e0b)]"
-              : "bg-[var(--volt,#16a34a)]",
+            isError ? "bg-warning" : "bg-volt-400",
           )}
         />
         {!isLast ? (
           <span
             aria-hidden="true"
-            className="absolute left-1/2 top-3 h-full w-px -translate-x-1/2 bg-[var(--volt,#16a34a)]/40"
+            className="absolute left-1/2 top-3 h-full w-px -translate-x-1/2 bg-volt-400/40"
           />
         ) : null}
       </div>
@@ -109,44 +99,33 @@ export function AgentTraceStep(props: AgentTraceStepProps) {
           row. Flex-wrap so long tool names don't
           push the latency out of view on mobile. */}
       <div
-        className={cn(
-          "min-w-0 flex-1 rounded-md border border-[var(--border,#1f2937)]",
-          "bg-[var(--surface-muted,#111827)]/40 px-3 py-2",
-        )}
+        className={cn("min-w-0 flex-1 rounded-md border border-border", "bg-muted/40 px-3 py-2")}
       >
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
           <span
             className={cn(
               "inline-flex items-center gap-1.5 font-mono text-xs",
-              isError
-                ? "text-[var(--warning,#f59e0b)]"
-                : "text-[var(--text,#e5e7eb)]",
+              isError ? "text-warning" : "text-foreground",
             )}
           >
             {isError ? (
-              <TriangleAlert
-                className="h-3 w-3 shrink-0"
-                aria-hidden="true"
-              />
+              <TriangleAlert className="h-3 w-3 shrink-0" aria-hidden="true" />
             ) : name === "generate_answer" ? (
-              <Terminal
-                className="h-3 w-3 shrink-0 text-[var(--text-muted,#9ca3af)]"
-                aria-hidden="true"
-              />
+              <Terminal className="h-3 w-3 shrink-0 text-muted-foreground" aria-hidden="true" />
             ) : null}
             <span className="break-all" data-testid="agent-step-name">
               {name}
             </span>
           </span>
           <span
-            className="ml-auto font-mono text-[11px] tabular-nums text-[var(--text-muted,#9ca3af)]"
+            className="ml-auto font-mono text-[11px] tabular-nums text-muted-foreground"
             data-testid="agent-step-latency"
           >
             {formatLatency(latencyMs)}
           </span>
         </div>
         <p
-          className="mt-1 text-xs leading-relaxed text-[var(--text-muted,#9ca3af)]"
+          className="mt-1 text-xs leading-relaxed text-muted-foreground"
           data-testid="agent-step-summary"
         >
           {isError && error ? error : resultSummary}

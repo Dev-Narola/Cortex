@@ -35,10 +35,7 @@ export function AgentRunHeader({ runId, agentId }: AgentRunHeaderProps) {
 
   if (query.isPending) {
     return (
-      <div
-        className="flex flex-col gap-2"
-        data-testid="agent-run-header-loading"
-      >
+      <div className="flex flex-col gap-2" data-testid="agent-run-header-loading">
         <Skeleton className="h-5 w-64" />
         <Skeleton className="h-4 w-96" />
       </div>
@@ -48,7 +45,7 @@ export function AgentRunHeader({ runId, agentId }: AgentRunHeaderProps) {
   if (query.isError) {
     return (
       <div
-        className="rounded-md border border-[var(--border,#1f2937)] p-3 text-sm text-[var(--text-muted,#9ca3af)]"
+        className="rounded-md border border-border p-3 text-sm text-muted-foreground"
         data-testid="agent-run-header-error"
         role="alert"
       >
@@ -60,31 +57,29 @@ export function AgentRunHeader({ runId, agentId }: AgentRunHeaderProps) {
   const run = query.data
   return (
     <header
-      className="rounded-md border border-[var(--border,#1f2937)] bg-[var(--surface,#0b1220)]/60 p-4"
+      className="rounded-md border border-border bg-card/60 p-4"
       data-testid="agent-run-header"
       data-run-status={run.status}
     >
-      <div className="flex flex-wrap items-baseline gap-2 text-xs text-[var(--text-muted,#9ca3af)]">
-        <span className="font-medium uppercase tracking-wide">
-          {run.status}
+      <div className="flex flex-wrap items-baseline gap-2 text-xs text-muted-foreground">
+        <span className="font-medium uppercase tracking-wide">{run.status}</span>
+        <span aria-hidden="true">·</span>
+        <span>
+          {run.iterations} iteration{run.iterations === 1 ? "" : "s"}
         </span>
         <span aria-hidden="true">·</span>
-        <span>{run.iterations} iteration{run.iterations === 1 ? "" : "s"}</span>
+        <span>
+          {run.toolCallCount} tool call{run.toolCallCount === 1 ? "" : "s"}
+        </span>
         <span aria-hidden="true">·</span>
-        <span>{run.toolCallCount} tool call{run.toolCallCount === 1 ? "" : "s"}</span>
-        <span aria-hidden="true">·</span>
-        <span>{run.totalTokens} token{run.totalTokens === 1 ? "" : "s"}</span>
+        <span>
+          {run.totalTokens} token{run.totalTokens === 1 ? "" : "s"}
+        </span>
         <span aria-hidden="true">·</span>
         <span className="font-mono">{agentId}</span>
       </div>
-      <p className="mt-2 text-sm text-[var(--text,#e5e7eb)]">
-        {run.input}
-      </p>
-      {run.output ? (
-        <p className="mt-2 text-sm text-[var(--text-muted,#9ca3af)]">
-          {run.output}
-        </p>
-      ) : null}
+      <p className="mt-2 text-sm text-foreground">{run.input}</p>
+      {run.output ? <p className="mt-2 text-sm text-muted-foreground">{run.output}</p> : null}
     </header>
   )
 }

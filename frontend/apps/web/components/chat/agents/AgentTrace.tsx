@@ -51,12 +51,7 @@
 
 import { useState } from "react"
 
-import {
-  ChevronDown,
-  Loader,
-  RefreshCw,
-  Sparkles,
-} from "lucide-react"
+import { ChevronDown, Loader, RefreshCw, Sparkles } from "lucide-react"
 
 import { Button } from "@cortex/ui"
 
@@ -142,11 +137,7 @@ export function AgentTrace(props: AgentTraceProps) {
   return (
     <section
       aria-label="Agent trace"
-      className={cn(
-        "rounded-md border border-[var(--border,#1f2937)]",
-        "bg-[var(--surface,#0b1220)]/60",
-        className,
-      )}
+      className={cn("rounded-md border border-border", "bg-card/60", className)}
       data-testid="agent-trace"
       data-run-id={runId}
     >
@@ -157,21 +148,15 @@ export function AgentTrace(props: AgentTraceProps) {
         aria-controls="agent-trace-panel"
         className={cn(
           "group flex w-full items-center gap-2 px-3 py-2 text-left",
-          "text-xs text-[var(--text-muted,#9ca3af)]",
-          "hover:bg-[var(--surface-muted,#111827)]/60",
+          "text-xs text-muted-foreground",
+          "hover:bg-muted/60",
           "focus-visible:outline-none focus-visible:ring-2",
-          "focus-visible:ring-[var(--volt,#16a34a)]/40",
+          "focus-visible:ring-volt-500/40",
         )}
         data-testid="agent-trace-toggle"
       >
-        <Sparkles
-          className="h-3.5 w-3.5 shrink-0 text-[var(--text-muted,#6b7280)]"
-          aria-hidden="true"
-        />
-        <span
-          className="font-medium text-[var(--text,#e5e7eb)]"
-          data-testid="agent-trace-label"
-        >
+        <Sparkles className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+        <span className="font-medium text-foreground" data-testid="agent-trace-label">
           {collapsedLabel}
         </span>
         <ChevronDown
@@ -186,7 +171,7 @@ export function AgentTrace(props: AgentTraceProps) {
       {expanded ? (
         <div
           id="agent-trace-panel"
-          className="border-t border-[var(--border,#1f2937)] px-3 py-3"
+          className="border-t border-border px-3 py-3"
           data-testid="agent-trace-panel"
         >
           {query.isPending ? (
@@ -200,10 +185,7 @@ export function AgentTrace(props: AgentTraceProps) {
           ) : stepCount === 0 ? (
             <AgentTraceEmpty />
           ) : (
-            <ol
-              className="flex flex-col gap-3"
-              data-testid="agent-trace-steps"
-            >
+            <ol className="flex flex-col gap-3" data-testid="agent-trace-steps">
               {query.data?.toolCalls.map((tc, idx) => (
                 <AgentTraceStep
                   key={tc.id}
@@ -220,7 +202,7 @@ export function AgentTrace(props: AgentTraceProps) {
           )}
           {query.data ? (
             <p
-              className="mt-3 text-[10px] uppercase tracking-wide text-[var(--text-muted,#6b7280)]"
+              className="mt-3 text-[10px] uppercase tracking-wide text-muted-foreground"
               data-testid="agent-trace-run-meta"
             >
               {countLabel(stepCount)} · {formatLatency(totalLatency(query.data.toolCalls))} total
@@ -247,15 +229,11 @@ function AgentTraceSkeleton() {
     >
       <span className="sr-only">Loading agent trace</span>
       {Array.from({ length: 3 }).map((_, idx) => (
-        <div
-          key={idx}
-          className="flex animate-pulse gap-3"
-          data-testid="agent-trace-skeleton-row"
-        >
-          <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-[var(--border,#1f2937)]" />
+        <div key={idx} className="flex animate-pulse gap-3" data-testid="agent-trace-skeleton-row">
+          <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-muted" />
           <div className="flex-1 space-y-1.5">
-            <div className="h-3 w-32 rounded bg-[var(--border,#1f2937)]" />
-            <div className="h-2 w-48 rounded bg-[var(--border,#1f2937)]/60" />
+            <div className="h-3 w-32 rounded bg-muted" />
+            <div className="h-2 w-48 rounded bg-muted/60" />
           </div>
         </div>
       ))}
@@ -265,22 +243,14 @@ function AgentTraceSkeleton() {
 
 function AgentTraceError({ onRetry }: { onRetry: () => void }) {
   return (
-    <div
-      className="flex flex-col items-start gap-2"
-      data-testid="agent-trace-error"
-      role="alert"
-    >
-      <p className="text-xs text-[var(--text-muted,#9ca3af)]">
-        Agent trace couldn't be loaded.
-      </p>
+    <div className="flex flex-col items-start gap-2" data-testid="agent-trace-error" role="alert">
+      <p className="text-xs text-muted-foreground">Agent trace couldn't be loaded.</p>
       <Button
         type="button"
         variant="ghost"
         size="sm"
         onClick={onRetry}
-        iconLeft={
-          <RefreshCw className="h-3 w-3" aria-hidden="true" />
-        }
+        iconLeft={<RefreshCw className="h-3 w-3" aria-hidden="true" />}
         data-testid="agent-trace-retry"
       >
         Retry
@@ -291,10 +261,7 @@ function AgentTraceError({ onRetry }: { onRetry: () => void }) {
 
 function AgentTraceEmpty() {
   return (
-    <p
-      className="text-xs text-[var(--text-muted,#9ca3af)]"
-      data-testid="agent-trace-empty"
-    >
+    <p className="text-xs text-muted-foreground" data-testid="agent-trace-empty">
       The agent run did not call any tools.
     </p>
   )
@@ -305,10 +272,7 @@ function AgentTraceEmpty() {
 // immediate feedback that the click was registered.
 export function AgentTracePendingDot() {
   return (
-    <Loader
-      className="ml-1 inline h-3 w-3 animate-spin text-[var(--text-muted,#6b7280)]"
-      aria-hidden="true"
-    />
+    <Loader className="ml-1 inline h-3 w-3 animate-spin text-muted-foreground" aria-hidden="true" />
   )
 }
 
@@ -316,9 +280,7 @@ export function AgentTracePendingDot() {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function totalLatency(
-  toolCalls: ReadonlyArray<{ latencyMs: number | null }>,
-): number | null {
+function totalLatency(toolCalls: ReadonlyArray<{ latencyMs: number | null }>): number | null {
   const valid = toolCalls
     .map((tc) => tc.latencyMs)
     .filter((ms): ms is number => typeof ms === "number" && ms > 0)
