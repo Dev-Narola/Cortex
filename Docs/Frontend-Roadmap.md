@@ -397,6 +397,12 @@ An audit-and-fill-gaps pass across everything built in F0–F8, not a from-scrat
 
 **Definition of done:** a complete pass using dev-tools mobile emulation, reduced-motion emulation, and keyboard-only navigation across every single screen — no dead ends, no missing focus states.
 
+**Status (2026-08-29):** F10 — Ongoing Hardening — **Part 1 shipped** (source-level performance baseline + Lighthouse run instructions). The 3D route is already isolated behind `next/dynamic({ ssr: false })` (F9 P2 work); F10-P1 confirmed the isolation via build manifest + chunk reference check. Parts 2–5 still pending.
+
+* **Part 1** — Performance Baseline & Lighthouse (source-level audit only — the runtime Lighthouse cells are left TBD because they require a live browser session + Chrome + the `lighthouse` CLI, which are not available in this environment; the doc `Docs/frontend/f10-performance.md` provides the exact `npx lighthouse` commands for the local run; the source-level findings are sufficient to begin Part 2). Key findings: most authenticated app routes sit at ~290 kB First Load JS, marketing `/` 294 kB, `/app/graph` 554 kB (R3F + drei + three, already dynamic-imported), shared by all routes 100 kB; 122 `use client` directives (no unnecessary client components); 1 dynamic import (the R3F GraphCanvas, already isolated); GSAP lazy-loaded via `void import("gsap")`; **3D route already isolated** — the 5 R3F + drei + three chunks (~928 kB) are not in the main app shell, confirmed by the build manifest + a chunk-reference check on `main-4f86159c8fa94e70.js`; **dead dep identified: `framer-motion`** (listed in `package.json` but zero imports in source — the project uses GSAP for marketing + CSS transitions + Tailwind v4 motion tokens for in-app motion; safe to remove in F10-P2); **font weight over-provisioning** (Bricolage 6 weights loaded using 2, Space Grotesk 5 using 2, Mono 3 using 2 but 600 not loaded so mono + semibold falls back to CSS-synthesized bold); zero raster images (everything is inline SVG); zero third-party scripts; env config clean (all backend URLs through Zod-validated `packages/config/src/env.ts`); F10-P2's optimization queue is the dead `framer-motion` removal + the font weight trim + confirming the 3D isolation via measurement)
+
+**Next phase:** F10 Part 2 — Bundle Optimization & 3D Route Isolation (the 3D route is already isolated; Part 2 removes the dead `framer-motion` dep, trims the font weight sets, and re-runs Lighthouse to populate the before/after table).
+
 ---
 
 ### F10+ — Ongoing Hardening
