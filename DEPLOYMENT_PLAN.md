@@ -67,7 +67,7 @@ streams + cites; `GET /tenants/me/usage` > 0; KG entities > 0; API-key + MCP cal
 
 1. Code: `git -C /opt/cortex checkout a76d4ee && git stash pop` (restores the exact pre-change tree), then `docker compose build api worker && docker compose up -d api worker`.
 2. Config: restore `.env` from the backup taken in D1.
-3. Schema (D4): `alembic downgrade -1` recreates `vector(1024)` (vectors stay empty); with the old embedding model retired there's nothing to restore, so re-embed with the active model.
+3. Schema: `docker exec cortex-api alembic downgrade v8_create_mcp_tables` reverts w4..w1 (column back to `vector(1024)`, empty; the old model is retired, so prefer restoring the D1 dump).
 4. Database: `pg_restore --clean -d cortex <dump>` from the D1 dump.
 
 ## Health checks after each step
