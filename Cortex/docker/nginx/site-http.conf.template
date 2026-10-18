@@ -1,0 +1,14 @@
+# HTTP site (bootstrap / no certificate yet). Serves the API on :80 and the
+# ACME challenge so certbot can issue a certificate. Selected by
+# NGINX_SITE=http (the default) in docker/.env.
+server {
+    listen      80 default_server;
+    listen      [::]:80 default_server;
+    server_name _;
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    include /etc/nginx/cortex-locations.conf;
+}

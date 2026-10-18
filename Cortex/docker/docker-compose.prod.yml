@@ -318,6 +318,8 @@ services:
     image: nginx:1.27-alpine
     container_name: cortex-nginx
     restart: unless-stopped
+    environment:
+      CORTEX_PUBLIC_HOST: ${CORTEX_PUBLIC_HOST:-localhost}
     ports:
       # The public surface. ALB is in front of these.
       - "80:80"
@@ -329,15 +331,17 @@ services:
       # ``./nginx/*`` references resolve to
       # ``Docker/nginx/*`` on the host.
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      # Site template chosen by NGINX_SITE (http | tls); the image renders
+      # it to conf.d/default.conf with envsubst (CORTEX_PUBLIC_HOST).
+      - ./nginx/site-${NGINX_SITE:-http}.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - ./nginx/cortex-locations.conf:/etc/nginx/cortex-locations.conf:ro
+      # certbot webroot + certificates (written by the certbot container).
+      - /opt/cortex/acme:/var/www/certbot:ro
+      - /opt/cortex/letsencrypt:/etc/letsencrypt:ro
       # Writable directory for cached bodies, temp files, and
       # the access/error logs that the docker compose ``logs``
       # command tails.
       - nginx_logs:/var/log/nginx
-      # When TLS is enabled, the certificate and key are
-      # rendered here by ``scripts/deploy.sh`` after fetching
-      # them from AWS ACM / Let's Encrypt. Mounted read-only.
-      - /etc/cortex/tls:/etc/nginx/tls:ro
     depends_on:
       api:
         condition: service_healthy

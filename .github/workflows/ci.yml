@@ -67,8 +67,19 @@ jobs:
           out=$(mypy src 2>&1); echo "$out" | tail -1
           n=$(echo "$out" | sed -n 's/^Found \([0-9]*\) errors.*/\1/p'); n=${n:-0}
           test "$n" -le 116 || { echo "mypy errors grew to $n (baseline 116)"; exit 1; }
+      - name: Installed versions
+        run: pip freeze | grep -iE "^(pytest|fastapi|starlette|sqlalchemy|pydantic|httpx|redis|strawberry)" | tee versions.txt
       - name: Tests + coverage gate
-        run: pytest -q
+        run: |
+          set -o pipefail
+          pytest -q 2>&1 | tee pytest.log
+      # Job logs need admin rights to read; annotations are public.
+      - name: Surface test failure
+        if: failure()
+        run: |
+          python scripts/ci_annotate.py "versions" < versions.txt
+          tail -c 3500 pytest.log | python scripts/ci_annotate.py "pytest tail"
+          grep -E "^(FAILED|ERROR)" pytest.log | head -20 | python scripts/ci_annotate.py "pytest failures"
       - name: Migrations upgrade / downgrade / upgrade
         run: |
           alembic upgrade head
