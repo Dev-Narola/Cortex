@@ -32,7 +32,7 @@ from collections.abc import AsyncIterator
 from datetime import UTC, datetime
 from typing import Any
 
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from src.conversation.application.context_manager import ContextWindowManager
 from src.conversation.domain.entities import Citation, Message, MessageRole
@@ -54,10 +54,10 @@ logger = logging.getLogger(__name__)
 # quality.
 _MAX_SOURCES = 5
 
-# Default number of recent messages to include in the prompt. The
-# ContextWindowManager may keep fewer if the conversation is very
-# long; this is the upper bound.
-_RECENT_MESSAGE_BUDGET = 20
+# Upper bound on messages loaded after the summary marker. The
+# ContextWindowManager compacts anything over the token budget, so this
+# only guards against pathological threads.
+_HISTORY_LOAD_LIMIT = 500
 
 # Maximum length of a single source excerpt shown to the LLM. The
 # full chunk is stored on the citation; the prompt gets a trimmed
@@ -80,7 +80,7 @@ class AnswerQueryService:
         *,
         llm_provider: LLMProvider,
         search_service: HybridSearchService,
-        db: AsyncSession,
+        db: Session,
         model_name: str | None = None,
         temperature: float | None = None,
         billable: BillableRecorder | None = None,
@@ -137,15 +137,29 @@ class AnswerQueryService:
         if not query or not query.strip():
             return
 
-        # 1) Load recent history.
-        recent_messages = await self._load_recent_messages(
+        # 1) History since the last summary, then fit it to the context
+        #    budget (compacting the oldest turns into the summary — FR-CHAT-02).
+        summary, recent_messages = await self._load_history(
             tenant_id=tenant_id,
             conversation_id=conversation_id,
         )
-        summary = await self._load_summary(
-            tenant_id=tenant_id,
-            conversation_id=conversation_id,
+        # The route persists the current question before calling us; it is
+        # sent as the final USER message, so don't repeat it in history.
+        if recent_messages and recent_messages[-1].content == query:
+            recent_messages = recent_messages[:-1]
+        new_summary, kept = await self._context_manager.get_usable_context(
+            recent_messages, summary
         )
+        if new_summary and new_summary != summary and len(kept) < len(recent_messages):
+            compacted = recent_messages[: len(recent_messages) - len(kept)]
+            await self._save_summary(
+                tenant_id=tenant_id,
+                conversation_id=conversation_id,
+                summary=new_summary,
+                summarized_through=compacted[-1].created_at,
+            )
+            self._record_completion(tenant_id, conversation_id, "success", operation="summarize")
+        summary, recent_messages = new_summary, kept
 
         # 2) Hybrid search.
         try:
@@ -178,21 +192,8 @@ class AnswerQueryService:
         for citation in citations:
             yield {"kind": "citation", "citation": citation}
 
-        # 5) Stream tokens. Any provider error surfaces as an
-        #    exception caught by the WebSocket route, which emits
-        #    ``error`` and finishes the turn.
-        #
-        # V4: token counting is best-effort here. The
-        # streaming path doesn't yet request the usage
-        # chunk from the OpenAI SDK, so we approximate via
-        # the cumulative output character count
-        # (4-chars-per-token heuristic, like the embedding
-        # path) for the output side, and the prompt
-        # message-character count for the input side. The
-        # V5 work to plumb ``include_usage`` through will
-        # replace these estimates with exact values; the
-        # billable recorder's contract is unchanged.
-        output_chars = 0
+        # 5) Stream tokens. Provider errors propagate to the route, which
+        #    emits ``error`` and ends the turn.
         outcome = "success"
         try:
             async for token in self._llm.stream(
@@ -202,75 +203,92 @@ class AnswerQueryService:
             ):
                 if not token:
                     continue
-                output_chars += len(token)
                 yield {"kind": "token", "content": token}
         except Exception:  # noqa: BLE001
             outcome = "failure"
             raise
         finally:
-            if self._billable is not None:
-                input_tokens = sum(
-                    max(1, len(m.content) // 4) for m in prompt_messages
-                )
-                output_tokens = max(1, output_chars // 4)
-                self._billable.record_completion(
-                    tenant_id=tenant_id,
-                    model=self.model_name,
-                    input_tokens=input_tokens,
-                    output_tokens=output_tokens,
-                    operation="stream",
-                    provider="openai",
-                    outcome=outcome,
-                    conversation_id=str(conversation_id),
-                )
+            self._record_completion(tenant_id, conversation_id, outcome, operation="stream")
+
+    def _record_completion(
+        self, tenant_id, conversation_id, outcome: str, *, operation: str
+    ) -> None:
+        """Record the provider-reported token usage (0 when the provider sent none)."""
+        if self._billable is None:
+            return
+        usage = getattr(self._llm, "last_usage", None) or {}
+        if not usage:
+            logger.warning("LLM provider reported no token usage for this completion.")
+        self._billable.record_completion(
+            tenant_id=tenant_id,
+            model=self.model_name,
+            input_tokens=usage.get("prompt_tokens", 0),
+            output_tokens=usage.get("completion_tokens", 0),
+            operation=operation,
+            provider=getattr(self._llm, "provider", "unknown"),
+            outcome=outcome,
+            conversation_id=str(conversation_id),
+        )
+        try:
+            self._db.commit()
+        except Exception:  # noqa: BLE001 - usage must never break the answer
+            logger.exception("Failed to commit usage event")
+            self._db.rollback()
 
     # ------------------------------------------------------------------
     # Internals
     # ------------------------------------------------------------------
 
-    async def _load_recent_messages(
+    async def _load_history(
         self,
         *,
         tenant_id: uuid.UUID,
         conversation_id: uuid.UUID,
-    ) -> list[Message]:
-        """
-        Load up to ``_RECENT_MESSAGE_BUDGET`` most recent messages.
+    ) -> tuple[str | None, list[Message]]:
+        """``(summary, messages after the summary marker)``, oldest first.
 
-        Wrapped in ``asyncio.to_thread`` because the existing
-        repository is sync (V2-era). For V4 we will add an
-        async-native repository and drop the thread hop.
+        The repositories are sync; one thread hop keeps the event loop free.
         """
         import asyncio
 
-        repo = ConversationMessageRepository(self._db)  # type: ignore[arg-type]
-        return list(
-            await asyncio.to_thread(
-                repo.list_for_conversation,
+        from src.conversation.infrastructure.repositories import ConversationRepository
+
+        def _load():
+            summary, through = ConversationRepository(self._db).get_summary_state(
+                conversation_id, tenant_id=tenant_id
+            )
+            messages = ConversationMessageRepository(self._db).list_for_conversation(
                 conversation_id,
                 tenant_id=tenant_id,
-                limit=_RECENT_MESSAGE_BUDGET,
+                limit=_HISTORY_LOAD_LIMIT,
+                after=through,
             )
-        )
+            return summary, list(messages)
 
-    async def _load_summary(
+        return await asyncio.to_thread(_load)
+
+    async def _save_summary(
         self,
         *,
         tenant_id: uuid.UUID,
         conversation_id: uuid.UUID,
-    ) -> str | None:
-        """Return the conversation's stored summary, if any."""
+        summary: str,
+        summarized_through: datetime,
+    ) -> None:
         import asyncio
 
-        from src.conversation.infrastructure.repositories import (
-            ConversationRepository,
-        )
+        from src.conversation.infrastructure.repositories import ConversationRepository
 
-        repo = ConversationRepository(self._db)  # type: ignore[arg-type]
-        conv = await asyncio.to_thread(
-            repo.get_by_id, conversation_id, tenant_id=tenant_id
-        )
-        return conv.summary if conv else None
+        def _save():
+            ConversationRepository(self._db).save_summary(
+                conversation_id,
+                tenant_id=tenant_id,
+                summary=summary,
+                summarized_through=summarized_through,
+            )
+            self._db.commit()
+
+        await asyncio.to_thread(_save)
 
     def _build_prompt(
         self,

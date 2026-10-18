@@ -5,7 +5,11 @@ import pytest
 from fastapi import HTTPException
 
 from src.ingestion.infrastructure.storage import LocalStorage
-from src.ingestion.interface.rest.auth import require_document_read, require_document_write
+from src.ingestion.interface.rest.auth import (
+    DocumentWriteAuth,
+    require_document_read,
+    require_document_write,
+)
 from src.ingestion.interface.rest.routes import get_s3_storage
 from src.main import app
 
@@ -27,7 +31,7 @@ def _deny_read():
 
 
 def _allow_read():
-    return uuid.uuid4()
+    return DocumentWriteAuth(tenant_id=uuid.uuid4(), created_by=uuid.uuid4())
 
 
 @pytest.mark.integration

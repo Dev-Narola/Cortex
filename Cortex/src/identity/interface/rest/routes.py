@@ -236,6 +236,8 @@ class CreateTenantRequest(_Base):
 class CreateApiKeyRequest(_Base):
     name: str = Field(..., min_length=1, max_length=255)
     scopes: list[str] = Field(default_factory=list)
+    # Per-key request limit; omitted = the tenant default.
+    rate_limit_per_min: int | None = Field(default=None, ge=1, le=100_000)
 
 
 class ApiKeyResponse(_Base):
@@ -243,6 +245,7 @@ class ApiKeyResponse(_Base):
     tenant_id: uuid.UUID
     name: str
     scopes: list[str]
+    rate_limit_per_min: int | None = None
     last_used_at: str | None = None
     revoked_at: str | None = None
     created_at: str
@@ -292,6 +295,7 @@ def _api_key_to_response(key: ApiKey) -> ApiKeyResponse:
         tenant_id=key.tenant_id,
         name=key.name,
         scopes=list(key.scopes),
+        rate_limit_per_min=key.rate_limit_per_min,
         last_used_at=key.last_used_at.isoformat() if key.last_used_at else None,
         revoked_at=key.revoked_at.isoformat() if key.revoked_at else None,
         created_at=key.created_at.isoformat(),
@@ -754,6 +758,8 @@ def create_api_key(
         tenant_id=tenant.id,
         name=body.name,
         scopes=body.scopes,
+        created_by=user.id,
+        rate_limit_per_min=body.rate_limit_per_min,
     )
     # V4 Phase 30 — API key creation is a privileged
     # action; the audit row records the actor, the

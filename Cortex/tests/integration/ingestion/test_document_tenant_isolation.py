@@ -5,7 +5,7 @@ import pytest
 from src.ingestion.domain.entities import Document
 from src.ingestion.infrastructure.repositories import DocumentRepository
 from src.ingestion.infrastructure.storage import LocalStorage
-from src.ingestion.interface.rest.auth import require_document_read, require_document_write
+from src.ingestion.interface.rest.auth import DocumentWriteAuth, require_document_read, require_document_write
 from src.ingestion.interface.rest.routes import get_s3_storage
 from src.main import app
 
@@ -41,7 +41,7 @@ async def test_tenant_cannot_list_another_tenants_documents(
     repo.create(_make_doc(tenant_b, "tenant_b.pdf"))
     db_session.commit()
 
-    app.dependency_overrides[require_document_read] = lambda: tenant_a
+    app.dependency_overrides[require_document_read] = lambda: DocumentWriteAuth(tenant_id=tenant_a, created_by=uuid.uuid4())
     try:
         res = await client.get("/api/v1/documents")
         assert res.status_code == 200
@@ -63,7 +63,7 @@ async def test_tenant_cannot_read_another_tenants_document(
     doc_b = repo.create(_make_doc(tenant_b, "secret.pdf"))
     db_session.commit()
 
-    app.dependency_overrides[require_document_read] = lambda: tenant_a
+    app.dependency_overrides[require_document_read] = lambda: DocumentWriteAuth(tenant_id=tenant_a, created_by=uuid.uuid4())
     try:
         res = await client.get(f"/api/v1/documents/{doc_b.id}")
         assert res.status_code == 404
@@ -85,7 +85,7 @@ async def test_tenant_cannot_delete_another_tenants_document(
     doc_b = repo.create(_make_doc(tenant_b, "protected.pdf"))
     db_session.commit()
 
-    app.dependency_overrides[require_document_write] = lambda: tenant_a
+    app.dependency_overrides[require_document_write] = lambda: DocumentWriteAuth(tenant_id=tenant_a, created_by=uuid.uuid4())
     try:
         res = await client.delete(f"/api/v1/documents/{doc_b.id}")
         assert res.status_code == 404

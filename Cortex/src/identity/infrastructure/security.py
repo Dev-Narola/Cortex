@@ -14,6 +14,7 @@ are the only callers.
 
 from __future__ import annotations
 
+import hashlib
 import secrets
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -286,6 +287,15 @@ def hash_api_key(raw_key: str) -> str:
     return bcrypt.hashpw(raw_key.encode("utf-8"), salt).decode("utf-8")
 
 
+def api_key_lookup(raw_key: str) -> str:
+    """Deterministic SHA-256 hex of a raw key, used for the indexed lookup.
+
+    Safe because keys carry 256 bits of randomness (no dictionary to
+    brute-force); bcrypt is for low-entropy secrets like passwords.
+    """
+    return hashlib.sha256(raw_key.encode("utf-8")).hexdigest()
+
+
 def verify_api_key(raw_key: str, hashed_key: str) -> bool:
     """
     Return True iff `raw_key` matches `hashed_key`. Never raises on
@@ -316,6 +326,7 @@ __all__ = [
     "JWT_DEFAULT_EXPIRY",
     "JWT_ISSUER",
     "JWT_REFRESH_EXPIRY",
+    "api_key_lookup",
     "create_access_token",
     "create_refresh_token",
     "decode_access_token",

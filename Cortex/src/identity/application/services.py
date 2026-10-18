@@ -30,6 +30,7 @@ from src.identity.infrastructure.security import (
     create_access_token,
     create_refresh_token,
     decode_access_token,
+    api_key_lookup,
     generate_api_key,
     hash_api_key,
     hash_password,
@@ -542,6 +543,8 @@ class CreateApiKeyService:
         tenant_id: uuid.UUID,
         name: str,
         scopes: Sequence[str] | None = None,
+        created_by: uuid.UUID | None = None,
+        rate_limit_per_min: int | None = None,
     ) -> IssuedApiKey:
         raw_key = generate_api_key()
         api_key = ApiKey.create(
@@ -549,6 +552,9 @@ class CreateApiKeyService:
             name=name,
             key_hash=hash_api_key(raw_key),
             scopes=list(scopes) if scopes else [],
+            key_lookup=api_key_lookup(raw_key),
+            created_by=created_by,
+            rate_limit_per_min=rate_limit_per_min,
         )
         saved = self._api_keys.create(api_key)
         self._session.commit()

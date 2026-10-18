@@ -36,10 +36,11 @@ from dataclasses import dataclass
 from fastapi import Depends, Header, HTTPException, status
 from sqlalchemy.orm import Session
 
-from src.identity.domain.entities import Role, Tenant
+from src.identity.domain.entities import Role
 from src.core.database import get_db
 from src.core.dependencies import (
     _role_check,
+    api_key_actor_user_id,
     get_current_user,
     require_api_key,
 )
@@ -47,47 +48,40 @@ from src.core.dependencies import (
 
 @dataclass(frozen=True, slots=True)
 class DocumentWriteAuth:
-    """Result of :func:`require_document_write`.
+    """The authenticated caller of a document route (read or write).
 
-    Carries the ``tenant_id`` (for tenant-scoped
-    queries) + the ``created_by`` UUID the
-    ``documents.created_by`` column expects.
-
-    * For JWT callers, ``created_by`` is the user's
-      id (the audit log + the FK to ``users.id``
-      both need a real user).
-    * For API key callers, ``created_by`` falls
-      back to ``api_key.user_id`` — every API key
-      is bound to a user, so the FK is still
-      satisfied. The ``api_key_id`` is also exposed
-      so the audit log can record which key was
-      used.
+    * ``tenant_id``  - scope for every query.
+    * ``created_by`` - the user recorded in ``documents.created_by``
+      (the JWT user, or the API key issuer / tenant owner).
+    * ``api_key_id`` - set for API-key callers (audit actor).
     """
 
     tenant_id: uuid.UUID
     created_by: uuid.UUID
     api_key_id: uuid.UUID | None = None
 
+    @property
+    def actor_user_id(self) -> uuid.UUID | None:
+        """Audit actor when a human (JWT) made the call."""
+        return None if self.api_key_id else self.created_by
+
+
+DocumentAuth = DocumentWriteAuth
+
 
 def require_document_read(
     authorization: str | None = Header(default=None),
     x_api_key: str | None = Header(default=None, alias="X-API-Key"),
     db: Session = Depends(get_db),
-) -> uuid.UUID:
-    """Dependency for ``documents:read`` scope or ``MEMBER`` role.
-
-    Returns the **tenant id** (not the full
-    :class:`DocumentWriteAuth`) because read paths
-    only need tenant scope — ``created_by`` is
-    irrelevant for reads.
-    """
+) -> DocumentWriteAuth:
+    """``documents:read`` scope, or any tenant role (viewers may read, US-1)."""
     return _verify_ingestion_auth(
         required_scope="documents:read",
-        min_role=Role.MEMBER,
+        min_role=Role.VIEWER,
         authorization=authorization,
         x_api_key=x_api_key,
         db=db,
-    ).tenant_id
+    )
 
 
 def require_document_write(
@@ -95,24 +89,30 @@ def require_document_write(
     x_api_key: str | None = Header(default=None, alias="X-API-Key"),
     db: Session = Depends(get_db),
 ) -> DocumentWriteAuth:
-    """Dependency for ``documents:write`` scope or ``MEMBER`` role.
-
-    Returns the full :class:`DocumentWriteAuth`
-    (tenant id + the user id to record as
-    ``created_by``). The route handler must use
-    ``auth.tenant_id`` for tenant-scoped queries
-    and ``auth.created_by`` for the
-    ``documents.created_by`` column — the latter
-    is a FK to ``users.id`` and was historically
-    mis-set to ``tenant_id`` (which passed the
-    type check but blew up the SQL INSERT).
-    """
+    """``documents:write`` scope, or MEMBER+ (viewers cannot upload/delete, US-1)."""
     return _verify_ingestion_auth(
         required_scope="documents:write",
         min_role=Role.MEMBER,
         authorization=authorization,
         x_api_key=x_api_key,
         db=db,
+    )
+
+
+def _api_key_auth(ctx, required_scope: str, db: Session) -> DocumentWriteAuth:
+    if required_scope not in ctx.api_key.scopes:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"API Key missing required scope: {required_scope}",
+        )
+    created_by = api_key_actor_user_id(db, ctx)
+    if created_by is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="API key has no attributable user (issuer and tenant owner missing).",
+        )
+    return DocumentWriteAuth(
+        tenant_id=ctx.tenant.id, created_by=created_by, api_key_id=ctx.api_key.id
     )
 
 
@@ -123,62 +123,22 @@ def _verify_ingestion_auth(
     x_api_key: str | None,
     db: Session,
 ) -> DocumentWriteAuth:
-    """Verify the caller's auth and return a
-    :class:`DocumentWriteAuth`.
-
-    The same function services both the read and
-    write paths; the read dependency unwraps the
-    ``tenant_id`` so existing callers don't have to
-    change.
-    """
-    # 1. Try API Key if explicitly passed via header.
+    """JWT (role-checked) or API key (scope-checked) -> :class:`DocumentWriteAuth`."""
     if x_api_key:
-        ctx = require_api_key(
-            x_api_key=x_api_key, authorization=None, db=db
-        )
-        if required_scope not in ctx.api_key.scopes:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"API Key missing required scope: {required_scope}",
-            )
-        # Every API key is bound to a user, so the
-        # ``documents.created_by`` FK is satisfied.
-        return DocumentWriteAuth(
-            tenant_id=ctx.tenant.id,
-            created_by=ctx.api_key.user_id,
-            api_key_id=ctx.api_key.id,
-        )
+        ctx = require_api_key(x_api_key=x_api_key, authorization=None, db=db)
+        return _api_key_auth(ctx, required_scope, db)
 
-    # 2. If Authorization header is present, decide
-    #    whether it's a JWT or an API key.
     if authorization:
         parts = authorization.split(None, 1)
         if len(parts) == 2 and parts[0].lower() == "bearer":
             token = parts[1].strip()
-            # JWTs have 3 parts separated by dots.
+            # JWTs have 3 dot-separated parts; anything else is an API key.
             if len(token.split(".")) == 3:
-                user, tenant = get_current_user(
-                    authorization=authorization, db=db
-                )
+                user, tenant = get_current_user(authorization=authorization, db=db)
                 _role_check((user, tenant), min_role=min_role)
-                return DocumentWriteAuth(
-                    tenant_id=tenant.id,
-                    created_by=user.id,
-                )
-            # API Key passed as a Bearer token.
-            ctx = require_api_key(
-                x_api_key=None, authorization=authorization, db=db
-            )
-            if required_scope not in ctx.api_key.scopes:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail=f"API Key missing required scope: {required_scope}",
-                )
-            return DocumentWriteAuth(
-                tenant_id=ctx.tenant.id,
-                created_by=ctx.api_key.user_id,
-                api_key_id=ctx.api_key.id,
-            )
+                return DocumentWriteAuth(tenant_id=tenant.id, created_by=user.id)
+            ctx = require_api_key(x_api_key=None, authorization=authorization, db=db)
+            return _api_key_auth(ctx, required_scope, db)
 
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,

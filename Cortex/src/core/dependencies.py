@@ -247,62 +247,26 @@ def get_conversation_llm_provider():
     )
 
 
-def get_answer_query_service(db: Session = Depends(get_db)):
+def build_answer_query_service(async_db: AsyncSession, sync_db: Session):
     """
-    Sync factory for ``AnswerQueryService`` — V2-era, used by
-    legacy callers. New V3 code should depend on
-    ``get_answer_query_service_async`` instead so the entire
-    pipeline (DB + search + LLM) runs in a single async
-    event loop without crossing the sync/async boundary.
+    Assemble the RAG service: search runs on the async session; history,
+    summaries and usage events go through the sync session (the
+    conversation/billing repositories are sync).
     """
     from src.conversation.application.services import AnswerQueryService
-    from src.embedding.infrastructure.providers.openai import OpenAIEmbeddingProvider
-    from src.retrieval.application.query.reciprocal_rank_fusion import ReciprocalRankFusion
-    from src.retrieval.application.query.query_embedding import QueryEmbeddingService
-    from src.retrieval.application.query.rerank_service import RerankerService
-    from src.retrieval.application.search_service import HybridSearchService  # V9: shim re-export from query/
-    from src.retrieval.infrastructure.query.full_text_search_repository import FullTextSearchRepository
-    from src.retrieval.infrastructure.reranker import IdentityReranker
-    from src.retrieval.infrastructure.query.vector_search_repository import VectorSearchRepository
+    from src.observability.application.billable import recorder_for_session
+    from src.retrieval.interface.dependencies import build_hybrid_search_service
 
     llm = get_conversation_llm_provider()
-    embed = QueryEmbeddingService(provider=OpenAIEmbeddingProvider())
-    search = HybridSearchService(
-        query_embed_service=embed,
-        vector_repo=VectorSearchRepository(db),
-        fts_repo=FullTextSearchRepository(db),
-        reranker=RerankerService(provider=IdentityReranker()),
-        fusion=ReciprocalRankFusion(),
+    billable = recorder_for_session(sync_db)
+    search = build_hybrid_search_service(async_db, billable=billable)
+    return AnswerQueryService(
+        llm_provider=llm,
+        search_service=search,
+        db=sync_db,
+        model_name=getattr(llm, "model", None),
+        billable=billable,
     )
-    return AnswerQueryService(llm_provider=llm, search_service=search, db=db)
-
-
-async def get_answer_query_service_async(db: AsyncSession = Depends(get_async_db)):
-    """
-    Async factory for ``AnswerQueryService`` — V3's primary
-    RAG service constructor. Used by the WebSocket route and
-    any future async REST endpoint.
-    """
-    from src.conversation.application.services import AnswerQueryService
-    from src.embedding.infrastructure.providers.openai import OpenAIEmbeddingProvider
-    from src.retrieval.application.query.reciprocal_rank_fusion import ReciprocalRankFusion
-    from src.retrieval.application.query.query_embedding import QueryEmbeddingService
-    from src.retrieval.application.query.rerank_service import RerankerService
-    from src.retrieval.application.search_service import HybridSearchService  # V9: shim re-export from query/
-    from src.retrieval.infrastructure.query.full_text_search_repository import FullTextSearchRepository
-    from src.retrieval.infrastructure.reranker import IdentityReranker
-    from src.retrieval.infrastructure.query.vector_search_repository import VectorSearchRepository
-
-    llm = get_conversation_llm_provider()
-    embed = QueryEmbeddingService(provider=OpenAIEmbeddingProvider())
-    search = HybridSearchService(
-        query_embed_service=embed,
-        vector_repo=VectorSearchRepository(db),
-        fts_repo=FullTextSearchRepository(db),
-        reranker=RerankerService(provider=IdentityReranker()),
-        fusion=ReciprocalRankFusion(),
-    )
-    return AnswerQueryService(llm_provider=llm, search_service=search, db=db)
 
 
 def require_api_key(
@@ -311,23 +275,15 @@ def require_api_key(
     db: Session = Depends(get_db),
 ) -> ApiKeyContext:
     """
-    Authenticate via an API key.
+    Authenticate via an API key (``X-API-Key`` or ``Authorization: Bearer``).
 
-    The key may be supplied via either the `X-API-Key` header or a
-    `Bearer`-style `Authorization` header. Verification walks every
-    API key in the (already-known) tenant and bcrypt-checks each
-    one — there is no hash-based lookup, because bcrypt is not
-    searchable. The walking cost is acceptable for a typical
-    tenant (a handful of keys); for a tenant with thousands of
-    keys, this should be replaced with a constant-time indexed
-    scheme (e.g. a short SHA-256 fingerprint stored alongside the
-    bcrypt hash).
+    One indexed query on the SHA-256 of the key (audit C5: the previous
+    version bcrypt-checked every key of every tenant per request).
     """
-    from src.identity.infrastructure.repositories import (
-        ApiKeyRepository,
-        TenantRepository,
-    )
-    from src.identity.infrastructure.security import verify_api_key
+    from datetime import UTC, datetime, timedelta
+
+    from src.identity.infrastructure.repositories import ApiKeyRepository, TenantRepository
+    from src.identity.infrastructure.security import api_key_lookup
 
     raw = x_api_key
     if not raw and authorization:
@@ -341,33 +297,41 @@ def require_api_key(
             data={"field": "api_key"},
         )
 
-    tenants = TenantRepository(db)
-    api_keys = ApiKeyRepository(db)
-    # Walk every tenant's active keys. A future optimization is to
-    # store a short, non-secret fingerprint of the key alongside
-    # the bcrypt hash so we can look up the tenant in O(1).
-    tenant_list = tenants.list(limit=10_000, offset=0)
-    for tenant in tenant_list:
-        if not tenant.is_active:
-            continue
-        keys = api_keys.list(tenant.id, include_revoked=False, limit=10_000)
-        for key in keys:
-            if verify_api_key(raw, key.key_hash):
-                key.record_usage()
-                db.commit()
-                return ApiKeyContext(tenant=tenant, api_key=key)
-    raise UnauthorizedException(
-        message="Invalid API key.",
-        code=401,
-        data={"field": "api_key"},
-    )
+    keys = ApiKeyRepository(db)
+    key = keys.find_by_lookup(api_key_lookup(raw))
+    tenant = TenantRepository(db).find_by_id(key.tenant_id) if key is not None else None
+    if key is None or not key.is_valid() or tenant is None or not tenant.is_active:
+        raise UnauthorizedException(
+            message="Invalid API key.", code=401, data={"field": "api_key"}
+        )
+    now = datetime.now(UTC)
+    # Throttle the last_used_at write: one UPDATE per key per minute, not per request.
+    if key.last_used_at is None or now - key.last_used_at > timedelta(minutes=1):
+        keys.touch(key.id, now)
+        db.commit()
+    return ApiKeyContext(tenant=tenant, api_key=key)
+
+
+def api_key_actor_user_id(db: Session, ctx: ApiKeyContext) -> uuid.UUID | None:
+    """User to attribute an API-key action to: the issuer, else the tenant owner
+    (keys issued before ``created_by`` existed)."""
+    if ctx.api_key.created_by is not None:
+        return ctx.api_key.created_by
+    from sqlalchemy import select
+
+    from src.identity.infrastructure.models import UserModel
+
+    return db.execute(
+        select(UserModel.id)
+        .where(UserModel.tenant_id == ctx.tenant.id, UserModel.role == "owner")
+        .limit(1)
+    ).scalar_one_or_none()
 
 
 __all__ = [
     "ApiKeyContext",
     "get_agent_executor",
-    "get_answer_query_service",
-    "get_answer_query_service_async",
+    "build_answer_query_service",
     "get_async_db",
     "get_current_tenant",
     "get_current_user",
@@ -378,6 +342,7 @@ __all__ = [
     "get_settings",
     "get_tool_registry",
     "require_admin",
+    "api_key_actor_user_id",
     "require_api_key",
     "require_member",
     "require_owner",

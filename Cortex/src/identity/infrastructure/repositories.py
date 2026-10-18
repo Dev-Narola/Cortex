@@ -17,7 +17,7 @@ import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -118,6 +118,9 @@ def _api_key_to_model(key: ApiKey) -> ApiKeyModel:
         last_used_at=key.last_used_at,
         revoked_at=key.revoked_at,
         created_at=key.created_at,
+        key_lookup=key.key_lookup,
+        created_by=key.created_by,
+        rate_limit_per_min=key.rate_limit_per_min,
     )
 
 
@@ -131,6 +134,9 @@ def _model_to_api_key(model: ApiKeyModel) -> ApiKey:
         last_used_at=_as_utc(model.last_used_at) if model.last_used_at else None,
         revoked_at=_as_utc(model.revoked_at) if model.revoked_at else None,
         created_at=_as_utc(model.created_at),
+        key_lookup=model.key_lookup,
+        created_by=model.created_by,
+        rate_limit_per_min=model.rate_limit_per_min,
     )
 
 
@@ -378,6 +384,20 @@ class ApiKeyRepository:
         if model is None or model.tenant_id != tenant_id:
             return None
         return _model_to_api_key(model)
+
+    def find_by_lookup(self, key_lookup: str) -> ApiKey | None:
+        """Indexed lookup by SHA-256 of the raw key (across tenants: the key
+        itself identifies its tenant)."""
+        model = self._session.execute(
+            select(ApiKeyModel).where(ApiKeyModel.key_lookup == key_lookup)
+        ).scalar_one_or_none()
+        return _model_to_api_key(model) if model is not None else None
+
+    def touch(self, api_key_id: uuid.UUID, when: datetime) -> None:
+        """Persist ``last_used_at`` (the entity copy is not ORM-tracked)."""
+        self._session.execute(
+            update(ApiKeyModel).where(ApiKeyModel.id == api_key_id).values(last_used_at=when)
+        )
 
     def find_by_hash(self, key_hash: str, *, tenant_id: uuid.UUID) -> ApiKey | None:
         """

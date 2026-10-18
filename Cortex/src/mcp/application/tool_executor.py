@@ -64,8 +64,12 @@ class ToolExecutionEngine:
         try:
             if tool_name == "retrieve_context":
                 return await self._execute_retrieve_context(tenant_id, arguments)
-            elif tool_name == "search_documents":
+            elif tool_name in ("search_documents", "search_knowledge_base"):
                 return await self._execute_search_documents(tenant_id, arguments)
+            elif tool_name == "ask_knowledge_base":
+                return await self._execute_ask(tenant_id, user_id, arguments)
+            elif tool_name == "get_document":
+                return self._execute_get_document(tenant_id, arguments)
             elif tool_name == "graph_search":
                 return self._execute_graph_search(tenant_id, arguments)
             elif tool_name == "run_agent":
@@ -73,7 +77,7 @@ class ToolExecutionEngine:
             elif tool_name == "list_documents":
                 return self._execute_list_documents(tenant_id, arguments)
             elif tool_name == "upload_document":
-                return await self._execute_upload_document(tenant_id, arguments)
+                return await self._execute_upload_document(tenant_id, user_id, arguments)
             elif tool_name == "query_memory":
                 return self._execute_query_memory(tenant_id, arguments)
             else:
@@ -102,21 +106,87 @@ class ToolExecutionEngine:
         }
 
     async def _execute_search_documents(self, tenant_id: uuid.UUID, args: dict[str, Any]) -> dict[str, Any]:
-        from src.retrieval.application.search_service import HybridSearchService
+        """Hybrid search + rerank, tenant-scoped, with chunk-level citations."""
+        from src.core.database import AsyncSessionLocal
+        from src.observability.application.billable import recorder_for_session
+        from src.retrieval.interface.dependencies import build_hybrid_search_service
 
-        svc = HybridSearchService(self._db)
-        results = await svc.search(
-            tenant_id=tenant_id,
-            query=args["query"],
-            top_k=args.get("limit", 5),
-        )
-        items = []
-        for r in results:
-            items.append({
-                "content": getattr(r, "content", getattr(r, "text", str(r))),
-                "score": getattr(r, "score", 1.0),
-            })
-        return {"items": items}
+        limit = max(1, min(int(args.get("limit", 5)), 20))
+        async with AsyncSessionLocal() as async_db:
+            svc = build_hybrid_search_service(async_db, billable=recorder_for_session(self._db))
+            results = await svc.search(tenant_id=tenant_id, query=args["query"])
+        self._db.commit()  # usage events
+        return {
+            "items": [
+                {
+                    "document_id": str(r.document_id),
+                    "chunk_id": str(r.chunk_id),
+                    "document_title": r.document_title,
+                    "chunk_index": r.chunk_index,
+                    "content": r.content,
+                    "score": r.rerank_score or r.score,
+                }
+                for r in results[:limit]
+            ]
+        }
+
+    async def _execute_ask(
+        self, tenant_id: uuid.UUID, user_id: uuid.UUID | None, args: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Grounded answer with citations (stateless: no conversation history)."""
+        from src.core.database import AsyncSessionLocal
+        from src.core.dependencies import build_answer_query_service
+
+        tokens: list[str] = []
+        citations: list[dict[str, Any]] = []
+        async with AsyncSessionLocal() as async_db:
+            service = build_answer_query_service(async_db, self._db)
+            async for event in service.stream_answer(
+                tenant_id=tenant_id,
+                # A fresh id matches no stored conversation, so history is empty.
+                conversation_id=uuid.uuid4(),
+                user_id=user_id or uuid.uuid4(),
+                query=args["question"],
+            ):
+                if event.get("kind") == "token":
+                    tokens.append(event["content"])
+                elif event.get("kind") == "citation":
+                    citations.append(event["citation"].to_dict())
+        return {
+            "content": [{"type": "text", "text": "".join(tokens)}],
+            "citations": citations,
+        }
+
+    def _execute_get_document(self, tenant_id: uuid.UUID, args: dict[str, Any]) -> dict[str, Any]:
+        """One document's metadata and chunk text; another tenant's id reads as not found."""
+        from sqlalchemy import select
+
+        from src.ingestion.infrastructure.models import DocumentChunkModel, DocumentModel
+
+        doc = self._db.get(DocumentModel, uuid.UUID(str(args["document_id"])))
+        if doc is None or doc.tenant_id != tenant_id:
+            raise ValidationException(
+                message="Document not found.", code=404, data={"document_id": str(args["document_id"])}
+            )
+        chunks = self._db.execute(
+            select(DocumentChunkModel.chunk_index, DocumentChunkModel.content)
+            .where(
+                DocumentChunkModel.document_id == doc.id,
+                DocumentChunkModel.tenant_id == tenant_id,
+            )
+            .order_by(DocumentChunkModel.chunk_index)
+            .limit(int(args.get("max_chunks", 50)))
+        ).all()
+        return {
+            "document": {
+                "id": str(doc.id),
+                "title": doc.title,
+                "status": doc.status,
+                "mime_type": doc.mime_type,
+                "created_at": doc.created_at.isoformat() if doc.created_at else None,
+            },
+            "chunks": [{"chunk_index": i, "content": c} for i, c in chunks],
+        }
 
     def _execute_graph_search(self, tenant_id: uuid.UUID, args: dict[str, Any]) -> dict[str, Any]:
         from src.knowledge_graph.application.query.traversal import GraphSearchService
@@ -164,18 +234,28 @@ class ToolExecutionEngine:
         items = [{"id": str(d.id), "title": d.title, "status": d.status} for d in docs]
         return {"documents": items}
 
-    async def _execute_upload_document(self, tenant_id: uuid.UUID, args: dict[str, Any]) -> dict[str, Any]:
-        from src.ingestion.application.services import DocumentIngestionService
-        from src.ingestion.domain.entities import DocumentInput
+    async def _execute_upload_document(
+        self, tenant_id: uuid.UUID, user_id: uuid.UUID | None, args: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Ingest text through the same pipeline as REST uploads."""
+        import io
 
-        doc_input = DocumentInput(
-            title=args["title"],
+        from src.ingestion.application.services import CreateDocumentService
+        from src.ingestion.infrastructure.repositories import DocumentRepository
+        from src.ingestion.interface.rest.queue import arq_queue
+        from src.ingestion.interface.rest.routes import get_s3_storage
+
+        if user_id is None:
+            raise ToolExecutionDenied(message="upload_document needs an attributable user")
+        service = CreateDocumentService(DocumentRepository(self._db), get_s3_storage(), queue=arq_queue)
+        doc = await service.execute(
+            tenant_id=tenant_id,
+            created_by=user_id,
             filename=f"{args['title']}.txt",
-            content_type="text/plain",
-            content=args["content"].encode("utf-8"),
+            mime_type="text/plain",
+            file_obj=io.BytesIO(str(args["content"]).encode("utf-8")),
         )
-        svc = DocumentIngestionService(self._db)
-        doc = await svc.ingest_document(tenant_id=tenant_id, input_data=doc_input)
+        self._db.commit()
         return {"document_id": str(doc.id), "title": doc.title, "status": str(doc.status)}
 
     def _execute_query_memory(self, tenant_id: uuid.UUID, args: dict[str, Any]) -> dict[str, Any]:
