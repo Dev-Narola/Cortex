@@ -27,7 +27,7 @@
 
 "use client"
 
-import { useQuery, type UseQueryResult } from "@tanstack/react-query"
+import { type UseQueryResult, useQuery } from "@tanstack/react-query"
 
 import { ApiError } from "@cortex/api-client"
 
@@ -44,10 +44,7 @@ export interface UseKGEntityNeighborsParams {
   enabled?: boolean
 }
 
-export type UseKGEntityNeighborsResult = UseQueryResult<
-  KGNeighborResponse | null,
-  Error
->
+export type UseKGEntityNeighborsResult = UseQueryResult<KGNeighborResponse | null, Error>
 
 export function useKGEntityNeighbors(
   id: string | null,
@@ -57,9 +54,7 @@ export function useKGEntityNeighbors(
   return useQuery<KGNeighborResponse | null, Error>({
     queryKey: kgKeys.neighbors(id ?? ""),
     queryFn: ({ signal }) =>
-      id
-        ? listEntityNeighbors({ id, signal, direction: "both" })
-        : Promise.resolve(null),
+      id ? listEntityNeighbors({ id, signal, direction: "both" }) : Promise.resolve(null),
     enabled: Boolean(id) && enabled,
     retry: (failureCount, error) => {
       if (error instanceof ApiError) {

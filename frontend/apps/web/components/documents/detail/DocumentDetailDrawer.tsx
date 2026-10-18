@@ -27,7 +27,7 @@
 
 "use client"
 
-import { useState, type ReactNode } from "react"
+import { type ReactNode, useState } from "react"
 
 import {
   Button,
@@ -114,24 +114,18 @@ export function DocumentDetailDrawer(): ReactNode {
 
           <DrawerBody className="space-y-6">
             {isLoading ? (
-              <div
-                className="flex min-h-[200px] items-center justify-center"
-                role="status"
-                aria-live="polite"
-              >
+              <output className="flex min-h-[200px] items-center justify-center" aria-live="polite">
                 <Spinner size="lg" />
-              </div>
+              </output>
             ) : isError ? (
               <ErrorState
                 title={
-                  fe?.kind === "not_found"
-                    ? "Document not found"
-                    : "Couldn't load this document"
+                  fe?.kind === "not_found" ? "Document not found" : "Couldn't load this document"
                 }
                 description={
                   fe?.kind === "not_found"
                     ? "It may have been deleted from another tab. Returning you to the list."
-                    : fe?.message ?? "Please try again."
+                    : (fe?.message ?? "Please try again.")
                 }
                 code={fe?.status ? String(fe.status) : undefined}
                 onRetry={() => {
@@ -148,11 +142,7 @@ export function DocumentDetailDrawer(): ReactNode {
 
           {data ? (
             <DrawerFooter className="flex-wrap">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => onCopyId(data)}
-              >
+              <Button type="button" variant="ghost" onClick={() => onCopyId(data)}>
                 <Icon name="Copy" className="h-3.5 w-3.5" />
                 <span>Copy ID</span>
               </Button>
@@ -161,23 +151,18 @@ export function DocumentDetailDrawer(): ReactNode {
                   type="button"
                   variant="outline"
                   onClick={() => setReprocessOpen(true)}
-                  disabled={data.status === "parsing" || data.status === "chunking" || data.status === "embedding"}
+                  // Backend: /reprocess needs INDEXED, /retry needs FAILED.
+                  disabled={data.status !== "indexed" && data.status !== "failed"}
                   title={
-                    data.status === "parsing" ||
-                    data.status === "chunking" ||
-                    data.status === "embedding"
-                      ? "Reprocess is unavailable while ingestion is in progress."
+                    data.status !== "indexed" && data.status !== "failed"
+                      ? "Available once processing finishes."
                       : undefined
                   }
                 >
                   <Icon name="RotateCw" className="h-3.5 w-3.5" />
-                  <span>Reprocess</span>
+                  <span>{data.status === "failed" ? "Retry" : "Reprocess"}</span>
                 </Button>
-                <Button
-                  type="button"
-                  variant="destructive"
-                  onClick={() => setDeleteOpen(true)}
-                >
+                <Button type="button" variant="destructive" onClick={() => setDeleteOpen(true)}>
                   <Icon name="Trash" className="h-3.5 w-3.5" />
                   <span>Delete</span>
                 </Button>
@@ -205,6 +190,7 @@ export function DocumentDetailDrawer(): ReactNode {
             onOpenChange={setReprocessOpen}
             documentId={data.id}
             documentTitle={data.title}
+            failed={data.status === "failed"}
           />
         </>
       ) : null}

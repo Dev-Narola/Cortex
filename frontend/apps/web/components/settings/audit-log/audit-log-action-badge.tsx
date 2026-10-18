@@ -22,7 +22,7 @@
  */
 import { Badge, type BadgeVariantProps } from "@cortex/ui"
 
-import { actionCategory, type ActionCategory } from "@/services/audit"
+import { type ActionCategory, actionCategory } from "@/services/audit"
 
 import { categoryLabel } from "@/services/audit"
 

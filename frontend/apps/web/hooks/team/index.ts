@@ -8,6 +8,7 @@
 export { teamKeys } from "./teamKeys"
 export {
   useTeamMembers,
+  useUpdateMember,
   type UseTeamMembersParams,
   type UseTeamMembersResult,
 } from "./useTeamMembers"

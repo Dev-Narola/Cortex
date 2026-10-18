@@ -58,7 +58,7 @@
  */
 "use client"
 
-import { useCallback, useRef, type ReactNode } from "react"
+import { type ReactNode, useCallback, useRef } from "react"
 
 import { Container, Text } from "@cortex/ui"
 
@@ -110,11 +110,7 @@ export function FeatureSection({
   useInView(textRef, onEnter)
 
   return (
-    <section
-      id={id}
-      aria-labelledby={`${id}-heading`}
-      className="relative py-20 md:py-28"
-    >
+    <section id={id} aria-labelledby={`${id}-heading`} className="relative py-20 md:py-28">
       <Container size="lg">
         <div
           className={`grid gap-10 md:gap-14 lg:gap-20 md:grid-cols-2 md:items-center ${
@@ -128,7 +124,7 @@ export function FeatureSection({
           >
             {icon ? (
               <div
-                className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-spark text-paper-50 shadow-spark"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-spark text-foreground shadow-spark"
                 aria-hidden
                 data-testid={`${id}-icon`}
               >

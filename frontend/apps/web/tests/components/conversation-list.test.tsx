@@ -101,9 +101,7 @@ describe("ConversationListItem", () => {
     expect(link).toHaveAttribute("title", longTitle)
     // The inner span has the truncation class
     // (text-ellipsis is applied via CSS).
-    const titleSpan = container.querySelector(
-      "[data-conversation-title]",
-    )
+    const titleSpan = container.querySelector("[data-conversation-title]")
     expect(titleSpan?.className).toMatch(/truncate/)
   })
 })
@@ -120,9 +118,7 @@ describe("ConversationList", () => {
         onStartConversation={() => {}}
       />,
     )
-    expect(
-      screen.getByRole("status", { name: /loading conversations/i }),
-    ).toBeInTheDocument()
+    expect(screen.getByRole("status", { name: /loading conversations/i })).toBeInTheDocument()
     expect(container.querySelectorAll("[data-skeleton-row]").length).toBe(6)
   })
 
@@ -139,12 +135,8 @@ describe("ConversationList", () => {
         onStartConversation={onStart}
       />,
     )
-    expect(
-      screen.getByText(/no conversations yet/i),
-    ).toBeInTheDocument()
-    await user.click(
-      screen.getByRole("button", { name: /start a conversation/i }),
-    )
+    expect(screen.getByText(/no conversations yet/i)).toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: /start a conversation/i }))
     expect(onStart).toHaveBeenCalledTimes(1)
   })
 
@@ -161,15 +153,9 @@ describe("ConversationList", () => {
         onStartConversation={() => {}}
       />,
     )
-    expect(
-      screen.getByRole("alert"),
-    ).toBeInTheDocument()
-    expect(
-      screen.getByText(/couldn't load conversations/i),
-    ).toBeInTheDocument()
-    expect(
-      screen.getByText(/network unreachable/i),
-    ).toBeInTheDocument()
+    expect(screen.getByRole("alert")).toBeInTheDocument()
+    expect(screen.getByText(/couldn't load conversations/i)).toBeInTheDocument()
+    expect(screen.getByText(/network unreachable/i)).toBeInTheDocument()
     await user.click(screen.getByRole("button", { name: /try again/i }))
     expect(onRetry).toHaveBeenCalledTimes(1)
   })
@@ -208,9 +194,7 @@ describe("ConversationList", () => {
         onStartConversation={() => {}}
       />,
     )
-    expect(
-      document.querySelector("[data-conversation-list='loading']"),
-    ).toBeInTheDocument()
+    expect(document.querySelector("[data-conversation-list='loading']")).toBeInTheDocument()
 
     rerender(
       <ConversationList
@@ -222,9 +206,7 @@ describe("ConversationList", () => {
         onStartConversation={() => {}}
       />,
     )
-    expect(
-      document.querySelector("[data-conversation-list='error']"),
-    ).toBeInTheDocument()
+    expect(document.querySelector("[data-conversation-list='error']")).toBeInTheDocument()
 
     rerender(
       <ConversationList
@@ -236,9 +218,7 @@ describe("ConversationList", () => {
         onStartConversation={() => {}}
       />,
     )
-    expect(
-      document.querySelector("[data-conversation-list='empty']"),
-    ).toBeInTheDocument()
+    expect(document.querySelector("[data-conversation-list='empty']")).toBeInTheDocument()
 
     rerender(
       <ConversationList
@@ -250,8 +230,6 @@ describe("ConversationList", () => {
         onStartConversation={() => {}}
       />,
     )
-    expect(
-      document.querySelector("[data-conversation-list='ready']"),
-    ).toBeInTheDocument()
+    expect(document.querySelector("[data-conversation-list='ready']")).toBeInTheDocument()
   })
 })

@@ -32,12 +32,7 @@
 
 "use client"
 
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 
 export type ClipboardState = "idle" | "success" | "error"
 
@@ -79,11 +74,7 @@ export function useClipboard(): UseClipboardResult {
       setError(null)
     } catch (err) {
       setState("error")
-      setError(
-        err instanceof Error
-          ? err
-          : new Error("Failed to write to the clipboard."),
-      )
+      setError(err instanceof Error ? err : new Error("Failed to write to the clipboard."))
     }
   }, [])
 

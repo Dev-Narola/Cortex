@@ -43,15 +43,15 @@
 
 "use client"
 
-import { useState, type ReactNode } from "react"
+import { type ReactNode, useState } from "react"
 
-import type { Message } from "@/types/conversation"
 import type { ActiveStream } from "@/hooks/chat/conversationStreamStore"
+import type { Message } from "@/types/conversation"
 
-import { CitationPanel } from "./citations/CitationPanel"
 import { ConversationHeader } from "./ConversationHeader"
 import { MessageInput } from "./MessageInput"
 import { MessageList } from "./MessageList"
+import { CitationPanel } from "./citations/CitationPanel"
 
 export interface ChatLayoutProps {
   /** Conversation title (server-owned). */
@@ -88,16 +88,10 @@ export function ChatLayout({
   }
 
   return (
-    <div
-      className="flex h-full min-h-0 flex-col"
-      data-chat-layout
-    >
+    <div className="flex h-full min-h-0 flex-col" data-chat-layout>
       <ConversationHeader title={title} />
       <div className="relative flex min-h-0 flex-1 flex-col md:flex-row">
-        <div
-          className="flex min-h-0 min-w-0 flex-1 flex-col"
-          data-chat-conversation
-        >
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col" data-chat-conversation>
           <MessageList
             messages={messages}
             stream={stream}
@@ -115,10 +109,7 @@ export function ChatLayout({
           className="absolute inset-0 z-20 flex bg-background md:static md:z-auto md:w-80 md:bg-transparent lg:w-96"
           data-citation-panel-slot
         >
-          <CitationPanel
-            conversationId={conversationId}
-            className="md:rounded-none"
-          />
+          <CitationPanel conversationId={conversationId} className="md:rounded-none" />
         </div>
       </div>
       <MessageInput
@@ -127,9 +118,7 @@ export function ChatLayout({
         onSubmit={handleSend}
         disabled={isBusy}
         placeholder={
-          isBusy
-            ? "Cortex is generating a response…"
-            : "Ask something about your knowledge base…"
+          isBusy ? "Cortex is generating a response…" : "Ask something about your knowledge base…"
         }
       />
     </div>

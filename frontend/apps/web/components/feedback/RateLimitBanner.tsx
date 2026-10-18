@@ -37,7 +37,7 @@
 
 "use client"
 
-import { useEffect, useState, type ReactNode } from "react"
+import { type ReactNode, useEffect, useState } from "react"
 
 import { Button, Icon, cn } from "@cortex/ui"
 
@@ -47,9 +47,7 @@ export interface RateLimitBannerProps {
   className?: string
 }
 
-export function RateLimitBanner({
-  className,
-}: RateLimitBannerProps): ReactNode {
+export function RateLimitBanner({ className }: RateLimitBannerProps): ReactNode {
   const message = useRateLimitStore((s) => s.message)
   const retryAfterMs = useRateLimitStore((s) => s.retryAfterMs)
   const until = useRateLimitStore((s) => s.until)
@@ -89,17 +87,11 @@ export function RateLimitBanner({
         className,
       )}
     >
-      <Icon
-        name="CircleAlert"
-        className="h-4 w-4 shrink-0 text-destructive"
-        aria-hidden
-      />
+      <Icon name="CircleAlert" className="h-4 w-4 shrink-0 text-destructive" aria-hidden />
       <div className="flex flex-1 flex-col">
         <span className="font-medium">{message}</span>
         {secondsLeft !== null && secondsLeft > 0 ? (
-          <span className="text-xs text-muted-foreground">
-            Try again in {secondsLeft}s
-          </span>
+          <span className="text-xs text-muted-foreground">Try again in {secondsLeft}s</span>
         ) : null}
       </div>
       {retryAfterMs !== null && secondsLeft === null ? (

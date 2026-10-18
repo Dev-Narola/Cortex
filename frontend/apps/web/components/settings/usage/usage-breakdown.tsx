@@ -33,10 +33,7 @@ import { Card, CardContent, ErrorState, Skeleton } from "@cortex/ui"
 import { useTenantUsage } from "@/hooks/usage"
 import { formatUsd } from "@/lib/utils/format"
 
-import {
-  eventTypeLabel,
-  UNIT_TYPES,
-} from "@/services/usage"
+import { UNIT_TYPES, eventTypeLabel } from "@/services/usage"
 
 const KNOWN_UNIT_KEYS: ReadonlySet<string> = new Set([
   UNIT_TYPES.TOKENS,
@@ -65,7 +62,10 @@ const KNOWN_UNIT_KEYS: ReadonlySet<string> = new Set([
  * (TS won't re-narrow an indexed access
  * expression that's repeated on the RHS).
  */
-function mainUnitsFor(eventTypeKey: string, units: Record<string, number>): {
+function mainUnitsFor(
+  eventTypeKey: string,
+  units: Record<string, number>,
+): {
   value: number
   unit: string
 } | null {
@@ -162,20 +162,16 @@ export function UsageBreakdownSection() {
   // usage yet. Same copy as the spec's "no
   // usage yet" example (Task 19).
   if (eventKeys.length === 0) {
-    return (
-      <EmptyBreakdown />
-    )
+    return <EmptyBreakdown />
   }
 
   return (
     <Card data-testid="usage-breakdown">
       <CardContent className="space-y-3 p-4 sm:p-6">
-        <h3 className="font-display text-sm font-semibold tracking-tight">
-          Usage breakdown
-        </h3>
-        <p className="text-xs text-paper-200/60">
-          Per-event-type totals for the current period. Costs are the actual backend
-          roll-ups — no client-side arithmetic.
+        <h3 className="font-display text-sm font-semibold tracking-tight">Usage breakdown</h3>
+        <p className="text-xs text-faint">
+          Per-event-type totals for the current period. Costs are the actual backend roll-ups — no
+          client-side arithmetic.
         </p>
         <ul className="space-y-1.5" data-testid="usage-breakdown-list">
           {eventKeys.map((eventType) => {
@@ -185,19 +181,19 @@ export function UsageBreakdownSection() {
             return (
               <li
                 key={eventType}
-                className="flex items-center justify-between gap-3 rounded-md border border-slate-700/40 bg-slate-900/30 px-3 py-2"
+                className="flex items-center justify-between gap-3 rounded-md border border-border bg-muted px-3 py-2"
                 data-testid={`usage-breakdown-row-${eventType}`}
               >
                 <div>
                   <p
-                    className="text-sm font-medium text-paper-50"
+                    className="text-sm font-medium text-foreground"
                     data-testid={`usage-breakdown-label-${eventType}`}
                   >
                     {eventTypeLabel(eventType)}
                   </p>
                   {main ? (
                     <p
-                      className="text-xs text-paper-200/60"
+                      className="text-xs text-faint"
                       data-testid={`usage-breakdown-units-${eventType}`}
                     >
                       {main.value.toLocaleString("en-US", {
@@ -208,7 +204,7 @@ export function UsageBreakdownSection() {
                   ) : null}
                 </div>
                 <p
-                  className="font-mono text-sm text-paper-50"
+                  className="font-mono text-sm text-foreground"
                   data-testid={`usage-breakdown-cost-${eventType}`}
                 >
                   {cost === null ? "—" : formatUsd(cost)}
@@ -226,10 +222,9 @@ function EmptyBreakdown() {
   return (
     <Card data-testid="usage-breakdown-empty">
       <CardContent className="space-y-2 p-4 sm:p-6 text-center">
-        <p className="text-sm font-medium text-paper-50">No usage yet</p>
-        <p className="text-sm text-paper-200/70">
-          Usage will appear here once Cortex processes documents or handles AI
-          requests.
+        <p className="text-sm font-medium text-foreground">No usage yet</p>
+        <p className="text-sm text-muted-foreground">
+          Usage will appear here once Cortex processes documents or handles AI requests.
         </p>
       </CardContent>
     </Card>

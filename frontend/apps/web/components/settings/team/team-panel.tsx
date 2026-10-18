@@ -43,20 +43,34 @@ import {
   Button,
   Card,
   CardContent,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
   EmptyState,
   ErrorState,
   Icon,
+  Input,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
   Skeleton,
   Table,
   TableBody,
   TableCell,
   TableHeader,
   TableRow,
+  toast,
 } from "@cortex/ui"
 
-import { useTeamMembers } from "@/hooks/team"
+import { useTeamMembers, useUpdateMember } from "@/hooks/team"
 import { useAuthStore } from "@/lib/auth/store"
-import type { TeamMember, TeamMemberRole } from "@/services/team"
+import { toFrontendError } from "@/lib/http/errors"
+import { type TeamMember, type TeamMemberRole, issuePasswordReset } from "@/services/team"
 
 import { InviteMemberModal } from "./invite-member-modal"
 
@@ -120,7 +134,8 @@ export function TeamPanel() {
   const currentRole = currentUser?.role
   const userIsInviter = canInvite(currentRole)
 
-  const { data, isLoading, isError, error, refetch } = useTeamMembers()
+  // GET /users is owner/admin-only on the backend; don't call it for others.
+  const { data, isLoading, isError, error, refetch } = useTeamMembers({ enabled: userIsInviter })
   const [inviteOpen, setInviteOpen] = useState(false)
 
   const openInvite = useCallback(() => setInviteOpen(true), [])
@@ -132,7 +147,7 @@ export function TeamPanel() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="font-display text-base font-semibold tracking-tight">Team</h2>
-            <p className="text-sm text-paper-200/70">
+            <p className="text-sm text-muted-foreground">
               The members of your workspace. Owners and admins can invite teammates.
             </p>
           </div>
@@ -150,7 +165,13 @@ export function TeamPanel() {
           ) : null}
         </div>
 
-        {isLoading ? <TeamPanelSkeleton /> : null}
+        {!userIsInviter ? (
+          <p className="text-sm text-muted-foreground" data-testid="team-panel-restricted">
+            Only workspace owners and admins can view and manage members.
+          </p>
+        ) : null}
+
+        {userIsInviter && isLoading ? <TeamPanelSkeleton /> : null}
 
         {!isLoading && isError ? (
           <ErrorState
@@ -169,10 +190,13 @@ export function TeamPanel() {
         ) : null}
 
         {!isLoading && !isError && data ? (
-          data.items.length === 0 ? (
-            <TeamPanelEmpty canInvite={userIsInviter} onInvite={openInvite} />
+          data.length <= 1 ? (
+            <>
+              {data.length === 1 ? <TeamMemberTable members={data} /> : null}
+              <TeamPanelEmpty canInvite={userIsInviter} onInvite={openInvite} />
+            </>
           ) : (
-            <TeamMemberTable members={data.items} />
+            <TeamMemberTable members={data} />
           )
         ) : null}
       </CardContent>
@@ -206,33 +230,217 @@ function TeamPanelEmpty({ canInvite, onInvite }: { canInvite: boolean; onInvite:
 }
 
 function TeamMemberTable({ members }: { members: TeamMember[] }) {
+  const me = useAuthStore((s) => s.user)
+  const update = useUpdateMember()
+  const isOwner = me?.role === "owner"
+  const [resetLink, setResetLink] = useState<{ email: string; url: string } | null>(null)
+  const [issuing, setIssuing] = useState<string | null>(null)
+
+  async function issueReset(m: TeamMember) {
+    setIssuing(m.id)
+    try {
+      const { reset_token } = await issuePasswordReset(m.id)
+      setResetLink({
+        email: m.email,
+        url: `${window.location.origin}/reset-password?token=${encodeURIComponent(reset_token)}`,
+      })
+    } catch (err) {
+      toast({
+        title: "Couldn't create a reset link",
+        description: toFrontendError(err).message,
+        variant: "destructive",
+      })
+    } finally {
+      setIssuing(null)
+    }
+  }
+
+  // Owners manage everyone but themselves; admins manage members and viewers.
+  // Mirrors the backend rule that only an owner may grant owner/admin.
+  function canManage(m: TeamMember): boolean {
+    if (!me || m.id === me.id) return false
+    if (isOwner) return true
+    return me.role === "admin" && (m.role === "member" || m.role === "viewer")
+  }
+
+  async function change(m: TeamMember, body: { role?: TeamMemberRole; is_active?: boolean }) {
+    try {
+      await update.mutateAsync({ id: m.id, ...body })
+    } catch (err) {
+      toast({
+        title: "Couldn't update the member",
+        description: toFrontendError(err).message,
+        variant: "destructive",
+      })
+    }
+  }
+
   return (
-    <Table data-testid="team-member-table">
-      <TableHeader>
-        <TableRow>
-          <TableCell tag="th">Member</TableCell>
-          <TableCell tag="th">Role</TableCell>
-          <TableCell tag="th">Joined</TableCell>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {members.map((m) => (
-          <TableRow key={m.id} data-testid={`team-row-${m.id}`}>
-            <TableCell>
-              <div className="flex flex-col">
-                <span className="text-sm font-medium text-paper-50">{m.full_name || m.email}</span>
-                {m.full_name ? <span className="text-xs text-paper-200/60">{m.email}</span> : null}
-              </div>
+    <>
+      <Table data-testid="team-member-table">
+        <TableHeader>
+          <TableRow>
+            <TableCell tag="th">Member</TableCell>
+            <TableCell tag="th">Role</TableCell>
+            <TableCell tag="th">Status</TableCell>
+            <TableCell tag="th" className="hidden sm:table-cell">
+              Joined
             </TableCell>
-            <TableCell>
-              <Badge variant={roleBadgeTone(m.role)} size="sm" data-testid={`team-role-${m.id}`}>
-                {roleLabel(m.role)}
-              </Badge>
+            <TableCell tag="th">
+              <span className="sr-only">Actions</span>
             </TableCell>
-            <TableCell className="text-xs text-paper-200/70">{formatDate(m.created_at)}</TableCell>
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          {members.map((m) => {
+            const manageable = canManage(m)
+            const grantable: TeamMemberRole[] = isOwner
+              ? ["owner", "admin", "member", "viewer"]
+              : ["member", "viewer"]
+            return (
+              <TableRow
+                key={m.id}
+                data-testid={`team-row-${m.id}`}
+                className={m.is_active === false ? "opacity-60" : undefined}
+              >
+                <TableCell>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium text-foreground">
+                      {m.full_name || m.email}
+                      {m.id === me?.id ? (
+                        <span className="ml-1.5 text-xs font-normal text-faint">(you)</span>
+                      ) : null}
+                    </span>
+                    {m.full_name ? <span className="text-xs text-faint">{m.email}</span> : null}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  {manageable ? (
+                    <Select
+                      value={m.role}
+                      onValueChange={(role) => void change(m, { role: role as TeamMemberRole })}
+                      disabled={update.isPending}
+                    >
+                      <SelectTrigger
+                        className="h-8 w-28"
+                        aria-label={`Role for ${m.email}`}
+                        data-testid={`team-role-${m.id}`}
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {grantable.map((r) => (
+                          <SelectItem key={r} value={r}>
+                            {roleLabel(r)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Badge
+                      variant={roleBadgeTone(m.role)}
+                      size="sm"
+                      data-testid={`team-role-${m.id}`}
+                    >
+                      {roleLabel(m.role)}
+                    </Badge>
+                  )}
+                </TableCell>
+                <TableCell>
+                  <Badge variant={m.is_active === false ? "secondary" : "success"} size="sm">
+                    {m.is_active === false ? "Deactivated" : "Active"}
+                  </Badge>
+                </TableCell>
+                <TableCell className="hidden text-xs text-muted-foreground sm:table-cell">
+                  {formatDate(m.created_at)}
+                </TableCell>
+                <TableCell className="text-right">
+                  {manageable ? (
+                    <div className="flex justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={issuing === m.id || m.is_active === false}
+                        onClick={() => void issueReset(m)}
+                        data-testid={`team-reset-${m.id}`}
+                      >
+                        Reset password
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={update.isPending}
+                        onClick={() => void change(m, { is_active: m.is_active === false })}
+                        data-testid={`team-toggle-${m.id}`}
+                      >
+                        {m.is_active === false ? "Reactivate" : "Deactivate"}
+                      </Button>
+                    </div>
+                  ) : null}
+                </TableCell>
+              </TableRow>
+            )
+          })}
+        </TableBody>
+      </Table>
+      <ResetLinkDialog link={resetLink} onClose={() => setResetLink(null)} />
+    </>
+  )
+}
+
+function ResetLinkDialog({
+  link,
+  onClose,
+}: {
+  link: { email: string; url: string } | null
+  onClose: () => void
+}) {
+  const [copied, setCopied] = useState(false)
+  return (
+    <Dialog
+      open={!!link}
+      onOpenChange={(o) => {
+        if (!o) {
+          setCopied(false)
+          onClose()
+        }
+      }}
+    >
+      <DialogContent size="md" data-testid="reset-link-dialog">
+        <DialogHeader>
+          <DialogTitle>Password reset link</DialogTitle>
+          <DialogDescription>
+            Send this link to {link?.email}. It works once and expires in 1 hour. Cortex doesn't
+            email it.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex gap-2">
+          <Input
+            readOnly
+            value={link?.url ?? ""}
+            aria-label="Reset link URL"
+            className="font-mono text-xs"
+            onFocus={(e) => e.target.select()}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            onClick={async () => {
+              if (!link) return
+              await navigator.clipboard.writeText(link.url)
+              setCopied(true)
+            }}
+          >
+            <Icon name={copied ? "Check" : "Copy"} className="h-4 w-4" aria-hidden />
+            {copied ? "Copied" : "Copy"}
+          </Button>
+        </div>
+        <DialogFooter>
+          <Button type="button" onClick={onClose}>
+            Done
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

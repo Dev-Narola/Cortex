@@ -13,18 +13,11 @@
 
 "use client"
 
-import { useMutation, type UseMutationResult } from "@tanstack/react-query"
+import { type UseMutationResult, useMutation } from "@tanstack/react-query"
 
-import {
-  deleteDocument,
-  type DeleteDocumentParams,
-} from "@/services/documents"
+import { type DeleteDocumentParams, deleteDocument } from "@/services/documents"
 
-export type UseDeleteDocumentResult = UseMutationResult<
-  void,
-  Error,
-  DeleteDocumentParams
->
+export type UseDeleteDocumentResult = UseMutationResult<void, Error, DeleteDocumentParams>
 
 export function useDeleteDocument(): UseDeleteDocumentResult {
   return useMutation<void, Error, DeleteDocumentParams>({

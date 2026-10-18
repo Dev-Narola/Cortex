@@ -27,10 +27,7 @@
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
 
-import {
-  WorkspaceSetupForm,
-  WorkspaceSetupLayout,
-} from "@/components/onboarding"
+import { WorkspaceSetupForm, WorkspaceSetupLayout } from "@/components/onboarding"
 import { ProgressIndicator } from "@/components/onboarding/ProgressIndicator"
 import { useAuthStore } from "@/lib/auth/store"
 
@@ -43,9 +40,7 @@ export default function WorkspaceSetupPage() {
   useEffect(() => {
     if (!hydrated) return
     if (!isAuthed) {
-      router.replace(
-        `/login?next=${encodeURIComponent("/workspace-setup")}` as never,
-      )
+      router.replace(`/login?next=${encodeURIComponent("/workspace-setup")}` as never)
       return
     }
     if (hasTenant) {

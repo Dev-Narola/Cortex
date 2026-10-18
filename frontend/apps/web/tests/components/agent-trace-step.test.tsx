@@ -51,28 +51,17 @@ describe("AgentTraceStep", () => {
         />
       </ul>,
     )
-    expect(screen.getByTestId("agent-step-summary").textContent).toBe(
-      "Found 5 relevant chunks",
-    )
-    expect(screen.getByTestId("agent-step-latency").textContent).toBe(
-      "420ms",
-    )
+    expect(screen.getByTestId("agent-step-summary").textContent).toBe("Found 5 relevant chunks")
+    expect(screen.getByTestId("agent-step-latency").textContent).toBe("420ms")
   })
 
   it("formats latency in seconds for >= 1000ms", () => {
     render(
       <ul>
-        <AgentTraceStep
-          name="generate_answer"
-          resultSummary="Done"
-          latencyMs={1200}
-          index={1}
-        />
+        <AgentTraceStep name="generate_answer" resultSummary="Done" latencyMs={1200} index={1} />
       </ul>,
     )
-    expect(screen.getByTestId("agent-step-latency").textContent).toBe(
-      "1.2s",
-    )
+    expect(screen.getByTestId("agent-step-latency").textContent).toBe("1.2s")
   })
 
   it("shows the em-dash when latency is null", () => {
@@ -86,9 +75,7 @@ describe("AgentTraceStep", () => {
         />
       </ul>,
     )
-    expect(screen.getByTestId("agent-step-latency").textContent).toBe(
-      "—",
-    )
+    expect(screen.getByTestId("agent-step-latency").textContent).toBe("—")
   })
 
   it("renders error message instead of summary when status is error", () => {
@@ -106,9 +93,7 @@ describe("AgentTraceStep", () => {
     )
     // When the call failed, the summary line shows
     // the error string, not the result summary.
-    expect(screen.getByTestId("agent-step-summary").textContent).toBe(
-      "graph offline",
-    )
+    expect(screen.getByTestId("agent-step-summary").textContent).toBe("graph offline")
     expect(
       screen.getByRole("listitem", {
         name: undefined,
@@ -119,19 +104,8 @@ describe("AgentTraceStep", () => {
   it("uses isLast to suppress the trailing connector", () => {
     const { container } = render(
       <ul>
-        <AgentTraceStep
-          name="a"
-          resultSummary="x"
-          latencyMs={100}
-          index={1}
-        />
-        <AgentTraceStep
-          name="b"
-          resultSummary="y"
-          latencyMs={100}
-          index={2}
-          isLast
-        />
+        <AgentTraceStep name="a" resultSummary="x" latencyMs={100} index={1} />
+        <AgentTraceStep name="b" resultSummary="y" latencyMs={100} index={2} isLast />
       </ul>,
     )
     // The last step renders only the dot; the
@@ -146,26 +120,16 @@ describe("AgentTraceStep", () => {
     const step1 = items[0]
     const step2 = items[1]
     if (!step1 || !step2) throw new Error("expected 2 list items")
-    const connectors1 = step1.querySelectorAll(
-      "span[aria-hidden='true']",
-    )
-    const connectors2 = step2.querySelectorAll(
-      "span[aria-hidden='true']",
-    )
+    const connectors1 = step1.querySelectorAll("span[aria-hidden='true']")
+    const connectors2 = step2.querySelectorAll("span[aria-hidden='true']")
     expect(connectors1.length).toBeGreaterThan(connectors2.length)
   })
 
   it("renders long tool names without overflow", () => {
-    const longName =
-      "search_knowledge_base_with_metadata_filter"
+    const longName = "search_knowledge_base_with_metadata_filter"
     render(
       <ul>
-        <AgentTraceStep
-          name={longName}
-          resultSummary="3 results"
-          latencyMs={120}
-          index={1}
-        />
+        <AgentTraceStep name={longName} resultSummary="3 results" latencyMs={120} index={1} />
       </ul>,
     )
     const name = screen.getByTestId("agent-step-name")
@@ -192,8 +156,6 @@ describe("AgentTraceStep", () => {
     // glyph instead. The simplest way to assert
     // no error treatment is the data-step-status
     // attribute defaults to "ok".
-    expect(
-      container.querySelector("[data-step-status='error']"),
-    ).toBeNull()
+    expect(container.querySelector("[data-step-status='error']")).toBeNull()
   })
 })

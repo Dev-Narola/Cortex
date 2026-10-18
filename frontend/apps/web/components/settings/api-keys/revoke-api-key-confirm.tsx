@@ -59,7 +59,7 @@ export function RevokeApiKeyConfirm({
           <DialogTitle>Revoke API key?</DialogTitle>
           <DialogDescription>
             This will immediately invalidate{" "}
-            <span className="font-medium text-paper-50">{keyName ?? "this key"}</span>. Any tool
+            <span className="font-medium text-foreground">{keyName ?? "this key"}</span>. Any tool
             using it will lose access on the next request.
           </DialogDescription>
         </DialogHeader>

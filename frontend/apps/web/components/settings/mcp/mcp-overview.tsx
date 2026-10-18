@@ -66,7 +66,7 @@ export function McpOverview() {
             </div>
             <div>
               <h2 className="font-display text-base font-semibold tracking-tight">What is MCP?</h2>
-              <p className="text-sm text-paper-200/70">
+              <p className="text-sm text-muted-foreground">
                 Connect Cortex to MCP-compatible clients such as Claude and other AI agents. The
                 client authenticates with an API key (the same one you manage under Settings → API
                 Keys) and calls the tools below over JSON-RPC 2.0.
@@ -81,10 +81,10 @@ export function McpOverview() {
           <h3 className="font-display text-sm font-semibold tracking-tight">Connection</h3>
           <dl className="space-y-2 text-xs">
             <div>
-              <dt className="font-medium uppercase tracking-wider text-paper-200/50">Endpoint</dt>
+              <dt className="font-medium uppercase tracking-wider text-faint">Endpoint</dt>
               <dd className="mt-1">
                 <code
-                  className="block break-all rounded-md border border-slate-700 bg-slate-900/60 px-3 py-2 font-mono text-sm text-paper-50"
+                  className="block break-all rounded-md border border-border bg-muted px-3 py-2 font-mono text-sm text-foreground"
                   data-testid="mcp-endpoint"
                 >
                   {endpoint}
@@ -92,10 +92,8 @@ export function McpOverview() {
               </dd>
             </div>
             <div>
-              <dt className="font-medium uppercase tracking-wider text-paper-200/50">
-                Auth methods
-              </dt>
-              <dd className="mt-1 space-y-1 text-paper-200">
+              <dt className="font-medium uppercase tracking-wider text-faint">Auth methods</dt>
+              <dd className="mt-1 space-y-1 text-muted-foreground">
                 <div>
                   <span className="font-mono text-xs">X-API-Key</span> — a regular API key (use
                   Settings → API Keys to create one for your client).
@@ -113,7 +111,7 @@ export function McpOverview() {
       <Card>
         <CardContent className="space-y-3 p-4 sm:p-6">
           <h3 className="font-display text-sm font-semibold tracking-tight">Available tools</h3>
-          <p className="text-xs text-paper-200/60">
+          <p className="text-xs text-faint">
             The tools your MCP client can call. Tools are tenant-scoped — clients see only this
             workspace&apos;s data.
           </p>
@@ -123,19 +121,19 @@ export function McpOverview() {
               if (tools.length === 0) return null
               return (
                 <div key={category}>
-                  <h4 className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-paper-200/50">
+                  <h4 className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-faint">
                     {categoryLabel(category)}
                   </h4>
                   <ul className="space-y-1.5">
                     {tools.map((tool) => (
                       <li
                         key={tool.name}
-                        className="rounded-md border border-slate-700/40 bg-slate-900/30 px-3 py-2"
+                        className="rounded-md border border-border bg-muted px-3 py-2"
                         data-testid={`mcp-tool-${tool.name}`}
                       >
                         <div className="flex items-center justify-between gap-2">
                           <code
-                            className="font-mono text-sm text-paper-50"
+                            className="font-mono text-sm text-foreground"
                             data-testid={`mcp-tool-name-${tool.name}`}
                           >
                             {tool.name}
@@ -149,7 +147,7 @@ export function McpOverview() {
                             </span>
                           ) : null}
                         </div>
-                        <p className="mt-1 text-xs text-paper-200/70">{tool.description}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">{tool.description}</p>
                       </li>
                     ))}
                   </ul>
@@ -165,7 +163,7 @@ export function McpOverview() {
           <h3 className="font-display text-sm font-semibold tracking-tight">
             Tenant-scoped access
           </h3>
-          <p className="text-sm text-paper-200/70">
+          <p className="text-sm text-muted-foreground">
             MCP clients authenticated with this configuration can access only this workspace&apos;s
             Cortex knowledge base. Cross-tenant access is technically impossible — the backend
             resolves the tenant from the authentication credentials at the SQL level.

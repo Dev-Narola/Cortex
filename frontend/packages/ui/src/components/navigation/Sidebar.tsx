@@ -43,7 +43,7 @@ const Sidebar = forwardRef<HTMLElement, SidebarProps>(
       ref={ref}
       data-state={state}
       className={cn(
-        "flex h-full flex-col border-r border-border bg-card text-card-foreground",
+        "flex h-full flex-col border-r border-border bg-background-2/70 text-card-foreground backdrop-blur-xl",
         "transition-[width] duration-200 ease-out",
         STATE[state],
         className,

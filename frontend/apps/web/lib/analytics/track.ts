@@ -96,10 +96,7 @@ export const KNOWLEDGE_GRAPH_VIEWED = "knowledge_graph_viewed" as const
  * provider-agnostic and the noop default accepts
  * anything.
  */
-export function track(
-  event: string,
-  properties?: AnalyticsProperties,
-): void {
+export function track(event: string, properties?: AnalyticsProperties): void {
   getAnalyticsClient().track(event, properties)
 }
 
@@ -108,10 +105,7 @@ export function track(
  * is a stable, opaque user ID (typically a UUID), NOT
  * the user's email.
  */
-export function identify(
-  userId: string,
-  traits?: AnalyticsProperties,
-): void {
+export function identify(userId: string, traits?: AnalyticsProperties): void {
   getAnalyticsClient().identify(userId, traits)
 }
 
@@ -121,10 +115,7 @@ export function identify(
  * path; the provider can decide whether to include
  * the query string.
  */
-export function page(
-  path: string,
-  properties?: AnalyticsProperties,
-): void {
+export function page(path: string, properties?: AnalyticsProperties): void {
   getAnalyticsClient().page(path, properties)
 }
 

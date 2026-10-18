@@ -29,9 +29,7 @@ describe("parseConversationEvent", () => {
   })
 
   it("parses token with a string content", () => {
-    const event = parseConversationEvent(
-      JSON.stringify({ type: "token", content: "Hello" }),
-    )
+    const event = parseConversationEvent(JSON.stringify({ type: "token", content: "Hello" }))
     expect(event).toEqual({ type: "token", content: "Hello" })
   })
 
@@ -103,9 +101,7 @@ describe("parseConversationEvent", () => {
   })
 
   it("parses error without message", () => {
-    const event = parseConversationEvent(
-      JSON.stringify({ type: "error", code: "BAD_REQUEST" }),
-    )
+    const event = parseConversationEvent(JSON.stringify({ type: "error", code: "BAD_REQUEST" }))
     expect(event).toEqual({ type: "error", code: "BAD_REQUEST" })
   })
 
@@ -114,9 +110,7 @@ describe("parseConversationEvent", () => {
   })
 
   it("returns null on unknown event type", () => {
-    expect(
-      parseConversationEvent(JSON.stringify({ type: "wat" })),
-    ).toBeNull()
+    expect(parseConversationEvent(JSON.stringify({ type: "wat" }))).toBeNull()
   })
 
   it("returns null on missing discriminator", () => {
@@ -125,18 +119,12 @@ describe("parseConversationEvent", () => {
 
   it("rejects message_start with empty message_id", () => {
     expect(
-      parseConversationEvent(
-        JSON.stringify({ type: "message_start", message_id: "" }),
-      ),
+      parseConversationEvent(JSON.stringify({ type: "message_start", message_id: "" })),
     ).toBeNull()
   })
 
   it("rejects token with non-string content", () => {
-    expect(
-      parseConversationEvent(
-        JSON.stringify({ type: "token", content: 42 }),
-      ),
-    ).toBeNull()
+    expect(parseConversationEvent(JSON.stringify({ type: "token", content: 42 }))).toBeNull()
   })
 
   it("rejects citation missing required fields", () => {
@@ -151,10 +139,6 @@ describe("parseConversationEvent", () => {
   })
 
   it("rejects error missing code", () => {
-    expect(
-      parseConversationEvent(
-        JSON.stringify({ type: "error", message: "nope" }),
-      ),
-    ).toBeNull()
+    expect(parseConversationEvent(JSON.stringify({ type: "error", message: "nope" }))).toBeNull()
   })
 })

@@ -55,9 +55,7 @@ export const useRateLimitStore = create<RateLimitState>((set) => ({
   until: null,
   setRateLimit: ({ message, retryAfterMs }) => {
     const until =
-      typeof retryAfterMs === "number" && retryAfterMs > 0
-        ? Date.now() + retryAfterMs
-        : null
+      typeof retryAfterMs === "number" && retryAfterMs > 0 ? Date.now() + retryAfterMs : null
     set({
       message: message ?? "Too many requests. Please slow down.",
       retryAfterMs: retryAfterMs ?? null,

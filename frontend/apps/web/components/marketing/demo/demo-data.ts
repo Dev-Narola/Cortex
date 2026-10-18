@@ -234,8 +234,7 @@ export function parseAnswer(answer: string): AnswerSegment[] {
   const parts: AnswerSegment[] = []
   const regex = /\{\{citation:(\d+)\}\}/g
   let lastIndex = 0
-  let match: RegExpExecArray | null
-  while ((match = regex.exec(answer)) !== null) {
+  for (const match of answer.matchAll(regex)) {
     if (match.index > lastIndex) {
       parts.push({ kind: "text", value: answer.slice(lastIndex, match.index) })
     }
@@ -245,7 +244,7 @@ export function parseAnswer(answer: string): AnswerSegment[] {
       id,
       index: Number.parseInt(match[1] ?? "1", 10),
     })
-    lastIndex = regex.lastIndex
+    lastIndex = match.index + match[0].length
   }
   if (lastIndex < answer.length) {
     parts.push({ kind: "text", value: answer.slice(lastIndex) })

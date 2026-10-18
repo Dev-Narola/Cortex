@@ -24,15 +24,9 @@
 
 "use client"
 
-import { useState, type ReactNode } from "react"
+import { type ReactNode, useState } from "react"
 
-import {
-  Button,
-  Icon,
-  Input,
-  TableToolbar,
-  TooltipRoot,
-} from "@cortex/ui"
+import { Button, Icon, Input, TableToolbar, TooltipRoot } from "@cortex/ui"
 
 export interface DocumentToolbarProps {
   /** Total count for the description line ("N documents"). */
@@ -72,11 +66,7 @@ export function DocumentToolbar({
       title="All documents"
       description={
         <span className="flex items-center gap-2">
-          <span>
-            {loading
-              ? "Loading…"
-              : `${total} ${total === 1 ? "document" : "documents"}`}
-          </span>
+          <span>{loading ? "Loading…" : `${total} ${total === 1 ? "document" : "documents"}`}</span>
           {connectionSlot}
         </span>
       }
@@ -114,11 +104,7 @@ export function DocumentToolbar({
 
           {/* Sort dropdown — placeholder. */}
           <TooltipRoot content="Sorting lands once the backend supports it" side="bottom">
-            <Button
-              variant="outline"
-              size="sm"
-              aria-label="Sort documents (coming soon)"
-            >
+            <Button variant="outline" size="sm" aria-label="Sort documents (coming soon)">
               <Icon name="SlidersHorizontal" className="h-3.5 w-3.5" />
               <span>Sort</span>
             </Button>

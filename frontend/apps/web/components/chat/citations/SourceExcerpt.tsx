@@ -23,7 +23,7 @@
  * whitespace (lists, indented code).
  */
 
-import { type ReactNode } from "react"
+import type { ReactNode } from "react"
 
 import { Icon } from "@cortex/ui"
 
@@ -34,10 +34,7 @@ export interface SourceExcerptProps {
   className?: string
 }
 
-export function SourceExcerpt({
-  citation,
-  className,
-}: SourceExcerptProps): ReactNode {
+export function SourceExcerpt({ citation, className }: SourceExcerptProps): ReactNode {
   // Defensive: the V3 stream always
   // includes an excerpt, but the reload
   // case (where the chunk ids are on the
@@ -52,22 +49,14 @@ export function SourceExcerpt({
       <div
         data-citation-excerpt
         data-citation-excerpt-state="unavailable"
-        className={
-          "flex items-start gap-2 rounded-md border border-dashed border-border bg-muted/30 px-3 py-3 text-sm text-muted-foreground " +
-          (className ?? "")
-        }
+        className={`flex items-start gap-2 rounded-md border border-dashed border-border bg-muted/30 px-3 py-3 text-sm text-muted-foreground ${className ?? ""}`}
       >
-        <Icon
-          name="TriangleAlert"
-          className="mt-0.5 h-3.5 w-3.5 shrink-0"
-        />
+        <Icon name="TriangleAlert" className="mt-0.5 h-3.5 w-3.5 shrink-0" />
         <div>
-          <p className="font-medium text-foreground/80">
-            Source unavailable
-          </p>
+          <p className="font-medium text-foreground/80">Source unavailable</p>
           <p className="text-xs text-muted-foreground">
-            The chunk metadata is no longer in this session. The
-            conversation can be re-streamed to refresh citations.
+            The chunk metadata is no longer in this session. The conversation can be re-streamed to
+            refresh citations.
           </p>
         </div>
       </div>
@@ -78,14 +67,9 @@ export function SourceExcerpt({
     <div
       data-citation-excerpt
       data-citation-excerpt-state="ready"
-      className={
-        "rounded-md border border-border bg-card/40 px-4 py-3 text-sm leading-relaxed text-foreground/90 " +
-        (className ?? "")
-      }
+      className={`rounded-md border border-border bg-card/40 px-4 py-3 text-sm leading-relaxed text-foreground/90 ${className ?? ""}`}
     >
-      <p className="whitespace-pre-wrap break-words">
-        {citation.excerpt}
-      </p>
+      <p className="whitespace-pre-wrap break-words">{citation.excerpt}</p>
     </div>
   )
 }

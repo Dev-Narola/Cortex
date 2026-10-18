@@ -11,10 +11,7 @@ import { Spinner } from "@cortex/ui"
 
 export default function AppLoading() {
   return (
-    <output
-      className="flex min-h-[50vh] items-center justify-center"
-      aria-live="polite"
-    >
+    <output className="flex min-h-[50vh] items-center justify-center" aria-live="polite">
       <Spinner size="lg" />
     </output>
   )

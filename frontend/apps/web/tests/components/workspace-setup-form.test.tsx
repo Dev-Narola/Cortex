@@ -64,9 +64,7 @@ describe("WorkspaceSetupForm", () => {
     render(<WorkspaceSetupForm />, { wrapper: makeWrapper() })
     expect(screen.getByLabelText(/workspace name/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/workspace url/i)).toBeInTheDocument()
-    expect(
-      screen.getByRole("button", { name: /create workspace/i }),
-    ).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /create workspace/i })).toBeInTheDocument()
   })
 
   it("rejects an empty name with a field-level error and no submit", async () => {
@@ -139,41 +137,29 @@ describe("WorkspaceSetupForm", () => {
       name: "Acme Inc",
       slug: "acme-inc",
     })
-    await waitFor(() =>
-      expect(useAuthStore.getState().tenant?.slug).toBe("acme-inc"),
-    )
+    await waitFor(() => expect(useAuthStore.getState().tenant?.slug).toBe("acme-inc"))
     expect(useAuthStore.getState().tenant?.workspace).toBe("Acme Inc")
     expect(useAuthStore.getState().isOnboarded).toBe(true)
-    await waitFor(() =>
-      expect(pushMock).toHaveBeenCalledWith("/app/dashboard"),
-    )
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/app/dashboard"))
   })
 
   it("on 409 (duplicate slug), surfaces the slug-already-taken error on the slug field", async () => {
-    postMock.mockRejectedValueOnce(
-      new ApiError(409, { message: "Slug already in use" }),
-    )
+    postMock.mockRejectedValueOnce(new ApiError(409, { message: "Slug already in use" }))
     const user = userEvent.setup()
     render(<WorkspaceSetupForm />, { wrapper: makeWrapper() })
     await user.type(screen.getByLabelText(/workspace name/i), "Acme Inc")
     await user.click(screen.getByRole("button", { name: /create workspace/i }))
-    expect(
-      await screen.findByText(/workspace url is already taken/i),
-    ).toBeInTheDocument()
+    expect(await screen.findByText(/workspace url is already taken/i)).toBeInTheDocument()
     expect(pushMock).not.toHaveBeenCalled()
   })
 
   it("on 5xx, surfaces a server-error banner", async () => {
-    postMock.mockRejectedValueOnce(
-      new ApiError(500, { message: "Internal Server Error" }),
-    )
+    postMock.mockRejectedValueOnce(new ApiError(500, { message: "Internal Server Error" }))
     const user = userEvent.setup()
     render(<WorkspaceSetupForm />, { wrapper: makeWrapper() })
     await user.type(screen.getByLabelText(/workspace name/i), "Acme Inc")
     await user.click(screen.getByRole("button", { name: /create workspace/i }))
-    expect(
-      await screen.findByText(/the server hit an error/i),
-    ).toBeInTheDocument()
+    expect(await screen.findByText(/the server hit an error/i)).toBeInTheDocument()
     expect(pushMock).not.toHaveBeenCalled()
   })
 })

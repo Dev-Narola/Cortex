@@ -32,10 +32,10 @@
  */
 "use client"
 
-import { useId, type ReactNode } from "react"
+import { type ReactNode, useId } from "react"
 
-import type { DemoCitation } from "./demo-data"
 import { DemoCitation as DemoCitationChip } from "./demo-citation"
+import type { DemoCitation } from "./demo-data"
 import type { AnswerSegment } from "./demo-data"
 
 interface DemoMessageProps {
@@ -45,8 +45,8 @@ interface DemoMessageProps {
   /** The full list of citations, keyed
    *  by `id` (e.g. "citation-1"). The
    *  component uses this to resolve the
- *  citation segments to their full
- *  payload. */
+   *  citation segments to their full
+   *  payload. */
   citations: ReadonlyArray<DemoCitation>
   /** The id of the currently-open
    *  citation (so the chip can reflect
@@ -86,21 +86,23 @@ export function DemoMessage({
       data-testid="demo-message"
       data-streaming={isStreaming ? "true" : "false"}
       className={`rounded-2xl border border-border bg-background/80 p-4 shadow-sm transition-shadow duration-base ${
-        isStreaming
-          ? "shadow-spark"
-          : "shadow-none"
+        isStreaming ? "shadow-spark" : "shadow-none"
       }`}
     >
       <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
         Cortex
       </p>
-      <p
-        data-testid="demo-message-text"
-        className="text-sm leading-relaxed text-foreground"
-      >
+      <p data-testid="demo-message-text" className="text-sm leading-relaxed text-foreground">
         {segments.map((seg, i) => {
           if (seg.kind === "text") {
-            return <span key={`${id}-t-${i}`}>{seg.value}</span>
+            return (
+              <span
+                // biome-ignore lint/suspicious/noArrayIndexKey: segments are positional and fixed per message
+                key={`${id}-t-${i}`}
+              >
+                {seg.value}
+              </span>
+            )
           }
           // Citation segment — look up by
           // index.
@@ -108,6 +110,7 @@ export function DemoMessage({
           if (!full) return null
           return (
             <DemoCitationChip
+              // biome-ignore lint/suspicious/noArrayIndexKey: segments are positional and fixed per message
               key={`${id}-c-${i}`}
               citation={full}
               isActive={activeCitationId === full.id}

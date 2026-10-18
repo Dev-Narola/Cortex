@@ -29,9 +29,7 @@ import { test } from "@playwright/test"
 import { prepareForScreenshot, snapshot } from "./helpers"
 
 test.describe("F1 component primitives visual regression", () => {
-  test("component showcase — full page (all primitives, default state)", async ({
-    page,
-  }) => {
+  test("component showcase — full page (all primitives, default state)", async ({ page }) => {
     await page.goto("/component-showcase")
     await prepareForScreenshot(page, { theme: "dark" })
     await snapshot(page, "components-showcase-default", { fullPage: true })

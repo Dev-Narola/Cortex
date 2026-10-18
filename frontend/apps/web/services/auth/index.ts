@@ -4,17 +4,12 @@
  * Re-exported by the app's `@/services/auth` import.
  */
 
+export { acceptInvite, type AcceptInviteRequest } from "./accept-invite"
 export { login, type LoginRequest, type LoginResponse } from "./login"
 export { register, type RegisterRequest, type RegisterResponse } from "./register"
 export { refresh, type RefreshResponse } from "./refresh"
-export { logout } from "./logout"
-export {
-  forgotPassword,
-  resetPassword,
-  type ForgotPasswordRequest,
-  type ResetPasswordRequest,
-  type ResetPasswordResponse,
-} from "./reset-password"
+export { logout, revokeRefreshToken } from "./logout"
+export { resetPassword, type ResetPasswordRequest } from "./reset-password"
 
 /**
  * Shared `toAuthUser` mapper — both login and register

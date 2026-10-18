@@ -25,7 +25,7 @@ import type { ReactNode } from "react"
 
 import { Card, CardContent, ErrorState, Icon } from "@cortex/ui"
 
-import { toFrontendError, type FrontendError } from "@/lib/http/errors"
+import { type FrontendError, toFrontendError } from "@/lib/http/errors"
 
 export interface DocumentErrorStateProps {
   /** The raw error from TanStack Query. */
@@ -46,8 +46,7 @@ function categorise(error: unknown): {
     case "network":
       return {
         title: "Can't reach Cortex",
-        description:
-          "Your network connection dropped. Check the cable, then try again.",
+        description: "Your network connection dropped. Check the cable, then try again.",
         icon: "Wifi",
       }
     case "server":

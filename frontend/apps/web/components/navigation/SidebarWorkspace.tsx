@@ -1,103 +1,68 @@
 /**
- * SidebarWorkspace — the workspace switcher at the top of
- * the sidebar.
+ * SidebarWorkspace — brand + current workspace at the top of the sidebar.
  *
- * **F3 Part 1 (Task 3).** Shows the current tenant's
- * name, an avatar (initials fallback), and the plan.
- *
- * **F2 state source.** The data comes from the F2
- * `useAuthStore` — specifically the `tenant` field that
- * `setTenant` / `completeOnboarding` write to.
- *
- * **Single tenant (today).** Per the spec, F3 only
- * supports *one* workspace. The dropdown that would
- * list "other workspaces" is reserved for F4+; the
- * button is rendered as a non-interactive pill so the
- * visual layout is correct (a misclick shouldn't do
- * anything) and the upcoming feature has a natural
- * place to land.
- *
- * **Collapsed.** When the sidebar is collapsed, we
- * render just the avatar + the workspace name as a
- * `TooltipRoot` — saves the 64px of horizontal space.
+ * Workspace name/slug come from the session; the plan comes from
+ * `GET /tenants/me` and is simply omitted until it loads (never guessed).
+ * Collapsed mode shows the logo mark only, with the workspace in a tooltip.
  */
 
 "use client"
 
+import Link from "next/link"
+
+import { Logo, TooltipRoot } from "@cortex/ui"
+
+import { useCurrentTenant } from "@/hooks/tenant/useCurrentTenant"
 import { useAuthStore } from "@/lib/auth/store"
 
-import { Avatar, TooltipRoot } from "@cortex/ui"
-
 export interface SidebarWorkspaceProps {
-  /** Hide the name + plan labels (icon-only mode). */
+  /** Logo mark only (icon rail). */
   collapsed?: boolean
-  /** Optional close handler for the mobile drawer. */
+  /** Mobile drawer close handler (navigating home closes the drawer). */
   onClose?: () => void
-}
-
-/** Derive a friendly plan label from the workspace. The
- *  plan isn't in the F2 auth-store payload yet (the
- *  `POST /tenants` response shape doesn't carry it),
- *  so we show "Workspace" as a sensible default. F3+
- *  will surface the actual `Plan` enum once the
- *  `GET /tenants/me` response is wired in. */
-function planLabel(): string {
-  return "Free"
-}
-
-/** Build the avatar's `name` prop. The F1 `Avatar`
- *  uses it to render initials + an accessible label. */
-function buildAvatarName(workspaceName: string, slug: string): string {
-  const src = (workspaceName ?? "").trim()
-  if (src) {
-    return src
-      .split(/\s+/)
-      .map((w) => w[0]?.toUpperCase() ?? "")
-      .slice(0, 2)
-      .join("") || slug
-  }
-  return (slug || "WS").slice(0, 2).toUpperCase()
 }
 
 export function SidebarWorkspace({ collapsed = false, onClose }: SidebarWorkspaceProps) {
   const tenant = useAuthStore((s) => s.tenant)
-  const workspaceName = tenant?.workspace ?? tenant?.slug ?? "Workspace"
-  const slug = tenant?.slug ?? "workspace"
-  const avatarName = buildAvatarName(workspaceName, slug)
-  const displayPlan = planLabel()
+  const { data: current } = useCurrentTenant()
+  const name = current?.name ?? tenant?.workspace ?? tenant?.slug ?? "Workspace"
+  const slug = current?.slug ?? tenant?.slug
+
+  const home = (
+    <Link
+      href="/app/dashboard"
+      onClick={onClose}
+      aria-label="Cortex home"
+      className="rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      <Logo size="md" showText={!collapsed} />
+    </Link>
+  )
 
   if (collapsed) {
     return (
-      <div className="flex h-14 items-center justify-center border-b border-border px-2">
-        <TooltipRoot content={`${workspaceName} · ${displayPlan}`} side="right">
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label={`${workspaceName} workspace`}
-            className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-          >
-            <Avatar name={avatarName} size="sm" />
-          </button>
+      <div className="flex h-14 items-center justify-center border-b border-divider px-2">
+        <TooltipRoot content={name} side="right">
+          {home}
         </TooltipRoot>
       </div>
     )
   }
 
   return (
-    <div className="flex h-14 items-center gap-3 border-b border-border px-3">
-      <Avatar name={avatarName} size="sm" />
-      <div className="min-w-0 flex-1">
-        <p
-          className="truncate text-sm font-semibold text-foreground"
-          title={workspaceName}
-        >
-          {workspaceName}
+    <div className="border-b border-divider px-3 pb-3">
+      <div className="flex h-14 items-center">{home}</div>
+      <div className="glass rounded-lg px-3 py-2">
+        <p className="truncate text-sm font-medium text-foreground" title={name}>
+          {name}
         </p>
-        <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-          <span className="inline-block h-1.5 w-1.5 rounded-full bg-success" />
-          {displayPlan}
-          <span className="opacity-50">·</span>
-          <span className="truncate">/{slug}</span>
+        <p className="flex items-center gap-1.5 truncate text-[11px] text-muted-foreground">
+          {slug ? <span className="truncate font-mono">/{slug}</span> : null}
+          {current?.plan ? (
+            <span className="rounded-full bg-brand/10 px-1.5 py-px font-medium capitalize text-brand">
+              {current.plan}
+            </span>
+          ) : null}
         </p>
       </div>
     </div>

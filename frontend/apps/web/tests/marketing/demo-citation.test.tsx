@@ -29,25 +29,13 @@ const TEST_CITATION: DemoCitationData = {
 
 describe("DemoCitation", () => {
   it("renders the index as the visible label", () => {
-    render(
-      <DemoCitation
-        citation={TEST_CITATION}
-        isActive={false}
-        onOpen={vi.fn()}
-      />,
-    )
+    render(<DemoCitation citation={TEST_CITATION} isActive={false} onOpen={vi.fn()} />)
     const btn = screen.getByTestId("demo-citation-test-1")
     expect(btn).toHaveTextContent("1")
   })
 
   it("carries the document title in the aria-label", () => {
-    render(
-      <DemoCitation
-        citation={TEST_CITATION}
-        isActive={false}
-        onOpen={vi.fn()}
-      />,
-    )
+    render(<DemoCitation citation={TEST_CITATION} isActive={false} onOpen={vi.fn()} />)
     expect(screen.getByTestId("demo-citation-test-1")).toHaveAttribute(
       "aria-label",
       "View source citation 1, Retrieval Notes.md",
@@ -59,9 +47,7 @@ describe("DemoCitation", () => {
       ...TEST_CITATION,
       documentTitle: "",
     }
-    render(
-      <DemoCitation citation={minimal} isActive={false} onOpen={vi.fn()} />,
-    )
+    render(<DemoCitation citation={minimal} isActive={false} onOpen={vi.fn()} />)
     expect(screen.getByTestId("demo-citation-test-1")).toHaveAttribute(
       "aria-label",
       "View source citation 1",
@@ -70,26 +56,14 @@ describe("DemoCitation", () => {
 
   it("clicking the chip calls onOpen with the citation id", () => {
     const onOpen = vi.fn()
-    render(
-      <DemoCitation
-        citation={TEST_CITATION}
-        isActive={false}
-        onOpen={onOpen}
-      />,
-    )
+    render(<DemoCitation citation={TEST_CITATION} isActive={false} onOpen={onOpen} />)
     fireEvent.click(screen.getByTestId("demo-citation-test-1"))
     expect(onOpen).toHaveBeenCalledWith("test-1")
   })
 
   it("Enter / Space also activates the chip (keyboard)", () => {
     const onOpen = vi.fn()
-    render(
-      <DemoCitation
-        citation={TEST_CITATION}
-        isActive={false}
-        onOpen={onOpen}
-      />,
-    )
+    render(<DemoCitation citation={TEST_CITATION} isActive={false} onOpen={onOpen} />)
     const chip = screen.getByTestId("demo-citation-test-1")
     fireEvent.keyDown(chip, { key: "Enter" })
     expect(onOpen).toHaveBeenCalledWith("test-1")
@@ -99,26 +73,10 @@ describe("DemoCitation", () => {
 
   it("aria-pressed reflects isActive", () => {
     const { rerender } = render(
-      <DemoCitation
-        citation={TEST_CITATION}
-        isActive={false}
-        onOpen={vi.fn()}
-      />,
+      <DemoCitation citation={TEST_CITATION} isActive={false} onOpen={vi.fn()} />,
     )
-    expect(screen.getByTestId("demo-citation-test-1")).toHaveAttribute(
-      "aria-pressed",
-      "false",
-    )
-    rerender(
-      <DemoCitation
-        citation={TEST_CITATION}
-        isActive={true}
-        onOpen={vi.fn()}
-      />,
-    )
-    expect(screen.getByTestId("demo-citation-test-1")).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    )
+    expect(screen.getByTestId("demo-citation-test-1")).toHaveAttribute("aria-pressed", "false")
+    rerender(<DemoCitation citation={TEST_CITATION} isActive={true} onOpen={vi.fn()} />)
+    expect(screen.getByTestId("demo-citation-test-1")).toHaveAttribute("aria-pressed", "true")
   })
 })

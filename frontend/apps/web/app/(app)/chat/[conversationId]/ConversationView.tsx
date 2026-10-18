@@ -45,7 +45,7 @@
 
 "use client"
 
-import { useCallback, useEffect, type ReactNode } from "react"
+import { type ReactNode, useCallback, useEffect } from "react"
 
 import { toast } from "@cortex/ui"
 
@@ -63,11 +63,8 @@ export interface ConversationViewProps {
   conversationId: string
 }
 
-export function ConversationView({
-  conversationId,
-}: ConversationViewProps): ReactNode {
-  const { data, isLoading, isError, error, refetch } =
-    useConversation(conversationId)
+export function ConversationView({ conversationId }: ConversationViewProps): ReactNode {
+  const { data, isLoading, isError, error, refetch } = useConversation(conversationId)
 
   // Mount the stream hook. This is the single
   // place the WebSocket lifecycle lives; the
@@ -88,14 +85,13 @@ export function ConversationView({
   // the effect doesn't refire on every
   // re-render with a new error object
   // reference.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: keyed on code+message so one error toasts once, not on every new error object
   useEffect(() => {
     if (stream.error) {
       const friendly = friendlyErrorForCode(stream.error.code)
       toast({
         title: friendly.title,
-        description:
-          stream.error.message ??
-          "Cortex couldn't complete this response.",
+        description: stream.error.message ?? "Cortex couldn't complete this response.",
         variant: "destructive",
       })
     }
@@ -111,8 +107,7 @@ export function ConversationView({
           onError: (err) => {
             toast({
               title: "Couldn't send your message",
-              description:
-                err instanceof Error ? err.message : "Try again in a moment.",
+              description: err instanceof Error ? err.message : "Try again in a moment.",
               variant: "destructive",
             })
           },
@@ -133,11 +128,7 @@ export function ConversationView({
           onRetry={() => {
             void refetch()
           }}
-          message={
-            error instanceof Error
-              ? error.message
-              : "Something went wrong reaching Cortex."
-          }
+          message={error instanceof Error ? error.message : "Something went wrong reaching Cortex."}
         />
       </div>
     )

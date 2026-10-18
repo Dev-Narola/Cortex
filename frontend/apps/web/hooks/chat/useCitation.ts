@@ -45,13 +45,12 @@
  * the swap is mechanical.
  */
 
+import { useQueryClient } from "@tanstack/react-query"
 import { useMemo } from "react"
 
-import {
-  resolveCitations,
-} from "@/lib/chat/citation-resolver"
+import { resolveCitations } from "@/lib/chat/citation-resolver"
 import type { Citation } from "@/types/citation"
-import type { Message } from "@/types/conversation"
+import type { Conversation, Message } from "@/types/conversation"
 
 import { useConversationStreamStore } from "./conversationStreamStore"
 
@@ -63,10 +62,10 @@ export type CitationStatus =
   // (reload case, or the backend did
   // not emit it).
   | "missing" // The chunk id is not on
-  // the message at all. The UI
-  // should not have rendered a chip
-  // for this — this is a programming
-  // error surface.
+// the message at all. The UI
+// should not have rendered a chip
+// for this — this is a programming
+// error surface.
 
 export interface UseCitationResult {
   status: CitationStatus
@@ -102,19 +101,15 @@ interface UseCitationInput {
  * conversation. The panel renders the
  * friendly "Source unavailable" state.
  */
-export function useCitation({
-  conversationId,
-  citationId,
-}: UseCitationInput): UseCitationResult {
+export function useCitation({ conversationId, citationId }: UseCitationInput): UseCitationResult {
+  const queryClient = useQueryClient()
   // The stream store holds the live
   // `ConversationCitation` list. We pull
   // it directly. The `useMemo` keeps the
   // reference stable across re-renders
   // when the underlying array doesn't
   // change.
-  const streamed = useConversationStreamStore(
-    (s) => s.streams.get(conversationId)?.citations,
-  )
+  const streamed = useConversationStreamStore((s) => s.streams.get(conversationId)?.citations)
 
   // We also need the active assistant
   // message so we can check whether the
@@ -144,6 +139,23 @@ export function useCitation({
     const chunkId = citationId.startsWith("citation:")
       ? citationId.slice("citation:".length)
       : citationId
+
+    // Saved answers: sources come with the conversation (already cached by
+    // the page), so opening one costs no request.
+    const saved = queryClient
+      .getQueryData<Conversation>(["conversations", conversationId])
+      ?.messages?.flatMap((m) => m.citations ?? [])
+      .find((c) => c.chunkId === chunkId)
+    if (saved) {
+      return {
+        status: "ready",
+        data: saved,
+        isLoading: false,
+        isError: false,
+        error: null,
+        refetch: () => {},
+      }
+    }
 
     if (!streamed) {
       return {
@@ -211,7 +223,7 @@ export function useCitation({
       error: null,
       refetch: () => {},
     }
-  }, [citationId, streamed, activeMessageId])
+  }, [citationId, streamed, activeMessageId, conversationId, queryClient])
 }
 
 /**
@@ -230,15 +242,11 @@ export function useCitationList(conversationId: string): {
   data: Citation[]
   isReady: boolean
 } {
-  const streamed = useConversationStreamStore(
-    (s) => s.streams.get(conversationId)?.citations,
-  )
+  const streamed = useConversationStreamStore((s) => s.streams.get(conversationId)?.citations)
   const assistantMessageId = useConversationStreamStore(
     (s) => s.streams.get(conversationId)?.assistantMessageId,
   )
-  const status = useConversationStreamStore(
-    (s) => s.streams.get(conversationId)?.status ?? "idle",
-  )
+  const status = useConversationStreamStore((s) => s.streams.get(conversationId)?.status ?? "idle")
 
   return useMemo(() => {
     if (!streamed || !assistantMessageId) {

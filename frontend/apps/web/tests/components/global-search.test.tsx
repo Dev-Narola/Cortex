@@ -1,72 +1,57 @@
 /**
- * GlobalSearch — F3 Part 1 (Task 9).
- *
- * Verifies the placeholder:
- *   - Renders the "Search Cortex…" affordance.
- *   - Reserves the Ctrl/Cmd + K shortcut.
- *   - On click, surfaces a "coming in F4" toast.
+ * GlobalSearch — the topbar trigger routes to /app/search (click or ⌘K),
+ * and focuses the field instead when the Search page is already open.
  */
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { render, screen } from "@testing-library/react"
+import { fireEvent, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { describe, expect, it } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 
-import { ToastProvider, ToastViewport } from "@cortex/ui"
+const pushMock = vi.fn()
+let pathname = "/app/dashboard"
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: pushMock }),
+  usePathname: () => pathname,
+}))
 
 import { GlobalSearch } from "@/components/search/GlobalSearch"
 
-function Wrapper({ children }: { children: React.ReactNode }) {
-  // The F1 Toast component requires a `ToastProvider`
-  // ancestor. The (app) layout mounts it; tests need to
-  // do the same or the toast call is a no-op (which is
-  // fine for these assertions — we just need a host
-  // for the portal).
-  return (
-    <QueryClientProvider
-      client={
-        new QueryClient({
-          defaultOptions: { mutations: { retry: false }, queries: { retry: false } },
-        })
-      }
-    >
-      <ToastProvider>
-        {children}
-        <ToastViewport />
-      </ToastProvider>
-    </QueryClientProvider>
-  )
-}
-
 describe("GlobalSearch", () => {
-  it("renders the placeholder with the keyboard hint", () => {
-    render(<GlobalSearch />, { wrapper: Wrapper })
-    const button = screen.getByRole("button", { name: /search.*coming in f4/i })
-    expect(button).toBeInTheDocument()
-    expect(button).toHaveTextContent(/search cortex/i)
+  beforeEach(() => {
+    pushMock.mockClear()
+    pathname = "/app/dashboard"
   })
 
-  it("is rendered as a disabled button (not a real input)", () => {
-    render(<GlobalSearch />, { wrapper: Wrapper })
-    const button = screen.getByRole("button", { name: /search.*coming in f4/i })
-    // The F1 GlobalSearch uses `aria-disabled` to
-    // communicate "this is a placeholder, not a real
-    // input" without making it unfocusable.
-    expect(button).toHaveAttribute("aria-disabled")
+  it("is a real, enabled control with a keyboard hint", () => {
+    render(<GlobalSearch />)
+    const button = screen.getByRole("button", { name: /search knowledge/i })
+    expect(button).not.toHaveAttribute("aria-disabled")
+    expect(button).toHaveAttribute("aria-keyshortcuts", "Control+K Meta+K")
   })
 
-  it("clicking the placeholder does not throw + fires the global handler", async () => {
-    // The F3 spec says the placeholder "shows a toast"
-    // on click. We don't assert the toast body in this
-    // test (Radix's portal + happy-dom interaction is
-    // flaky in jsdom). What we do assert: the click
-    // handler is wired + the `toast()` call doesn't
-    // throw. The toast is exercised in the F1 toast
-    // tests in the @cortex/ui package.
-    const user = userEvent.setup()
-    render(<GlobalSearch />, { wrapper: Wrapper })
-    await expect(
-      user.click(screen.getByRole("button", { name: /search.*coming in f4/i })),
-    ).resolves.not.toThrow()
+  it("click opens the Search page", async () => {
+    render(<GlobalSearch />)
+    await userEvent.setup().click(screen.getByRole("button", { name: /search knowledge/i }))
+    expect(pushMock).toHaveBeenCalledWith("/app/search")
+  })
+
+  it("Ctrl+K opens the Search page", () => {
+    render(<GlobalSearch />)
+    fireEvent.keyDown(window, { key: "k", ctrlKey: true })
+    expect(pushMock).toHaveBeenCalledWith("/app/search")
+  })
+
+  it("on the Search page, ⌘K focuses the field instead of navigating", () => {
+    pathname = "/app/search"
+    render(
+      <>
+        <GlobalSearch />
+        <input id="search-q" />
+      </>,
+    )
+    fireEvent.keyDown(window, { key: "K", metaKey: true })
+    expect(pushMock).not.toHaveBeenCalled()
+    expect(document.activeElement?.id).toBe("search-q")
   })
 })

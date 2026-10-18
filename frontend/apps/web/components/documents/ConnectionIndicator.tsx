@@ -61,8 +61,7 @@ export function ConnectionIndicator({
   // <p> wrapper; an inline indicator is the
   // right shape for that context.
   return (
-    <span
-      role="status"
+    <output
       aria-live="polite"
       className={cn(
         "inline-flex items-center gap-1.5 align-middle text-xs text-muted-foreground",
@@ -74,8 +73,7 @@ export function ConnectionIndicator({
         className={cn(
           "h-1.5 w-1.5 rounded-full",
           state === "open" && "bg-success",
-          state === "connecting" &&
-            "bg-warning animate-pulse",
+          state === "connecting" && "bg-warning animate-pulse",
           state === "closed" && "bg-muted-foreground",
           state === "closing" && "bg-warning",
           // V11.5 — steady amber, no pulse, so the
@@ -85,6 +83,6 @@ export function ConnectionIndicator({
         )}
       />
       <span>{COPY[state]}</span>
-    </span>
+    </output>
   )
 }

@@ -45,31 +45,15 @@ function formatDate(iso: string): string {
   })
 }
 
-export function DocumentMetadata({
-  document,
-}: DocumentMetadataProps): ReactNode {
+export function DocumentMetadata({ document }: DocumentMetadataProps): ReactNode {
   return (
     <dl className="divide-y divide-border/60">
       <MetadataRow label="Title" value={document.title} />
-      <MetadataRow
-        label="Status"
-        value={<DocumentStatusBadge status={document.status} />}
-      />
-      <MetadataRow
-        label="Source"
-        value={document.mime_type}
-        monospace
-      />
-      <MetadataRow
-        label="File type"
-        value={document.mime_type}
-        monospace
-      />
+      <MetadataRow label="Status" value={<DocumentStatusBadge status={document.status} />} />
+      <MetadataRow label="Source" value={document.mime_type} monospace />
+      <MetadataRow label="File type" value={document.mime_type} monospace />
       <MetadataRow label="File size" value="—" />
-      <MetadataRow
-        label="Created"
-        value={formatDate(document.created_at)}
-      />
+      <MetadataRow label="Created" value={formatDate(document.created_at)} />
       <MetadataRow label="Updated" value="—" />
       <MetadataRow label="Chunk count" value="—" />
       <MetadataRow label="Metadata" value="—" />

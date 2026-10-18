@@ -19,18 +19,12 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { renderHook, waitFor } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
+import { agentKeys, useAgentRun, useAgentToolCalls } from "@/hooks/agents"
 import { getApiClient } from "@/lib/auth/api-client"
-import {
-  useAgentRun,
-  useAgentToolCalls,
-  agentKeys,
-} from "@/hooks/agents"
 
 vi.mock("@/lib/auth/api-client", async () => {
   const actual =
-    await vi.importActual<typeof import("@/lib/auth/api-client")>(
-      "@/lib/auth/api-client",
-    )
+    await vi.importActual<typeof import("@/lib/auth/api-client")>("@/lib/auth/api-client")
   return { ...actual, getApiClient: vi.fn(), resetApiClient: vi.fn() }
 })
 
@@ -58,10 +52,7 @@ describe("useAgentRun", () => {
     const get = vi.fn()
     getApiClientMock.mockReturnValue({ get } as never)
 
-    const { result } = renderHook(
-      () => useAgentRun({ runId: null }),
-      { wrapper: makeWrapper() },
-    )
+    const { result } = renderHook(() => useAgentRun({ runId: null }), { wrapper: makeWrapper() })
 
     expect(result.current.fetchStatus).toBe("idle")
     expect(get).not.toHaveBeenCalled()
@@ -71,10 +62,7 @@ describe("useAgentRun", () => {
     const get = vi.fn()
     getApiClientMock.mockReturnValue({ get } as never)
 
-    const { result } = renderHook(
-      () => useAgentRun({ runId: "" }),
-      { wrapper: makeWrapper() },
-    )
+    const { result } = renderHook(() => useAgentRun({ runId: "" }), { wrapper: makeWrapper() })
 
     expect(result.current.fetchStatus).toBe("idle")
     expect(get).not.toHaveBeenCalled()
@@ -106,10 +94,7 @@ describe("useAgentRun", () => {
     const wrapper = ({ children }: { children: React.ReactNode }) => (
       <QueryClientProvider client={qc}>{children}</QueryClientProvider>
     )
-    const { result } = renderHook(
-      () => useAgentRun({ runId: "r-1" }),
-      { wrapper },
-    )
+    const { result } = renderHook(() => useAgentRun({ runId: "r-1" }), { wrapper })
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(get).toHaveBeenCalledTimes(1)
@@ -147,14 +132,8 @@ describe("useAgentRun", () => {
     })
     getApiClientMock.mockReturnValue({ get } as never)
 
-    const { result: r1 } = renderHook(
-      () => useAgentRun({ runId: "r-1" }),
-      { wrapper },
-    )
-    const { result: r2 } = renderHook(
-      () => useAgentRun({ runId: "r-2" }),
-      { wrapper },
-    )
+    const { result: r1 } = renderHook(() => useAgentRun({ runId: "r-1" }), { wrapper })
+    const { result: r2 } = renderHook(() => useAgentRun({ runId: "r-2" }), { wrapper })
 
     await waitFor(() => expect(r1.current.isSuccess).toBe(true))
     await waitFor(() => expect(r2.current.isSuccess).toBe(true))
@@ -163,16 +142,14 @@ describe("useAgentRun", () => {
   })
 })
 
-
 describe("useAgentToolCalls", () => {
   it("does not fire when disabled (enabled: false)", async () => {
     const get = vi.fn()
     getApiClientMock.mockReturnValue({ get } as never)
 
-    const { result } = renderHook(
-      () => useAgentToolCalls({ runId: "r-1", enabled: false }),
-      { wrapper: makeWrapper() },
-    )
+    const { result } = renderHook(() => useAgentToolCalls({ runId: "r-1", enabled: false }), {
+      wrapper: makeWrapper(),
+    })
 
     expect(result.current.fetchStatus).toBe("idle")
     expect(get).not.toHaveBeenCalled()
@@ -198,15 +175,10 @@ describe("useAgentToolCalls", () => {
     getApiClientMock.mockReturnValue({ get } as never)
 
     const wrapper = makeWrapper()
-    const { result } = renderHook(
-      () => useAgentToolCalls({ runId: "r-1" }),
-      { wrapper },
-    )
+    const { result } = renderHook(() => useAgentToolCalls({ runId: "r-1" }), { wrapper })
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
-    expect(result.current.data?.toolCalls[0]?.name).toBe(
-      "retrieve_documents",
-    )
+    expect(result.current.data?.toolCalls[0]?.name).toBe("retrieve_documents")
   })
 
   it("uses a key that includes the run id", async () => {
@@ -230,8 +202,6 @@ describe("useAgentToolCalls", () => {
       wrapper,
     })
 
-    await waitFor(() =>
-      expect(qc.getQueryData(agentKeys.toolCalls("r-1"))).toBeDefined(),
-    )
+    await waitFor(() => expect(qc.getQueryData(agentKeys.toolCalls("r-1"))).toBeDefined())
   })
 })

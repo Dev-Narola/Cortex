@@ -21,7 +21,7 @@
 
 "use client"
 
-import { useState, type ReactNode } from "react"
+import { type ReactNode, useState } from "react"
 
 import {
   Button,
@@ -35,16 +35,15 @@ import {
   toast,
 } from "@cortex/ui"
 
-import {
-  useInvalidateDocuments,
-  useReprocessDocument,
-} from "@/hooks/documents"
+import { useInvalidateDocuments, useReprocessDocument } from "@/hooks/documents"
 
 export interface ReprocessDocumentDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   documentId: string
   documentTitle: string
+  /** Failed documents are retried (`/retry`); indexed ones are reprocessed. */
+  failed?: boolean
   /** Fired after a successful reprocess. */
   onReprocessed?: () => void
 }
@@ -54,6 +53,7 @@ export function ReprocessDocumentDialog({
   onOpenChange,
   documentId,
   documentTitle,
+  failed = false,
   onReprocessed,
 }: ReprocessDocumentDialogProps): ReactNode {
   const [submitting, setSubmitting] = useState(false)
@@ -64,15 +64,15 @@ export function ReprocessDocumentDialog({
     if (submitting) return
     setSubmitting(true)
     const pending = toast({
-      title: "Reprocessing…",
+      title: failed ? "Retrying…" : "Reprocessing…",
       description: documentTitle,
     })
     try {
-      await reprocessMutation.mutateAsync({ id: documentId })
+      await reprocessMutation.mutateAsync({ id: documentId, retry: failed })
       pending.dismiss()
       toast({
         title: "Document queued",
-        description: "Reprocessing started - status will update shortly.",
+        description: `${failed ? "Retry" : "Reprocessing"} started - status will update shortly.`,
         variant: "success",
       })
       await invalidate()
@@ -81,7 +81,7 @@ export function ReprocessDocumentDialog({
     } catch (err) {
       pending.dismiss()
       toast({
-        title: "Reprocess failed",
+        title: failed ? "Retry failed" : "Reprocess failed",
         description: err instanceof Error ? err.message : "Try again.",
         variant: "destructive",
       })
@@ -100,11 +100,12 @@ export function ReprocessDocumentDialog({
     >
       <DialogContent size="sm">
         <DialogHeader>
-          <DialogTitle>Reprocess document?</DialogTitle>
+          <DialogTitle>{failed ? "Retry document?" : "Reprocess document?"}</DialogTitle>
           <DialogDescription>
             <span className="font-medium text-foreground">{documentTitle}</span>{" "}
-            will be re-ingested from scratch. The current version stays
-            searchable until the new version is indexed.
+            {failed
+              ? "will be queued for processing again."
+              : "will be re-ingested from scratch. The current version stays searchable until the new version is indexed."}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
@@ -130,7 +131,7 @@ export function ReprocessDocumentDialog({
             ) : (
               <>
                 <Icon name="RotateCw" className="h-3.5 w-3.5" />
-                <span>Reprocess</span>
+                <span>{failed ? "Retry" : "Reprocess"}</span>
               </>
             )}
           </Button>

@@ -42,7 +42,7 @@
  */
 "use client"
 
-import { useState, type KeyboardEvent } from "react"
+import { type KeyboardEvent, useState } from "react"
 
 import { Icon } from "@cortex/ui"
 
@@ -122,7 +122,7 @@ export function DemoInput({
         disabled={!canSubmit}
         aria-label="Ask Cortex"
         data-testid="demo-submit"
-        className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-spark text-paper-50 shadow-spark transition-opacity disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-volt-500"
+        className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-spark text-foreground shadow-spark transition-opacity disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-volt-500"
       >
         <Icon name="ArrowUp" className="h-4 w-4" aria-hidden />
       </button>

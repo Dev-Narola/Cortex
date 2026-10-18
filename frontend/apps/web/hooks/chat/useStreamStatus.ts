@@ -16,10 +16,8 @@
 
 "use client"
 
-import { useConversationStreamStore, type StreamStatus } from "./conversationStreamStore"
+import { type StreamStatus, useConversationStreamStore } from "./conversationStreamStore"
 
 export function useStreamStatus(conversationId: string): StreamStatus {
-  return useConversationStreamStore(
-    (s) => s.streams.get(conversationId)?.status ?? "idle",
-  )
+  return useConversationStreamStore((s) => s.streams.get(conversationId)?.status ?? "idle")
 }

@@ -9,10 +9,9 @@
  *
  * Responsibilities:
  *   - Inject the Bearer token from the auth store.
- *   - On 401, attempt a silent refresh against `/auth/refresh`.
- *     The refresh token lives in an httpOnly cookie set by the
- *     backend, so the browser sends it automatically with
- *     `credentials: "include"`.
+ *   - On 401, attempt a silent refresh against `/auth/refresh`
+ *     with the stored refresh token in the JSON body (the backend
+ *     sets no cookies, so requests use `credentials: "omit"`).
  *   - On refresh success, update the store and retry the original
  *     request.
  *   - On refresh failure, call `logout()` and let the 401 surface
@@ -56,18 +55,15 @@ async function performRefresh(): Promise<boolean> {
       await useAuthStore.getState().logout()
       return false
     }
-    const res = await fetch(
-      `${publicEnv.NEXT_PUBLIC_API_URL}/api/v1/auth/refresh`,
-      {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify({ refresh_token: refreshToken }),
+    const res = await fetch(`${publicEnv.NEXT_PUBLIC_API_URL}/api/v1/auth/refresh`, {
+      method: "POST",
+      credentials: "omit",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
       },
-    )
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    })
     if (!res.ok) {
       await useAuthStore.getState().logout()
       return false

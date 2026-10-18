@@ -19,10 +19,7 @@
 import { act, renderHook } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
-import {
-  _splitIntoChunksForTest,
-  useDemoStream,
-} from "@/components/marketing/demo/demo-stream"
+import { _splitIntoChunksForTest, useDemoStream } from "@/components/marketing/demo/demo-stream"
 
 describe("_splitIntoChunksForTest", () => {
   it("splits a text segment into 2-4 word chunks", () => {
@@ -38,9 +35,7 @@ describe("_splitIntoChunksForTest", () => {
       .filter((c): c is { kind: "text"; value: string } => c.kind === "text")
       .map((c) => c.value)
       .join("")
-    expect(reassembled).toBe(
-      "Cortex combines keyword and semantic retrieval",
-    )
+    expect(reassembled).toBe("Cortex combines keyword and semantic retrieval")
   })
 
   it("does not split citation segments", () => {
@@ -66,9 +61,7 @@ describe("useDemoStream", () => {
 
   it("starts with an empty revealed list when answer is empty", () => {
     const onComplete = vi.fn()
-    const { result } = renderHook(() =>
-      useDemoStream({ answer: "", runId: 0, onComplete }),
-    )
+    const { result } = renderHook(() => useDemoStream({ answer: "", runId: 0, onComplete }))
     expect(result.current.revealed).toEqual([])
     expect(result.current.isStreaming).toBe(false)
   })

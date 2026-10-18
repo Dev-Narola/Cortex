@@ -30,10 +30,7 @@
  * return a valid event or `null`.
  */
 
-import {
-  isDocumentStatus,
-  type DocumentStatus,
-} from "@/lib/documents/status"
+import { type DocumentStatus, isDocumentStatus } from "@/lib/documents/status"
 import type { IngestionEvent } from "@/types/websocket"
 
 /** A trivial UUID-shape check. The backend
@@ -54,8 +51,7 @@ function parseIngestionStatus(input: unknown): IngestionEvent | null {
   if (!isDocumentStatus(candidate.status)) return null
 
   const timestamp =
-    typeof candidate.timestamp === "number" &&
-    Number.isFinite(candidate.timestamp)
+    typeof candidate.timestamp === "number" && Number.isFinite(candidate.timestamp)
       ? candidate.timestamp
       : undefined
 

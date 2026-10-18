@@ -10,6 +10,8 @@
 
 export { listTeamMembers, type ListTeamMembersParams } from "./listTeamMembers"
 export { inviteMember, type InviteMemberParams } from "./inviteMember"
+export { updateMember } from "./updateMember"
+export { issuePasswordReset, type PasswordResetLink } from "./issuePasswordReset"
 export type {
   InvitableRole,
   InviteMemberRequest,
@@ -17,4 +19,5 @@ export type {
   TeamListResponse,
   TeamMember,
   TeamMemberRole,
+  UpdateMemberRequest,
 } from "./types"

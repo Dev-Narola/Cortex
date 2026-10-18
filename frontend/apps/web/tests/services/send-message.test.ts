@@ -15,12 +15,12 @@
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest"
 
-import { sendMessage } from "@/services/conversations"
-import { useAuthStore } from "@/lib/auth/store"
 import {
   conversationStreamStore,
   useConversationStreamStore,
 } from "@/hooks/chat/conversationStreamStore"
+import { useAuthStore } from "@/lib/auth/store"
+import { sendMessage } from "@/services/conversations"
 
 beforeEach(() => {
   conversationStreamStore.resetAll()
@@ -65,9 +65,7 @@ describe("sendMessage", () => {
       content: "Hello",
       userMessageId: "um-1",
     })
-    const stream = useConversationStreamStore
-      .getState()
-      .streams.get("c-1")
+    const stream = useConversationStreamStore.getState().streams.get("c-1")
     expect(stream?.status).toBe("sending")
     expect(stream?.optimisticUserMessageId).toBe("um-1")
     expect(stream?.pendingContent).toBe("Hello")
@@ -86,9 +84,7 @@ describe("sendMessage", () => {
       content: "second",
       userMessageId: "um-2",
     })
-    const stream = useConversationStreamStore
-      .getState()
-      .streams.get("c-1")
+    const stream = useConversationStreamStore.getState().streams.get("c-1")
     expect(stream?.pendingContent).toBe("first")
     expect(stream?.optimisticUserMessageId).toBe("um-1")
   })

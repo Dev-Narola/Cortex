@@ -13,17 +13,11 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 import { ApiError } from "@cortex/api-client"
 
 import { getApiClient } from "@/lib/auth/api-client"
-import {
-  deleteDocument,
-  reprocessDocument,
-  uploadDocument,
-} from "@/services/documents"
+import { deleteDocument, reprocessDocument, uploadDocument } from "@/services/documents"
 
 vi.mock("@/lib/auth/api-client", async () => {
   const actual =
-    await vi.importActual<typeof import("@/lib/auth/api-client")>(
-      "@/lib/auth/api-client",
-    )
+    await vi.importActual<typeof import("@/lib/auth/api-client")>("@/lib/auth/api-client")
   return {
     ...actual,
     getApiClient: vi.fn(),
@@ -83,11 +77,7 @@ describe("services/documents mutations", () => {
     })
 
     it("propagates api-client errors", async () => {
-      const post = vi
-        .fn()
-        .mockRejectedValue(
-          new ApiError(413, { message: "Payload too large" }),
-        )
+      const post = vi.fn().mockRejectedValue(new ApiError(413, { message: "Payload too large" }))
       getApiClientMock.mockReturnValue({ post } as never)
 
       const file = new File(["x"], "x.txt", { type: "text/plain" })
@@ -121,19 +111,24 @@ describe("services/documents mutations", () => {
 
   describe("reprocessDocument", () => {
     it("POSTs to /api/v1/documents/{id}/reprocess", async () => {
-      const post = vi
-        .fn()
-        .mockResolvedValue({ message: "Document queued for reprocessing." })
+      const post = vi.fn().mockResolvedValue({ message: "Document queued for reprocessing." })
       getApiClientMock.mockReturnValue({ post } as never)
 
       const result = await reprocessDocument({ id: "d-1" })
 
-      expect(post).toHaveBeenCalledWith(
-        "/api/v1/documents/d-1/reprocess",
-        undefined,
-        { signal: undefined },
-      )
+      expect(post).toHaveBeenCalledWith("/api/v1/documents/d-1/reprocess", undefined, {
+        signal: undefined,
+      })
       expect(result.message).toMatch(/queued for reprocessing/i)
+    })
+
+    it("routes FAILED documents to /retry (the backend rejects /reprocess for them)", async () => {
+      const post = vi.fn().mockResolvedValue({ message: "Document queued for retry." })
+      getApiClientMock.mockReturnValue({ post } as never)
+      await reprocessDocument({ id: "d-2", retry: true })
+      expect(post).toHaveBeenCalledWith("/api/v1/documents/d-2/retry", undefined, {
+        signal: undefined,
+      })
     })
   })
 })

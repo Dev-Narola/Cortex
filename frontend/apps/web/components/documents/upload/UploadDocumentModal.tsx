@@ -18,12 +18,9 @@
  * closing the modal; the modal only owns the form
  * lifecycle.
  *
- * **The "URL tab is a placeholder" decision.** The
- * backend currently has no `POST /api/v1/documents/url`
- * endpoint. We render the tab + collect the URL +
- * validate it, then show a "Coming soon" toast on
- * submit. The form is wired so the future endpoint
- * is a one-line change in the submit handler.
+ * **URL tab.** `POST /api/v1/documents/url`: the server
+ * fetches the page (bounded, SSRF-guarded) and queues it
+ * like an upload; fetch failures show inline on the field.
  *
  * **No business logic outside this file.** State
  * lives here; hooks live in `@/hooks/documents`; the
@@ -50,8 +47,9 @@ import {
   toast,
 } from "@cortex/ui"
 
-import { useInvalidateDocuments, useUploadDocument } from "@/hooks/documents"
+import { useImportDocumentUrl, useInvalidateDocuments, useUploadDocument } from "@/hooks/documents"
 import { fileUploadSchema, urlUploadSchema } from "@/lib/documents/upload.schema"
+import { toFrontendError } from "@/lib/http/errors"
 
 import { FileUploadTab } from "./FileUploadTab"
 import { UrlUploadTab } from "./UrlUploadTab"
@@ -80,6 +78,7 @@ export function UploadDocumentModal({
   const [abortController, setAbortController] = useState<AbortController | null>(null)
 
   const upload = useUploadDocument()
+  const importUrl = useImportDocumentUrl()
   const invalidate = useInvalidateDocuments()
 
   // Reset the form when the modal opens or closes.
@@ -151,24 +150,33 @@ export function UploadDocumentModal({
         setAbortController(null)
       }
     } else {
-      // URL tab — backend endpoint not available yet.
-      // Validate, then surface a clear "coming soon" toast.
       const result = urlUploadSchema.safeParse({ kind: "url", url })
       if (!result.success) {
         setUrlError(result.error.issues[0]?.message ?? "Invalid URL.")
         return
       }
       setUrlError(null)
-      toast({
-        title: "URL ingestion - coming soon",
-        description:
-          "The backend doesn't expose a URL-ingestion endpoint yet. We're shipping the form so the rollout is a one-line change.",
-        variant: "default",
-      })
+      try {
+        const accepted = await importUrl.mutateAsync({ url: result.data.url })
+        toast({
+          title: "Page imported",
+          description: "Your document is queued for processing.",
+          variant: "success",
+        })
+        // The URL itself is not tracked (it can reveal customer or project names).
+        track(DOCUMENT_UPLOADED, { source: "url", file_type: "url" })
+        await invalidate()
+        onUploaded?.(accepted.id)
+        onOpenChange(false)
+      } catch (err) {
+        // The server fetches the page: unreachable, too large, blocked
+        // (private addresses) and unsupported types come back as 4xx.
+        setUrlError(toFrontendError(err).message || "Couldn't import that URL.")
+      }
     }
   }
 
-  const isUploading = upload.isPending
+  const isUploading = upload.isPending || importUrl.isPending
   const isDisabled = isUploading
 
   return (

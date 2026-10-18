@@ -33,33 +33,40 @@
 import { type VariantProps, cva } from "class-variance-authority"
 
 export const cardVariants = cva(
-  "rounded-xl border bg-card text-card-foreground transition-colors",
+  // No background in the base: each variant owns its surface so `glass`
+  // is never overridden by bg-card.
+  "rounded-xl border text-card-foreground transition-[transform,box-shadow,border-color,background-color] duration-base ease-out-quint",
   {
     variants: {
       variant: {
-        default: "border-border bg-background shadow-sm",
-        elevated: "border-transparent bg-card shadow-md",
+        default: "border-border bg-card shadow-sm",
+        elevated: "border-border bg-card shadow-md",
         outline: "border-border bg-transparent",
+        // Frosted surface for bento cards, nav and overlays. Keep dense
+        // tables and long text on `default` (opaque) for readability.
+        glass: "glass shadow-md",
+        // Clickable cards only: lift + brand border on hover/focus.
         interactive:
-          "cursor-pointer border-border bg-background shadow-sm hover:border-ink-300 hover:shadow-md active:translate-y-px",
-        hoverable: "border-border bg-background shadow-sm hover:border-ink-300",
+          "glass cursor-pointer shadow-md hover:-translate-y-0.5 hover:border-brand/40 hover:shadow-lg focus-within:border-brand/40 active:translate-y-0",
+        hoverable: "border-border bg-card shadow-sm hover:border-brand/30",
       },
       padding: {
         none: "",
         sm: "p-3",
-        md: "p-6",
-        lg: "p-8",
+        md: "p-5",
+        lg: "p-6",
       },
       radius: {
         sm: "rounded-md",
         md: "rounded-lg",
         lg: "rounded-xl",
         xl: "rounded-2xl",
+        "2xl": "rounded-3xl",
       },
       state: {
         default: "",
         loading: "pointer-events-none opacity-70",
-        selected: "border-ember-500 ring-1 ring-ember-500/30",
+        selected: "border-brand ring-1 ring-brand/30",
         disabled: "opacity-50 cursor-not-allowed",
       },
     },

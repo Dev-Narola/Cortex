@@ -35,10 +35,7 @@
 import { publicEnv } from "@cortex/config"
 
 import { shouldApplyStatus } from "@/lib/documents/status"
-import {
-  WebSocketClient,
-  type WebSocketState,
-} from "@/lib/websocket/client"
+import { WebSocketClient, type WebSocketState } from "@/lib/websocket/client"
 import { parseIngestionEvent } from "@/lib/websocket/parseEvent"
 import type { IngestionEvent } from "@/types/websocket"
 
@@ -87,10 +84,7 @@ export class IngestionSocket {
           // that the Documents page must not crash
           // on a bad frame.
           if (typeof console !== "undefined") {
-            console.warn(
-              "[ingestionSocket] dropped malformed event:",
-              data,
-            )
+            console.warn("[ingestionSocket] dropped malformed event:", data)
           }
           return
         }
@@ -178,10 +172,7 @@ export class IngestionSocket {
     // with chunk counts etc.).
     if (event.type === "ingestion.status") {
       const current = this.statuses.get(event.document_id)
-      if (
-        current === undefined ||
-        shouldApplyStatus(current, event.status)
-      ) {
+      if (current === undefined || shouldApplyStatus(current, event.status)) {
         this.statuses.set(event.document_id, event.status)
       } else {
         // Stale event — drop silently (Task 44).

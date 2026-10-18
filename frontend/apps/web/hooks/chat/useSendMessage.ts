@@ -52,16 +52,12 @@
 
 "use client"
 
+import { type UseMutationResult, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useCallback, useEffect } from "react"
-import {
-  useMutation,
-  useQueryClient,
-  type UseMutationResult,
-} from "@tanstack/react-query"
 
 import { sendMessage } from "@/services/conversations"
-import { useConversationStreamStore } from "./conversationStreamStore"
 import type { Conversation, Message } from "@/types/conversation"
+import { useConversationStreamStore } from "./conversationStreamStore"
 
 export interface UseSendMessageParams {
   conversationId: string
@@ -86,10 +82,7 @@ export type UseSendMessageResult = UseMutationResult<
  * for now; the server row will eventually
  * replace it.
  */
-function makeOptimisticUserMessage(
-  conversationId: string,
-  content: string,
-): Message {
+function makeOptimisticUserMessage(conversationId: string, content: string): Message {
   const id =
     typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
       ? crypto.randomUUID()
@@ -107,9 +100,7 @@ function makeOptimisticUserMessage(
   }
 }
 
-export function useSendMessage(
-  params: UseSendMessageParams,
-): UseSendMessageResult {
+export function useSendMessage(params: UseSendMessageParams): UseSendMessageResult {
   const qc = useQueryClient()
   const { conversationId } = params
 
@@ -127,13 +118,8 @@ export function useSendMessage(
       // cache. The mutation's `onError`
       // path rolls back, so a dropped
       // submit leaves no trace.
-      const current = useConversationStreamStore
-        .getState()
-        .streams.get(conversationId)
-      if (
-        current &&
-        (current.status === "sending" || current.status === "streaming")
-      ) {
+      const current = useConversationStreamStore.getState().streams.get(conversationId)
+      if (current && (current.status === "sending" || current.status === "streaming")) {
         throw new Error("A message is already being sent.")
       }
 
@@ -142,16 +128,13 @@ export function useSendMessage(
       // network. This is what makes the user
       // message appear instantly (Task 13).
       const optimistic = makeOptimisticUserMessage(conversationId, content)
-      qc.setQueryData<Conversation>(
-        ["conversations", conversationId],
-        (prev) => {
-          if (!prev) return prev
-          return {
-            ...prev,
-            messages: [...(prev.messages ?? []), optimistic],
-          }
-        },
-      )
+      qc.setQueryData<Conversation>(["conversations", conversationId], (prev) => {
+        if (!prev) return prev
+        return {
+          ...prev,
+          messages: [...(prev.messages ?? []), optimistic],
+        }
+      })
       // Kick off the WS turn. The stream hook
       // watches the store + opens the socket.
       sendMessage({
@@ -170,10 +153,7 @@ export function useSendMessage(
       // We snapshot the previous conversation
       // so the rollback can restore it on
       // error.
-      const previousConversation = qc.getQueryData<Conversation>([
-        "conversations",
-        conversationId,
-      ])
+      const previousConversation = qc.getQueryData<Conversation>(["conversations", conversationId])
       return { previousConversation }
     },
     onError: (_err, _vars, context) => {
@@ -181,10 +161,7 @@ export function useSendMessage(
       // optimistic patch. (Async WS errors
       // are surfaced by the store separately.)
       if (context?.previousConversation) {
-        qc.setQueryData(
-          ["conversations", conversationId],
-          context.previousConversation,
-        )
+        qc.setQueryData(["conversations", conversationId], context.previousConversation)
       }
     },
   })
@@ -206,9 +183,7 @@ export function useSendMessage(
  */
 export function useInvalidateOnStreamComplete(conversationId: string): void {
   const qc = useQueryClient()
-  const status = useConversationStreamStore(
-    (s) => s.streams.get(conversationId)?.status ?? "idle",
-  )
+  const status = useConversationStreamStore((s) => s.streams.get(conversationId)?.status ?? "idle")
   // We deliberately read `status` and
   // invalidate in the same render the
   // transition happens. The query is

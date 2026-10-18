@@ -46,13 +46,7 @@
  * `useDeleteConversation`).
  */
 
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  type KeyboardEvent,
-  type ReactNode,
-} from "react"
+import { type KeyboardEvent, type ReactNode, useCallback, useEffect, useRef } from "react"
 
 import { Button, Icon, Spinner } from "@cortex/ui"
 
@@ -108,34 +102,19 @@ export function DeleteConfirmation({
       aria-busy={isDeleting || undefined}
       data-delete-confirmation
       onKeyDown={handleKeyDown}
-      className={
-        "flex w-full flex-col gap-2 rounded-md border border-destructive/30 bg-popover px-3 py-2 shadow-sm " +
-        (className ?? "")
-      }
+      className={`flex w-full flex-col gap-2 rounded-md border border-destructive/30 bg-popover px-3 py-2 shadow-sm ${className ?? ""}`}
     >
       <div className="flex flex-col gap-0.5">
-        <span
-          id={titleId}
-          className="text-sm font-medium text-foreground"
-        >
+        <span id={titleId} className="text-sm font-medium text-foreground">
           Delete conversation?
         </span>
-        <span
-          id={descId}
-          className="text-xs text-muted-foreground"
-        >
-          <span className="font-medium text-foreground/80">
-            {conversationTitle}
-          </span>{" "}
-          and its messages will be removed. This can't be undone.
+        <span id={descId} className="text-xs text-muted-foreground">
+          <span className="font-medium text-foreground/80">{conversationTitle}</span> and its
+          messages will be removed. This can't be undone.
         </span>
       </div>
       {errorMessage ? (
-        <p
-          role="alert"
-          className="text-xs text-destructive"
-          data-delete-error
-        >
+        <p role="alert" className="text-xs text-destructive" data-delete-error>
           {errorMessage}
         </p>
       ) : null}

@@ -24,11 +24,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
-import {
-  getTenantUsage,
-  getTenantUsageEvents,
-  getTenantUsageSummary,
-} from "@/services/usage"
+import { getTenantUsage, getTenantUsageEvents, getTenantUsageSummary } from "@/services/usage"
 
 const getMock = vi.fn()
 
@@ -48,10 +44,7 @@ describe("getTenantUsageSummary", () => {
   it("hits /api/v1/tenants/me/usage/summary", async () => {
     getMock.mockResolvedValueOnce({ period: { from: "", to: "" }, requests: 0 })
     await getTenantUsageSummary()
-    expect(getMock).toHaveBeenCalledWith(
-      "/api/v1/tenants/me/usage/summary",
-      expect.any(Object),
-    )
+    expect(getMock).toHaveBeenCalledWith("/api/v1/tenants/me/usage/summary", expect.any(Object))
   })
 
   it("does NOT send a tenant_id query param", async () => {
@@ -100,10 +93,7 @@ describe("getTenantUsage", () => {
   it("hits /api/v1/tenants/me/usage (the aggregate)", async () => {
     getMock.mockResolvedValueOnce({ by_event: {} })
     await getTenantUsage()
-    expect(getMock).toHaveBeenCalledWith(
-      "/api/v1/tenants/me/usage",
-      expect.any(Object),
-    )
+    expect(getMock).toHaveBeenCalledWith("/api/v1/tenants/me/usage", expect.any(Object))
   })
 
   it("does NOT send a tenant_id query param", async () => {
@@ -118,10 +108,7 @@ describe("getTenantUsageEvents", () => {
   it("hits /api/v1/tenants/me/usage/events", async () => {
     getMock.mockResolvedValueOnce([])
     await getTenantUsageEvents()
-    expect(getMock).toHaveBeenCalledWith(
-      "/api/v1/tenants/me/usage/events",
-      expect.any(Object),
-    )
+    expect(getMock).toHaveBeenCalledWith("/api/v1/tenants/me/usage/events", expect.any(Object))
   })
 
   it("does NOT send a tenant_id query param", async () => {

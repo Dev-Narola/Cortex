@@ -63,22 +63,15 @@
 "use client"
 
 import { useParams, usePathname, useRouter } from "next/navigation"
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react"
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import { Icon, cn } from "@cortex/ui"
 
 import {
+  type UseConversationsResult,
   useConversations,
   useDeleteConversation,
   useRenameConversation,
-  type UseConversationsResult,
 } from "@/hooks/chat/useConversations"
 import type { Conversation } from "@/types/conversation"
 
@@ -183,10 +176,7 @@ export function ConversationHistory({
           ...prev,
           [id]: {
             ...prev[id],
-            rename:
-              err instanceof Error
-                ? err.message
-                : "Couldn't rename the conversation.",
+            rename: err instanceof Error ? err.message : "Couldn't rename the conversation.",
           },
         }))
       }
@@ -222,10 +212,7 @@ export function ConversationHistory({
           ...prev,
           [id]: {
             ...prev[id],
-            delete:
-              err instanceof Error
-                ? err.message
-                : "Couldn't delete the conversation.",
+            delete: err instanceof Error ? err.message : "Couldn't delete the conversation.",
           },
         }))
       }
@@ -236,6 +223,7 @@ export function ConversationHistory({
   // Scroll the active item into view when the
   // route changes OR when the list data lands
   // for the first time.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: pathname/query.data are re-run triggers (route change, rows landing), not values read
   useEffect(() => {
     if (!listRef.current || !activeConversationId) return
     const el = listRef.current.querySelector<HTMLElement>(
@@ -321,11 +309,7 @@ export function ConversationHistory({
           {...(onNavigate ? { onAfterCreate: onNavigate } : {})}
         />
       </div>
-      <div
-        ref={listRef}
-        data-history-list-scroll
-        className="min-h-0 flex-1 overflow-y-auto"
-      >
+      <div ref={listRef} data-history-list-scroll className="min-h-0 flex-1 overflow-y-auto">
         <ConversationList
           conversations={conversations}
           isLoading={query.isLoading}

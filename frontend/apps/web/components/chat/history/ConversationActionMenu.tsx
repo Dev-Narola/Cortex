@@ -43,13 +43,7 @@
 
 "use client"
 
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react"
+import { type ReactNode, useCallback, useEffect, useRef, useState } from "react"
 
 import { Button, Icon } from "@cortex/ui"
 
@@ -94,11 +88,7 @@ export function ConversationActionMenu({
   }, [open, close])
 
   return (
-    <div
-      ref={rootRef}
-      data-conversation-action-menu
-      className={"relative " + (className ?? "")}
-    >
+    <div ref={rootRef} data-conversation-action-menu className={`relative ${className ?? ""}`}>
       <Button
         type="button"
         variant="ghost"

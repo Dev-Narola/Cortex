@@ -27,17 +27,17 @@
 
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 import { Card, CardContent, Spinner } from "@cortex/ui"
 
 import { ConnectionIndicator } from "@/components/documents/ConnectionIndicator"
-import { DocumentDetailDrawer } from "@/components/documents/detail/DocumentDetailDrawer"
 import { DocumentErrorState } from "@/components/documents/DocumentErrorState"
 import { DocumentSelectionProvider } from "@/components/documents/DocumentSelectionProvider"
 import { DocumentToolbar } from "@/components/documents/DocumentToolbar"
 import { DocumentsEmptyState } from "@/components/documents/DocumentsEmptyState"
 import { DocumentsTable } from "@/components/documents/DocumentsTable"
+import { DocumentDetailDrawer } from "@/components/documents/detail/DocumentDetailDrawer"
 import { UploadDocumentModal } from "@/components/documents/upload/UploadDocumentModal"
 import { useDocuments, useIngestionStatus } from "@/hooks/documents"
 
@@ -45,6 +45,10 @@ export function DocumentsView() {
   const { data, isLoading, isError, error, refetch, isFetching } = useDocuments()
   const { connectionState } = useIngestionStatus()
   const [uploadOpen, setUploadOpen] = useState(false)
+  // `/app/documents?upload=1` (dashboard CTA) opens the upload dialog.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("upload") === "1") setUploadOpen(true)
+  }, [])
 
   return (
     <DocumentSelectionProvider>
@@ -71,9 +75,7 @@ export function DocumentsView() {
               total={data?.total ?? 0}
               loading={isLoading}
               onUpload={() => setUploadOpen(true)}
-              connectionSlot={
-                <ConnectionIndicator state={connectionState} />
-              }
+              connectionSlot={<ConnectionIndicator state={connectionState} />}
             />
           )}
 
@@ -83,13 +85,12 @@ export function DocumentsView() {
                 <DocumentErrorState error={error} onRetry={() => void refetch()} />
               </div>
             ) : isLoading ? (
-              <div
+              <output
                 className="flex min-h-[280px] items-center justify-center p-8"
-                role="status"
                 aria-live="polite"
               >
                 <Spinner size="lg" />
-              </div>
+              </output>
             ) : data && data.items.length === 0 ? (
               <div className="p-4">
                 <DocumentsEmptyState onUpload={() => setUploadOpen(true)} />
@@ -104,10 +105,7 @@ export function DocumentsView() {
             in the corner of the page so the user knows
             something is happening. */}
         {isFetching && !isLoading ? (
-          <p
-            className="text-right text-xs text-muted-foreground"
-            aria-live="polite"
-          >
+          <p className="text-right text-xs text-muted-foreground" aria-live="polite">
             Refreshing…
           </p>
         ) : null}

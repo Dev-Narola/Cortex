@@ -41,7 +41,7 @@
  */
 "use client"
 
-import { type KeyboardEvent, type MouseEvent } from "react"
+import type { KeyboardEvent, MouseEvent } from "react"
 
 import { cn } from "@cortex/ui"
 

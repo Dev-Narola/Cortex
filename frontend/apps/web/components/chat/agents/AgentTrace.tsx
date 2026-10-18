@@ -229,7 +229,12 @@ function AgentTraceSkeleton() {
     >
       <span className="sr-only">Loading agent trace</span>
       {Array.from({ length: 3 }).map((_, idx) => (
-        <div key={idx} className="flex animate-pulse gap-3" data-testid="agent-trace-skeleton-row">
+        <div
+          // biome-ignore lint/suspicious/noArrayIndexKey: static, identical skeleton placeholders
+          key={idx}
+          className="flex animate-pulse gap-3"
+          data-testid="agent-trace-skeleton-row"
+        >
           <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-muted" />
           <div className="flex-1 space-y-1.5">
             <div className="h-3 w-32 rounded bg-muted" />

@@ -38,14 +38,14 @@
 
 "use client"
 
-import { useEffect, useMemo, useRef, type ReactNode } from "react"
+import { type ReactNode, useEffect, useMemo, useRef } from "react"
 
+import type { ActiveStream } from "@/hooks/chat/conversationStreamStore"
+import type { Message } from "@/types/conversation"
 import { ChatEmptyState } from "./ChatEmptyState"
 import { InterruptedBanner } from "./InterruptedBanner"
 import { MessageBubble } from "./MessageBubble"
 import { StreamingMessage } from "./StreamingMessage"
-import type { Message } from "@/types/conversation"
-import type { ActiveStream } from "@/hooks/chat/conversationStreamStore"
 
 const NEAR_BOTTOM_THRESHOLD_PX = 80
 
@@ -79,9 +79,9 @@ export function MessageList({
   useEffect(() => {
     const el = scrollRef.current
     if (!el) return
+    const node = el
     function onScroll() {
-      const distance =
-        el!.scrollHeight - (el!.scrollTop + el!.clientHeight)
+      const distance = node.scrollHeight - (node.scrollTop + node.clientHeight)
       nearBottomRef.current = distance < NEAR_BOTTOM_THRESHOLD_PX
     }
     el.addEventListener("scroll", onScroll, { passive: true })
@@ -152,12 +152,7 @@ export function MessageList({
 
   if (messages.length === 0 && !showStreamingSlot) {
     return (
-      <div
-        ref={scrollRef}
-        className={
-          "flex flex-1 flex-col overflow-y-auto " + (className ?? "")
-        }
-      >
+      <div ref={scrollRef} className={`flex flex-1 flex-col overflow-y-auto ${className ?? ""}`}>
         <ChatEmptyState />
       </div>
     )
@@ -166,10 +161,7 @@ export function MessageList({
   return (
     <div
       ref={scrollRef}
-      className={
-        "flex flex-1 flex-col gap-4 overflow-y-auto px-4 py-6 sm:px-6 " +
-        (className ?? "")
-      }
+      className={`flex flex-1 flex-col gap-4 overflow-y-auto px-4 py-6 sm:px-6 ${className ?? ""}`}
       aria-label="Conversation messages"
     >
       {messages.map((m) => (
@@ -179,9 +171,7 @@ export function MessageList({
           conversationId={conversationId}
           isBusy={isBusy}
           precedingUserMessage={
-            m.role === "assistant"
-              ? (precedingTextByMessageId.get(m.id) ?? null)
-              : null
+            m.role === "assistant" ? (precedingTextByMessageId.get(m.id) ?? null) : null
           }
         />
       ))}
@@ -195,10 +185,7 @@ export function MessageList({
         />
       ) : null}
       {isInterrupted && lastUserContent ? (
-        <InterruptedBanner
-          conversationId={conversationId}
-          content={lastUserContent}
-        />
+        <InterruptedBanner conversationId={conversationId} content={lastUserContent} />
       ) : null}
     </div>
   )

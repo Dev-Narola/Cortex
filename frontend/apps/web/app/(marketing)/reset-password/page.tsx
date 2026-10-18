@@ -1,42 +1,34 @@
-/**
- * Reset Password — `/reset-password?token=...`.
- *
- * **F2 Part 1 (Task 1).** Sets a new password using
- * the token from the email link. The form reads
- * the token from the URL query string.
- *
- * **Suspense.** `useSearchParams()` requires a
- * Suspense boundary around the form.
- */
-
 import Link from "next/link"
-import { Suspense } from "react"
 
 import { AuthLayout, ResetPasswordForm } from "@/components/auth"
 
-export const dynamic = "force-dynamic"
+export const metadata = { title: "Reset password" }
 
-export default function ResetPasswordPage() {
+export default async function ResetPasswordPage({
+  searchParams,
+}: { searchParams: Promise<{ token?: string }> }) {
+  const { token } = await searchParams
+  if (typeof token === "string" && token.length > 0) {
+    return (
+      <AuthLayout title="Set a new password" backHref="/login">
+        <ResetPasswordForm token={token} />
+      </AuthLayout>
+    )
+  }
   return (
-    <AuthLayout
-      title="Set a new password"
-      description="Pick something you haven't used before."
-      backHref="/login"
-      footer={
-        <p className="text-center text-sm text-muted-foreground">
-          Didn&apos;t request this?{" "}
-          <Link
-            href="/login"
-            className="font-medium text-foreground underline-offset-4 hover:underline"
-          >
-            Sign in
-          </Link>
+    <AuthLayout title="Reset your password" backHref="/login">
+      <div className="space-y-4 text-sm text-muted-foreground">
+        <p>
+          Reset links are issued by your workspace owner or an admin from <strong>Team</strong>. Ask
+          them for a link; it works once and expires after an hour.
         </p>
-      }
-    >
-      <Suspense fallback={null}>
-        <ResetPasswordForm />
-      </Suspense>
+        <Link
+          href="/login"
+          className="inline-block font-medium text-foreground underline-offset-4 hover:underline"
+        >
+          Back to sign in
+        </Link>
+      </div>
     </AuthLayout>
   )
 }

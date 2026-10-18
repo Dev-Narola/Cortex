@@ -39,9 +39,7 @@ describe("ProblemSection", () => {
     expect(h2).toHaveTextContent(/trust/i)
     // The supporting paragraph uses the
     // spec's wording.
-    expect(
-      screen.getByText(/documents, notes, wikis, reports/i),
-    ).toBeInTheDocument()
+    expect(screen.getByText(/documents, notes, wikis, reports/i)).toBeInTheDocument()
   })
 
   it("mentions the trust problem in the supporting text", () => {
@@ -51,9 +49,7 @@ describe("ProblemSection", () => {
     // not just the *find* problem.
     // "trustworthy answer" is the
     // anchor phrase.
-    expect(
-      screen.getByText(/trustworthy answer/i),
-    ).toBeInTheDocument()
+    expect(screen.getByText(/trustworthy answer/i)).toBeInTheDocument()
   })
 
   it("has a stable id for the marketing nav", () => {

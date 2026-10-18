@@ -149,7 +149,7 @@ export function GraphNodeDetail({
     <aside
       aria-labelledby="graph-node-detail-title"
       data-testid="graph-node-detail"
-      className="pointer-events-auto w-full max-w-sm rounded-xl border border-slate-700 bg-slate-800/90 p-4 text-paper-50 shadow-xl backdrop-blur-md ring-1 ring-void-950/40"
+      className="pointer-events-auto w-full max-w-sm rounded-xl border border-border bg-card/90 p-4 text-foreground shadow-xl backdrop-blur-md ring-1 ring-border"
     >
       <header className="mb-3 flex items-start justify-between gap-3">
         <div className="flex items-start gap-3 min-w-0">
@@ -162,14 +162,14 @@ export function GraphNodeDetail({
           <div className="min-w-0 flex-1">
             <h2
               id="graph-node-detail-title"
-              className="font-display text-base font-semibold leading-tight tracking-tight text-paper-50"
+              className="font-display text-base font-semibold leading-tight tracking-tight text-foreground"
               data-testid="graph-node-detail-name"
             >
               {entity.name}
             </h2>
-            <p className="mt-0.5 text-xs text-paper-200/70">
+            <p className="mt-0.5 text-xs text-muted-foreground">
               <span
-                className="inline-block rounded bg-slate-700/50 px-1.5 py-0.5 text-[10px] uppercase tracking-wider"
+                className="inline-block rounded bg-muted px-1.5 py-0.5 text-[10px] uppercase tracking-wider"
                 data-testid="graph-node-detail-type"
               >
                 {entity.entity_type}
@@ -184,7 +184,7 @@ export function GraphNodeDetail({
           size="sm"
           onClick={onClose}
           aria-label="Close node detail"
-          className="text-paper-200 hover:bg-slate-700/50 hover:text-paper-50"
+          className="text-muted-foreground hover:bg-muted hover:text-foreground"
         >
           <Icon name="X" size="sm" />
         </Button>
@@ -211,16 +211,19 @@ export function GraphNodeDetail({
       ) : null}
 
       {entity.description ? (
-        <p className="mb-3 text-sm text-paper-200/90" data-testid="graph-node-detail-description">
+        <p
+          className="mb-3 text-sm text-muted-foreground"
+          data-testid="graph-node-detail-description"
+        >
           {entity.description}
         </p>
       ) : null}
 
       <dl className="space-y-2 text-xs">
         <div>
-          <dt className="font-medium uppercase tracking-wider text-paper-200/50">ID</dt>
+          <dt className="font-medium uppercase tracking-wider text-faint">ID</dt>
           <dd
-            className="mt-1 break-all font-mono text-[11px] text-paper-200"
+            className="mt-1 break-all font-mono text-[11px] text-muted-foreground"
             data-testid="graph-node-detail-id"
           >
             {entity.id}
@@ -229,9 +232,9 @@ export function GraphNodeDetail({
 
         {isCanonicalDuplicate ? (
           <div>
-            <dt className="font-medium uppercase tracking-wider text-paper-200/50">Canonical of</dt>
+            <dt className="font-medium uppercase tracking-wider text-faint">Canonical of</dt>
             <dd
-              className="mt-1 break-all font-mono text-[11px] text-paper-200"
+              className="mt-1 break-all font-mono text-[11px] text-muted-foreground"
               data-testid="graph-node-detail-canonical"
             >
               {entity.canonical_id}
@@ -241,26 +244,26 @@ export function GraphNodeDetail({
 
         {entitySourceChunkId ? (
           <div>
-            <dt className="font-medium uppercase tracking-wider text-paper-200/50">Source chunk</dt>
+            <dt className="font-medium uppercase tracking-wider text-faint">Source chunk</dt>
             <dd
-              className="mt-1 break-all font-mono text-[11px] text-paper-200"
+              className="mt-1 break-all font-mono text-[11px] text-muted-foreground"
               data-testid="graph-node-detail-source-chunk"
             >
               {entitySourceChunkId}
             </dd>
-            <p className="mt-1 text-[10px] text-paper-200/50">
+            <p className="mt-1 text-[10px] text-faint">
               The source document is the chunk this entity was extracted from.
             </p>
           </div>
         ) : null}
       </dl>
 
-      <div className="mt-4 border-t border-slate-700/60 pt-3">
+      <div className="mt-4 border-t border-border pt-3">
         <div className="mb-2 flex items-center justify-between">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-paper-200/70">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Relations
           </h3>
-          {loading ? <span className="text-[10px] text-paper-200/50">Loading…</span> : null}
+          {loading ? <span className="text-[10px] text-faint">Loading…</span> : null}
         </div>
 
         {relationsError ? (
@@ -284,7 +287,7 @@ export function GraphNodeDetail({
         ) : null}
 
         {!relationsError && !loading && relations.length === 0 ? (
-          <p className="text-xs text-paper-200/50">No connected relationships found.</p>
+          <p className="text-xs text-faint">No connected relationships found.</p>
         ) : null}
 
         {!relationsError && relations.length > 0 ? (
@@ -292,16 +295,14 @@ export function GraphNodeDetail({
             {relations.map((rel) => (
               <li
                 key={rel.id}
-                className="rounded-md border border-slate-700/40 bg-slate-900/40 p-2 text-xs"
+                className="rounded-md border border-border bg-muted p-2 text-xs"
                 data-testid={`graph-relation-${rel.id}`}
               >
                 <div className="flex items-center justify-between gap-2">
-                  <span className="font-medium text-paper-50">{rel.relationship_type}</span>
-                  <span className="text-[10px] text-paper-200/50">
-                    {formatConfidence(rel.confidence)}
-                  </span>
+                  <span className="font-medium text-foreground">{rel.relationship_type}</span>
+                  <span className="text-[10px] text-faint">{formatConfidence(rel.confidence)}</span>
                 </div>
-                <p className="mt-0.5 truncate text-[10px] text-paper-200/50">
+                <p className="mt-0.5 truncate text-[10px] text-faint">
                   {rel.source_entity_id === entity.id ? "→" : "←"}{" "}
                   {rel.source_entity_id === entity.id ? rel.target_entity_id : rel.source_entity_id}
                 </p>

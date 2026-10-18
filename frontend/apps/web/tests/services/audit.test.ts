@@ -26,7 +26,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
-import { getAuditLog, AUDIT_ACTIONS, AUDIT_RESOURCE_TYPES } from "@/services/audit"
+import { AUDIT_ACTIONS, AUDIT_RESOURCE_TYPES, getAuditLog } from "@/services/audit"
 import * as auditServiceExports from "@/services/audit"
 
 const getMock = vi.fn()
@@ -47,10 +47,7 @@ describe("getAuditLog", () => {
   it("hits /api/v1/audit-log (the tenant-scoped route)", async () => {
     getMock.mockResolvedValueOnce({ items: [], next_cursor: null })
     await getAuditLog()
-    expect(getMock).toHaveBeenCalledWith(
-      "/api/v1/audit-log",
-      expect.any(Object),
-    )
+    expect(getMock).toHaveBeenCalledWith("/api/v1/audit-log", expect.any(Object))
   })
 
   it("does NOT send a tenant_id query param", async () => {

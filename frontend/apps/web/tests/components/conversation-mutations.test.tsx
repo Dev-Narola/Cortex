@@ -93,9 +93,7 @@ describe("InlineRename", () => {
       />,
       { wrapper: makeWrapper() },
     )
-    expect(
-      screen.getByDisplayValue("Cortex architecture"),
-    ).toBeInTheDocument()
+    expect(screen.getByDisplayValue("Cortex architecture")).toBeInTheDocument()
   })
 
   it("submits the trimmed value on Enter", async () => {
@@ -124,12 +122,7 @@ describe("InlineRename", () => {
     const onSubmit = vi.fn()
     const user = userEvent.setup()
     render(
-      <InlineRename
-        initialTitle="x"
-        isSaving={false}
-        onSubmit={onSubmit}
-        onCancel={onCancel}
-      />,
+      <InlineRename initialTitle="x" isSaving={false} onSubmit={onSubmit} onCancel={onCancel} />,
       { wrapper: makeWrapper() },
     )
     const input = screen.getByLabelText(/conversation title/i)
@@ -143,33 +136,21 @@ describe("InlineRename", () => {
     const onSubmit = vi.fn()
     const user = userEvent.setup()
     render(
-      <InlineRename
-        initialTitle=""
-        isSaving={false}
-        onSubmit={onSubmit}
-        onCancel={() => {}}
-      />,
+      <InlineRename initialTitle="" isSaving={false} onSubmit={onSubmit} onCancel={() => {}} />,
       { wrapper: makeWrapper() },
     )
     const input = screen.getByLabelText(/conversation title/i)
     input.focus()
     await user.keyboard("{Enter}")
     expect(onSubmit).not.toHaveBeenCalled()
-    expect(
-      screen.getByText(/conversation name can't be empty/i),
-    ).toBeInTheDocument()
+    expect(screen.getByText(/conversation name can't be empty/i)).toBeInTheDocument()
   })
 
   it("rejects a whitespace-only title", async () => {
     const onSubmit = vi.fn()
     const user = userEvent.setup()
     render(
-      <InlineRename
-        initialTitle="   "
-        isSaving={false}
-        onSubmit={onSubmit}
-        onCancel={() => {}}
-      />,
+      <InlineRename initialTitle="   " isSaving={false} onSubmit={onSubmit} onCancel={() => {}} />,
       { wrapper: makeWrapper() },
     )
     const input = screen.getByLabelText(/conversation title/i)
@@ -180,22 +161,13 @@ describe("InlineRename", () => {
 
   it("disables input + buttons while saving", () => {
     render(
-      <InlineRename
-        initialTitle="x"
-        isSaving={true}
-        onSubmit={() => {}}
-        onCancel={() => {}}
-      />,
+      <InlineRename initialTitle="x" isSaving={true} onSubmit={() => {}} onCancel={() => {}} />,
       { wrapper: makeWrapper() },
     )
     const input = screen.getByLabelText(/conversation title/i)
     expect(input).toBeDisabled()
-    expect(
-      screen.getByRole("button", { name: /save rename/i }),
-    ).toBeDisabled()
-    expect(
-      screen.getByRole("button", { name: /cancel rename/i }),
-    ).toBeDisabled()
+    expect(screen.getByRole("button", { name: /save rename/i })).toBeDisabled()
+    expect(screen.getByRole("button", { name: /cancel rename/i })).toBeDisabled()
     expect(screen.getByText(/saving…/i)).toBeInTheDocument()
   })
 
@@ -209,9 +181,7 @@ describe("InlineRename", () => {
       />,
       { wrapper: makeWrapper() },
     )
-    const input = screen.getByLabelText(
-      /conversation title/i,
-    ) as HTMLInputElement
+    const input = screen.getByLabelText(/conversation title/i) as HTMLInputElement
     await waitFor(() => {
       expect(document.activeElement).toBe(input)
     })
@@ -243,16 +213,10 @@ describe("DeleteConfirmation", () => {
       />,
       { wrapper: makeWrapper() },
     )
-    expect(
-      screen.getByRole("alertdialog", { name: /delete conversation\?/i }),
-    ).toBeInTheDocument()
+    expect(screen.getByRole("alertdialog", { name: /delete conversation\?/i })).toBeInTheDocument()
     expect(screen.getByText(/cortex architecture/i)).toBeInTheDocument()
-    expect(
-      screen.getByRole("button", { name: /cancel/i }),
-    ).toBeInTheDocument()
-    expect(
-      screen.getByRole("button", { name: /delete/i }),
-    ).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /cancel/i })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /delete/i })).toBeInTheDocument()
   })
 
   it("Cancel fires onCancel", async () => {
@@ -283,9 +247,7 @@ describe("DeleteConfirmation", () => {
       />,
       { wrapper: makeWrapper() },
     )
-    await user.click(
-      screen.getByRole("button", { name: /delete/i }),
-    )
+    await user.click(screen.getByRole("button", { name: /delete/i }))
     expect(onConfirm).toHaveBeenCalledTimes(1)
   })
 
@@ -299,12 +261,8 @@ describe("DeleteConfirmation", () => {
       />,
       { wrapper: makeWrapper() },
     )
-    expect(
-      screen.getByRole("button", { name: /cancel/i }),
-    ).toBeDisabled()
-    expect(
-      screen.getByRole("button", { name: /deleting…/i }),
-    ).toBeDisabled()
+    expect(screen.getByRole("button", { name: /cancel/i })).toBeDisabled()
+    expect(screen.getByRole("button", { name: /deleting…/i })).toBeDisabled()
   })
 
   it("renders the inline error when provided", () => {
@@ -318,9 +276,7 @@ describe("DeleteConfirmation", () => {
       />,
       { wrapper: makeWrapper() },
     )
-    expect(
-      screen.getByRole("alert"),
-    ).toHaveTextContent(/couldn't delete/i)
+    expect(screen.getByRole("alert")).toHaveTextContent(/couldn't delete/i)
   })
 
   it("Escape cancels when not deleting", async () => {
@@ -351,16 +307,10 @@ describe("ConversationActionMenu", () => {
     const onRename = vi.fn()
     const onDelete = vi.fn()
     const user = userEvent.setup()
-    render(
-      <ConversationActionMenuHarness
-        onRename={onRename}
-        onDelete={onDelete}
-      />,
-      { wrapper: makeWrapper() },
-    )
-    await user.click(
-      screen.getByRole("button", { name: /open conversation actions/i }),
-    )
+    render(<ConversationActionMenuHarness onRename={onRename} onDelete={onDelete} />, {
+      wrapper: makeWrapper(),
+    })
+    await user.click(screen.getByRole("button", { name: /open conversation actions/i }))
     await user.click(screen.getByRole("menuitem", { name: /rename/i }))
     expect(onRename).toHaveBeenCalledTimes(1)
     expect(onDelete).not.toHaveBeenCalled()
@@ -369,16 +319,10 @@ describe("ConversationActionMenu", () => {
   it("Delete emits onDelete for an owner", async () => {
     const onDelete = vi.fn()
     const user = userEvent.setup()
-    render(
-      <ConversationActionMenuHarness
-        onRename={() => {}}
-        onDelete={onDelete}
-      />,
-      { wrapper: makeWrapper() },
-    )
-    await user.click(
-      screen.getByRole("button", { name: /open conversation actions/i }),
-    )
+    render(<ConversationActionMenuHarness onRename={() => {}} onDelete={onDelete} />, {
+      wrapper: makeWrapper(),
+    })
+    await user.click(screen.getByRole("button", { name: /open conversation actions/i }))
     await user.click(screen.getByRole("menuitem", { name: /delete/i }))
     expect(onDelete).toHaveBeenCalledTimes(1)
   })
@@ -390,28 +334,16 @@ describe("ConversationActionMenu", () => {
     // set the default to `owner`; flip it here.
     useAuthStore.setState((prev) => ({
       ...prev,
-      user: prev.user
-        ? { ...prev.user, role: "viewer" }
-        : prev.user,
+      user: prev.user ? { ...prev.user, role: "viewer" } : prev.user,
     }))
     const onDelete = vi.fn()
     const user = userEvent.setup()
-    render(
-      <ConversationActionMenuHarness
-        onRename={() => {}}
-        onDelete={onDelete}
-      />,
-      { wrapper: makeWrapper() },
-    )
-    await user.click(
-      screen.getByRole("button", { name: /open conversation actions/i }),
-    )
-    expect(
-      screen.queryByRole("menuitem", { name: /delete/i }),
-    ).toBeNull()
-    expect(
-      screen.getByRole("menuitem", { name: /rename/i }),
-    ).toBeInTheDocument()
+    render(<ConversationActionMenuHarness onRename={() => {}} onDelete={onDelete} />, {
+      wrapper: makeWrapper(),
+    })
+    await user.click(screen.getByRole("button", { name: /open conversation actions/i }))
+    expect(screen.queryByRole("menuitem", { name: /delete/i })).toBeNull()
+    expect(screen.getByRole("menuitem", { name: /rename/i })).toBeInTheDocument()
   })
 
   it("click outside closes the menu", async () => {
@@ -422,24 +354,15 @@ describe("ConversationActionMenu", () => {
         <button type="button" data-outside>
           Outside
         </button>
-        <ConversationActionMenuHarness
-          onRename={onRename}
-          onDelete={() => {}}
-        />
+        <ConversationActionMenuHarness onRename={onRename} onDelete={() => {}} />
       </div>,
       { wrapper: makeWrapper() },
     )
-    await user.click(
-      screen.getByRole("button", { name: /open conversation actions/i }),
-    )
-    expect(
-      screen.getByRole("menu", { name: /conversation actions/i }),
-    ).toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: /open conversation actions/i }))
+    expect(screen.getByRole("menu", { name: /conversation actions/i })).toBeInTheDocument()
     await user.click(screen.getByRole("button", { name: /outside/i }))
     await waitFor(() => {
-      expect(
-        screen.queryByRole("menu", { name: /conversation actions/i }),
-      ).toBeNull()
+      expect(screen.queryByRole("menu", { name: /conversation actions/i })).toBeNull()
     })
   })
 })

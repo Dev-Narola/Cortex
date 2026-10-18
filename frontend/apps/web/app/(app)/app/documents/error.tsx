@@ -37,9 +37,7 @@ export default function DocumentsError({
     <div className="space-y-6">
       <header className="space-y-1">
         <h1 className="font-display text-3xl font-semibold tracking-tight">Documents</h1>
-        <p className="text-sm text-muted-foreground">
-          We hit a problem rendering the page.
-        </p>
+        <p className="text-sm text-muted-foreground">We hit a problem rendering the page.</p>
       </header>
       <Card>
         <CardContent className="flex flex-col items-center gap-4 py-12 text-center">

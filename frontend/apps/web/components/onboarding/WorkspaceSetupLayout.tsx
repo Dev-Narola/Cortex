@@ -26,7 +26,7 @@
  */
 
 import Link from "next/link"
-import { type ReactNode } from "react"
+import type { ReactNode } from "react"
 
 import { Logo, Text } from "@cortex/ui"
 
@@ -77,7 +77,7 @@ export function WorkspaceSetupLayout({
                   gradient mesh that hints at "the network lights up
                   when your documents connect". F3+ replaces this
                   with a real SVG / canvas illustration. */}
-              <div className="absolute inset-0 bg-gradient-to-br from-ember-100 via-paper-50 to-volt-100" />
+              <div className="absolute inset-0 bg-gradient-to-br from-ember-100 via-foreground to-volt-100" />
               <div className="absolute left-1/2 top-1/2 h-32 w-32 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-br from-ember-300 to-volt-300 opacity-50 blur-2xl" />
             </div>
             <div className="space-y-1">
@@ -85,8 +85,8 @@ export function WorkspaceSetupLayout({
                 Build your knowledge graph
               </h2>
               <Text tone="muted" size="sm">
-                A workspace is where your documents, agents, and team live
-                together. You can invite teammates after the setup.
+                A workspace is where your documents, agents, and team live together. You can invite
+                teammates after the setup.
               </Text>
             </div>
           </section>
@@ -104,9 +104,7 @@ export function WorkspaceSetupLayout({
             </div>
             {children}
             {footer ? (
-              <div className="pt-2 text-center text-sm text-muted-foreground">
-                {footer}
-              </div>
+              <div className="pt-2 text-center text-sm text-muted-foreground">{footer}</div>
             ) : null}
           </section>
         </div>

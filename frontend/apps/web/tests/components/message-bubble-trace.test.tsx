@@ -15,19 +15,9 @@
  * caught here.
  */
 
-import {
-  QueryClient,
-  QueryClientProvider,
-} from "@tanstack/react-query"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { render, screen } from "@testing-library/react"
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import { MessageBubble } from "@/components/chat/MessageBubble"
 import { getApiClient } from "@/lib/auth/api-client"
@@ -35,9 +25,7 @@ import type { Message } from "@/types/conversation"
 
 vi.mock("@/lib/auth/api-client", async () => {
   const actual =
-    await vi.importActual<typeof import("@/lib/auth/api-client")>(
-      "@/lib/auth/api-client",
-    )
+    await vi.importActual<typeof import("@/lib/auth/api-client")>("@/lib/auth/api-client")
   return { ...actual, getApiClient: vi.fn(), resetApiClient: vi.fn() }
 })
 
@@ -83,17 +71,10 @@ afterEach(() => {
 
 describe("MessageBubble — agent trace integration", () => {
   it("does not render the trace when agentRunId is null", () => {
-    render(
-      <MessageBubble
-        message={baseMessage}
-        conversationId="c-1"
-        isBusy={false}
-      />,
-      { wrapper: makeWrapper() },
-    )
-    expect(
-      screen.queryByTestId("agent-trace"),
-    ).not.toBeInTheDocument()
+    render(<MessageBubble message={baseMessage} conversationId="c-1" isBusy={false} />, {
+      wrapper: makeWrapper(),
+    })
+    expect(screen.queryByTestId("agent-trace")).not.toBeInTheDocument()
   })
 
   it("does not render the trace when agentRunId is empty string", () => {
@@ -105,9 +86,7 @@ describe("MessageBubble — agent trace integration", () => {
       />,
       { wrapper: makeWrapper() },
     )
-    expect(
-      screen.queryByTestId("agent-trace"),
-    ).not.toBeInTheDocument()
+    expect(screen.queryByTestId("agent-trace")).not.toBeInTheDocument()
   })
 
   it("renders the trace when agentRunId is set, collapsed by default", async () => {
@@ -158,16 +137,9 @@ describe("MessageBubble — agent trace integration", () => {
       content: "How are they related?",
       agentRunId: "r-1",
     }
-    render(
-      <MessageBubble
-        message={userMessage}
-        conversationId="c-1"
-        isBusy={false}
-      />,
-      { wrapper: makeWrapper() },
-    )
-    expect(
-      screen.queryByTestId("agent-trace"),
-    ).not.toBeInTheDocument()
+    render(<MessageBubble message={userMessage} conversationId="c-1" isBusy={false} />, {
+      wrapper: makeWrapper(),
+    })
+    expect(screen.queryByTestId("agent-trace")).not.toBeInTheDocument()
   })
 })

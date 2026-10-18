@@ -78,12 +78,11 @@ export function CitationsVisual() {
           Cortex combines keyword and semantic search
           <span
             data-testid="citation-marker-1"
-            className="ml-0.5 inline-flex h-5 w-5 translate-y-0.5 items-center justify-center rounded-full bg-spark font-mono text-[10px] font-semibold text-paper-50 opacity-0 shadow-spark transition-all duration-300 ease-out [transition-delay:400ms] data-[revealed=true]:opacity-100 data-[revealed=true]:scale-100 scale-75"
+            className="ml-0.5 inline-flex h-5 w-5 translate-y-0.5 items-center justify-center rounded-full bg-spark font-mono text-[10px] font-semibold text-foreground opacity-0 shadow-spark transition-all duration-300 ease-out [transition-delay:400ms] data-[revealed=true]:opacity-100 data-[revealed=true]:scale-100 scale-75"
           >
             1
           </span>
-          , then reranks the fused candidates before generating the
-          final answer.
+          , then reranks the fused candidates before generating the final answer.
         </p>
       </div>
 
@@ -101,7 +100,7 @@ export function CitationsVisual() {
         <div className="flex items-start gap-3">
           <span
             aria-hidden
-            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-spark font-mono text-xs font-semibold text-paper-50 shadow-sm"
+            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-spark font-mono text-xs font-semibold text-foreground shadow-sm"
           >
             1
           </span>
@@ -115,9 +114,7 @@ export function CitationsVisual() {
             >
               Retrieval Notes.md
             </p>
-            <p className="text-xs text-muted-foreground">
-              Section: Hybrid Retrieval · Page 12
-            </p>
+            <p className="text-xs text-muted-foreground">Section: Hybrid Retrieval · Page 12</p>
           </div>
         </div>
       </div>

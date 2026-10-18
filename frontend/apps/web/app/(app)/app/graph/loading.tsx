@@ -28,14 +28,14 @@ export default function GraphLoading() {
     <section
       aria-busy
       aria-label="Loading knowledge graph"
-      className="relative -m-6 flex h-[calc(100vh-3.5rem)] w-[calc(100%+3rem)] flex-col bg-void-950"
+      className="relative -m-6 flex h-[calc(100vh-3.5rem)] w-[calc(100%+3rem)] flex-col bg-background"
     >
       <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-4 p-4 md:p-6">
         {/* Search bar placeholder — same shape
             as the real bar so the layout doesn't
             shift when the real one mounts. */}
         <div className="flex flex-1 items-start">
-          <output className="flex h-9 w-full max-w-sm items-center gap-2 rounded-md border border-slate-600 bg-slate-700/60 px-3 text-sm text-paper-200/50 backdrop-blur-sm">
+          <output className="flex h-9 w-full max-w-sm items-center gap-2 rounded-md border border-border bg-muted px-3 text-sm text-faint backdrop-blur-sm">
             <Icon name="Search" size="sm" tone="muted" aria-hidden />
             <span>Loading knowledge graph…</span>
           </output>
@@ -43,8 +43,8 @@ export default function GraphLoading() {
       </div>
 
       <output className="flex h-full w-full items-center justify-center">
-        <div className="flex flex-col items-center gap-3 text-paper-200/60">
-          <div className="h-12 w-12 animate-spin rounded-full border-2 border-void-700 border-t-volt-400" />
+        <div className="flex flex-col items-center gap-3 text-faint">
+          <div className="h-12 w-12 animate-spin rounded-full border-2 border-border border-t-volt-400" />
           <p className="text-sm">Preparing the 3D scene</p>
         </div>
       </output>

@@ -27,25 +27,18 @@ export const apiConfig = {
     // Identity (V1)
     authLogin: "/api/v1/auth/login",
     authRefresh: "/api/v1/auth/refresh",
-    authLogout: "/api/v1/auth/logout",
     me: "/api/v1/tenants/me",
     users: "/api/v1/users",
 
     // Knowledge (V2)
     documents: "/api/v1/documents",
     documentById: (id: string) => `/api/v1/documents/${id}`,
-    chunksById: (id: string) => `/api/v1/chunks/${id}`,
-    documentUpload: "/api/v1/documents/upload",
 
     // Retrieval (V3 / V5)
     search: "/api/v1/search",
-    answer: "/api/v1/answer",
 
     // Knowledge Graph (V7)
-    graphExtract: "/api/v1/graph/extract",
     graphEntities: "/api/v1/graph/entities",
-    graphRelations: "/api/v1/graph/relations",
-    graphNeighbors: (id: string) => `/api/v1/graph/neighbors/${id}`,
 
     // Conversations (V3)
     conversations: "/api/v1/conversations",
@@ -54,7 +47,6 @@ export const apiConfig = {
     // Agents (V6)
     agents: "/api/v1/agents",
     agentById: (id: string) => `/api/v1/agents/${id}`,
-    agentInvoke: (id: string) => `/api/v1/agents/${id}/invoke`,
 
     // MCP (V8) — JSON-RPC 2.0 over HTTP POST.
     // The MCP server exposes a single endpoint;
@@ -71,11 +63,9 @@ export const apiConfig = {
      * `apiConfig.mcpUrl` so the origin is driven
      * by the env, not hardcoded in the page.
      */
-    mcpJsonRpcUrl: (mcpUrl: string) =>
-      `${mcpUrl.replace(/\/$/, "")}/api/v1/mcp`,
+    mcpJsonRpcUrl: (mcpUrl: string) => `${mcpUrl.replace(/\/$/, "")}/api/v1/mcp`,
 
     // Billing / Admin (V1)
-    billingUsage: "/api/v1/billing/usage",
 
     // Usage (V4 / F7 Part 4) — verified against
     // `Cortex/src/billing/interface/rest/routes.py`.
@@ -88,7 +78,6 @@ export const apiConfig = {
     tenantUsageSummary: "/api/v1/tenants/me/usage/summary",
     tenantUsage: "/api/v1/tenants/me/usage",
     tenantUsageEvents: "/api/v1/tenants/me/usage/events",
-    adminAudit: "/api/v1/admin/audit",
 
     // Audit Log (V4 / F7 Part 5) — verified
     // against `Cortex/src/observability/interface/rest/audit_routes.py`.

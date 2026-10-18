@@ -139,8 +139,7 @@ export const AUDIT_RESOURCE_TYPES = {
   SESSION: "session",
 } as const
 
-export type AuditResourceType =
-  (typeof AUDIT_RESOURCE_TYPES)[keyof typeof AUDIT_RESOURCE_TYPES]
+export type AuditResourceType = (typeof AUDIT_RESOURCE_TYPES)[keyof typeof AUDIT_RESOURCE_TYPES]
 
 /**
  * Human-readable label for an action.
@@ -237,10 +236,7 @@ export function actionCategory(action: string): ActionCategory {
   ) {
     return "documents"
   }
-  if (
-    action === AUDIT_ACTIONS.API_KEY_CREATED ||
-    action === AUDIT_ACTIONS.API_KEY_REVOKED
-  ) {
+  if (action === AUDIT_ACTIONS.API_KEY_CREATED || action === AUDIT_ACTIONS.API_KEY_REVOKED) {
     return "api_keys"
   }
   if (
@@ -251,10 +247,7 @@ export function actionCategory(action: string): ActionCategory {
   ) {
     return "users"
   }
-  if (
-    action === AUDIT_ACTIONS.TENANT_UPDATED ||
-    action === AUDIT_ACTIONS.TENANT_CREATED
-  ) {
+  if (action === AUDIT_ACTIONS.TENANT_UPDATED || action === AUDIT_ACTIONS.TENANT_CREATED) {
     return "tenant"
   }
   if (
@@ -304,7 +297,9 @@ export function categoryLabel(category: ActionCategory): string {
  */
 export type ActorKind = "user" | "api_key" | "system"
 
-export function actorKind(event: Pick<AuditEvent, "actor_user_id" | "actor_api_key_id">): ActorKind {
+export function actorKind(
+  event: Pick<AuditEvent, "actor_user_id" | "actor_api_key_id">,
+): ActorKind {
   if (event.actor_user_id) return "user"
   if (event.actor_api_key_id) return "api_key"
   return "system"

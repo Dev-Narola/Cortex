@@ -101,15 +101,13 @@ export function AuditLogPanel() {
   }, [])
 
   const currentCursor: string | null =
-    cursorStack.length === 0 ? null : cursorStack[cursorStack.length - 1] ?? null
+    cursorStack.length === 0 ? null : (cursorStack[cursorStack.length - 1] ?? null)
 
   const { data, isLoading, isError, error, refetch, isFetching } = useAuditLog({
     limit: DEFAULT_PAGE_SIZE,
     ...(currentCursor !== null ? { cursor: currentCursor } : {}),
     ...(filters.action !== undefined ? { action: filters.action } : {}),
-    ...(filters.resource_type !== undefined
-      ? { resource_type: filters.resource_type }
-      : {}),
+    ...(filters.resource_type !== undefined ? { resource_type: filters.resource_type } : {}),
     ...(filters.start_date !== undefined ? { start_date: filters.start_date } : {}),
     ...(filters.end_date !== undefined ? { end_date: filters.end_date } : {}),
   })
@@ -168,21 +166,14 @@ export function AuditLogPanel() {
   }, [cursorStack, data])
 
   return (
-    <div
-      className="space-y-6"
-      data-testid="audit-log-panel"
-      aria-label="Audit log"
-    >
+    <div className="space-y-6" data-testid="audit-log-panel" aria-label="Audit log">
       <header className="space-y-1">
-        <h2 className="font-display text-base font-semibold tracking-tight">
-          Audit Log
-        </h2>
-        <p className="text-sm text-paper-200/70">
+        <h2 className="font-display text-base font-semibold tracking-tight">Audit Log</h2>
+        <p className="text-sm text-muted-foreground">
           Review activity and changes made in this workspace.
         </p>
-        <p className="text-xs text-paper-200/50">
-          Append-only. Workspace events recorded by Cortex — you can&rsquo;t edit or
-          delete them.
+        <p className="text-xs text-faint">
+          Append-only. Workspace events recorded by Cortex — you can&rsquo;t edit or delete them.
         </p>
       </header>
 
@@ -261,9 +252,8 @@ function AuditLogBody({
         className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-between"
         data-testid="audit-log-pagination"
       >
-        <p className="text-xs text-paper-200/60">
-          Showing the most recent {totalLoaded} event{totalLoaded === 1 ? "" : "s"} for
-          this page.
+        <p className="text-xs text-faint">
+          Showing the most recent {totalLoaded} event{totalLoaded === 1 ? "" : "s"} for this page.
         </p>
         <div className="flex items-center gap-2">
           <Button
@@ -300,14 +290,14 @@ function AuditLogEmptyState() {
       <CardContent className="space-y-2 p-4 sm:p-6 text-center">
         <div
           aria-hidden
-          className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-slate-800/60 text-paper-200/60"
+          className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-card/60 text-faint"
         >
           <Icon name="ScrollText" className="h-5 w-5" />
         </div>
-        <p className="text-sm font-medium text-paper-50">No activity yet</p>
-        <p className="mx-auto max-w-sm text-sm text-paper-200/70">
-          Workspace activity will appear here as documents, users, API keys, and other
-          workspace actions occur.
+        <p className="text-sm font-medium text-foreground">No activity yet</p>
+        <p className="mx-auto max-w-sm text-sm text-muted-foreground">
+          Workspace activity will appear here as documents, users, API keys, and other workspace
+          actions occur.
         </p>
       </CardContent>
     </Card>
@@ -320,16 +310,16 @@ function AuditLogForbiddenState() {
       <CardContent className="space-y-2 p-4 sm:p-6 text-center">
         <div
           aria-hidden
-          className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-slate-800/60 text-paper-200/60"
+          className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-card/60 text-faint"
         >
           <Icon name="Lock" className="h-5 w-5" />
         </div>
-        <p className="text-sm font-medium text-paper-50">
+        <p className="text-sm font-medium text-foreground">
           You don&rsquo;t have access to the audit log
         </p>
-        <p className="mx-auto max-w-sm text-sm text-paper-200/70">
-          Only workspace owners and admins can review the audit trail. Ask an admin to
-          grant you access if you need it.
+        <p className="mx-auto max-w-sm text-sm text-muted-foreground">
+          Only workspace owners and admins can review the audit trail. Ask an admin to grant you
+          access if you need it.
         </p>
       </CardContent>
     </Card>
@@ -338,14 +328,14 @@ function AuditLogForbiddenState() {
 
 function AuditLogSkeleton() {
   return (
-    <output
-      data-testid="audit-log-skeleton"
-      aria-label="Loading audit log"
-      className="block"
-    >
-      <div className="space-y-2 rounded-md border border-slate-700/40 bg-slate-900/30 p-3">
+    <output data-testid="audit-log-skeleton" aria-label="Loading audit log" className="block">
+      <div className="space-y-2 rounded-md border border-border bg-muted p-3">
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="flex items-center gap-3">
+          <div
+            // biome-ignore lint/suspicious/noArrayIndexKey: static, identical skeleton placeholders
+            key={i}
+            className="flex items-center gap-3"
+          >
             <Skeleton className="h-4 w-28" />
             <Skeleton className="h-4 w-24" />
             <Skeleton className="h-4 flex-1" />

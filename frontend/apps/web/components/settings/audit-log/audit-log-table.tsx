@@ -35,7 +35,13 @@
 
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "@cortex/ui"
 
-import { actionLabel, resourceTypeLabel, shortResourceId, type AuditEvent, type ActorKind } from "@/services/audit"
+import {
+  type ActorKind,
+  type AuditEvent,
+  actionLabel,
+  resourceTypeLabel,
+  shortResourceId,
+} from "@/services/audit"
 
 import { AuditLogActionBadge } from "./audit-log-action-badge"
 
@@ -83,11 +89,12 @@ function AuditLogRow({
         }
       }}
       tabIndex={0}
+      // biome-ignore lint/a11y/useSemanticElements: a clickable table row can't be a <button>; it keeps row semantics plus Enter/Space
       role="button"
       aria-label={`View details for ${actionLabel(event.action)}`}
-      className="cursor-pointer transition-colors hover:bg-slate-800/40 focus-visible:bg-slate-800/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-volt-500"
+      className="cursor-pointer transition-colors hover:bg-card/40 focus-visible:bg-card/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-volt-500"
     >
-      <TableCell className="whitespace-nowrap text-xs text-paper-200/70">
+      <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
         {formatTimestamp(event.created_at)}
       </TableCell>
       <TableCell>
@@ -95,7 +102,10 @@ function AuditLogRow({
       </TableCell>
       <TableCell>
         <div className="flex flex-col gap-0.5">
-          <span className="text-sm font-medium text-paper-50" data-testid={`audit-log-action-${event.id}`}>
+          <span
+            className="text-sm font-medium text-foreground"
+            data-testid={`audit-log-action-${event.id}`}
+          >
             {actionLabel(event.action)}
           </span>
           <AuditLogActionBadge action={event.action} />
@@ -103,11 +113,9 @@ function AuditLogRow({
       </TableCell>
       <TableCell>
         <div className="flex flex-col">
-          <span className="text-sm text-paper-50">
-            {resourceTypeLabel(event.resource_type)}
-          </span>
+          <span className="text-sm text-foreground">{resourceTypeLabel(event.resource_type)}</span>
           {event.resource_id ? (
-            <span className="font-mono text-[10px] uppercase tracking-wider text-paper-200/50">
+            <span className="font-mono text-[10px] uppercase tracking-wider text-faint">
               {shortResourceId(event.resource_id)}
             </span>
           ) : null}
@@ -133,8 +141,8 @@ function ActorCell({
     const id = event.actor_user_id ?? ""
     return (
       <div className="flex flex-col">
-        <span className="text-sm font-medium text-paper-50">User</span>
-        <span className="font-mono text-[10px] uppercase tracking-wider text-paper-200/50">
+        <span className="text-sm font-medium text-foreground">User</span>
+        <span className="font-mono text-[10px] uppercase tracking-wider text-faint">
           {shortResourceId(id)}
         </span>
       </div>
@@ -144,15 +152,15 @@ function ActorCell({
     const id = event.actor_api_key_id ?? ""
     return (
       <div className="flex flex-col">
-        <span className="text-sm font-medium text-paper-50">API key</span>
-        <span className="font-mono text-[10px] uppercase tracking-wider text-paper-200/50">
+        <span className="text-sm font-medium text-foreground">API key</span>
+        <span className="font-mono text-[10px] uppercase tracking-wider text-faint">
           {shortResourceId(id)}
         </span>
       </div>
     )
   }
   return (
-    <span className="text-sm text-paper-200/70" data-testid="audit-log-actor-system">
+    <span className="text-sm text-muted-foreground" data-testid="audit-log-actor-system">
       System
     </span>
   )

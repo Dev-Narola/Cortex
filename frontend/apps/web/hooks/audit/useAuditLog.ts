@@ -27,9 +27,9 @@
  */
 "use client"
 
-import { useQuery, type UseQueryResult } from "@tanstack/react-query"
+import { type UseQueryResult, useQuery } from "@tanstack/react-query"
 
-import { getAuditLog, type AuditEventListResponse, type GetAuditLogParams } from "@/services/audit"
+import { type AuditEventListResponse, type GetAuditLogParams, getAuditLog } from "@/services/audit"
 
 import { auditKeys } from "./auditKeys"
 
@@ -46,21 +46,11 @@ export interface UseAuditLogParams extends Omit<GetAuditLogParams, "signal"> {
 
 export type UseAuditLogResult = UseQueryResult<AuditEventListResponse, Error>
 
-export function useAuditLog(
-  params: UseAuditLogParams = {},
-): UseAuditLogResult {
+export function useAuditLog(params: UseAuditLogParams = {}): UseAuditLogResult {
   const { enabled = true, ...rest } = params
   // Strip `signal` from the queryKey so the
   // signal identity never causes a refetch.
-  const {
-    cursor,
-    limit,
-    action,
-    resource_type,
-    actor_user_id,
-    start_date,
-    end_date,
-  } = rest
+  const { cursor, limit, action, resource_type, actor_user_id, start_date, end_date } = rest
   return useQuery<AuditEventListResponse, Error>({
     queryKey: auditKeys.list({
       ...(cursor !== undefined ? { cursor } : {}),

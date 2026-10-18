@@ -55,11 +55,7 @@ export function ProblemSection() {
   useInView(ref, onEnter)
 
   return (
-    <section
-      id="problem"
-      aria-labelledby="problem-heading"
-      className="relative py-20 md:py-28"
-    >
+    <section id="problem" aria-labelledby="problem-heading" className="relative py-20 md:py-28">
       <Container size="md" className="text-center">
         <div
           ref={ref}
@@ -74,13 +70,11 @@ export function ProblemSection() {
             className="font-display text-3xl font-semibold leading-[1.15] tracking-tight text-foreground sm:text-4xl md:text-5xl"
           >
             Your knowledge is everywhere.
-            <br className="hidden sm:block" />{" "}
-            Answers are nowhere you can trust.
+            <br className="hidden sm:block" /> Answers are nowhere you can trust.
           </h2>
           <Text tone="muted" className="mx-auto max-w-2xl text-base sm:text-lg">
-            Documents, notes, wikis, reports, internal knowledge. The
-            information is all there — but finding one trustworthy
-            answer still means searching through all of it yourself.
+            Documents, notes, wikis, reports, internal knowledge. The information is all there — but
+            finding one trustworthy answer still means searching through all of it yourself.
           </Text>
         </div>
       </Container>

@@ -1,74 +1,46 @@
 /**
- * GlobalSearch — the search input in the topbar.
- *
- * **F3 Part 1 (Task 9).** Read-only placeholder. The
- * real search lands in F4 — for now the input is a
- * no-op button that surfaces a toast saying
- * "Search coming in F4" when clicked (or activated
- * via the keyboard).
- *
- * **Keyboard shortcut.** The spec asks us to "reserve"
- * `Ctrl/Cmd + K` for the future. We listen for it
- * globally and trigger the same "coming in F4" toast
- * so the affordance is consistent with the click path.
- * The real F4 search will own the shortcut (it
- * already does, in a sense — the listener will be
- * replaced with the F4 CommandPalette).
- *
- * **No business logic.** The input is non-functional;
- * the value is never read. `onClick` and the keyboard
- * listener are the only behaviours.
- *
- * **Why a button, not an `<input>`.** Using a
- * button-as-input keeps the placeholder visually
- * consistent with what the real search will look
- * like (a CommandPalette modal), and it makes the
- * "this isn't a real input" affordance explicit for
- * screen readers (`aria-disabled` + tooltip).
+ * GlobalSearch — the topbar search trigger. Click or ⌘K / Ctrl+K opens the
+ * Search page (or focuses its field when already there).
  */
 
 "use client"
 
-import { useEffect, type ReactNode } from "react"
+import { usePathname, useRouter } from "next/navigation"
+import { type ReactNode, useCallback, useEffect } from "react"
 
-import { Icon, toast } from "@cortex/ui"
-
-function showComingSoonToast() {
-  toast({
-    title: "Search coming in F4",
-    description: "We're wiring up the global search soon — for now, head to Documents to find what you uploaded.",
-  })
-}
+import { Icon } from "@cortex/ui"
 
 export function GlobalSearch(): ReactNode {
-  // Reserve Ctrl/Cmd + K for the future. When the user
-  // hits the shortcut we show the same toast as a
-  // click so the affordance is consistent.
+  const router = useRouter()
+  const pathname = usePathname()
+
+  const open = useCallback(() => {
+    if (pathname === "/app/search") document.getElementById("search-q")?.focus()
+    else router.push("/app/search" as never)
+  }, [pathname, router])
+
   useEffect(() => {
-    if (typeof window === "undefined") return
     function onKey(e: KeyboardEvent) {
-      const isMod = e.metaKey || e.ctrlKey
-      if (isMod && (e.key === "k" || e.key === "K")) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault()
-        showComingSoonToast()
+        open()
       }
     }
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
-  }, [])
+  }, [open])
 
   return (
     <button
       type="button"
-      onClick={showComingSoonToast}
-      aria-label="Search (coming in F4)"
-      aria-disabled
-      className="group inline-flex h-9 w-full min-w-0 max-w-md items-center gap-2 rounded-md border border-border bg-muted/30 px-3 text-left text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+      onClick={open}
+      aria-keyshortcuts="Control+K Meta+K"
+      className="glass inline-flex h-9 w-full min-w-0 max-w-md items-center gap-2 rounded-full px-3.5 text-left text-sm text-faint transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
-      <Icon name="Search" className="h-4 w-4 shrink-0" />
-      <span className="flex-1 truncate">Search Cortex…</span>
-      <kbd className="hidden items-center gap-0.5 rounded border border-border bg-background px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground sm:inline-flex">
-        <span className="text-[10px]">⌘</span>K
+      <Icon name="Search" className="h-4 w-4 shrink-0" aria-hidden />
+      <span className="flex-1 truncate">Search knowledge…</span>
+      <kbd className="hidden items-center gap-0.5 rounded-md border border-border px-1.5 py-0.5 font-mono text-[10px] sm:inline-flex">
+        ⌘K
       </kbd>
     </button>
   )

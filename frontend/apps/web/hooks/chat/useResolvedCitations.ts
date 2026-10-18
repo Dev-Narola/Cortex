@@ -46,12 +46,10 @@ export interface UseResolvedCitationsResult {
 }
 
 export function useResolvedCitations(
-  message: Pick<Message, "id" | "retrievedChunkIds">,
+  message: Pick<Message, "id" | "retrievedChunkIds" | "citations">,
   conversationId: string,
 ): UseResolvedCitationsResult {
-  const streamed = useConversationStreamStore(
-    (s) => s.streams.get(conversationId)?.citations,
-  )
+  const streamed = useConversationStreamStore((s) => s.streams.get(conversationId)?.citations)
   const assistantMessageId = useConversationStreamStore(
     (s) => s.streams.get(conversationId)?.assistantMessageId,
   )
@@ -59,6 +57,10 @@ export function useResolvedCitations(
   return useMemo(() => {
     if (message.retrievedChunkIds.length === 0) {
       return { data: [], isReady: true }
+    }
+    // Saved answers carry server-resolved sources (survive reloads).
+    if (message.citations && message.citations.length > 0) {
+      return { data: message.citations, isReady: true }
     }
     if (!streamed) {
       return { data: [], isReady: false }

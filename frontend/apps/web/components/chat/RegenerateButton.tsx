@@ -51,7 +51,7 @@
 
 "use client"
 
-import { type ReactNode } from "react"
+import type { ReactNode } from "react"
 
 import { Button, Icon, Spinner } from "@cortex/ui"
 
@@ -89,10 +89,7 @@ export function RegenerateButton({
       aria-label="Regenerate answer"
       aria-busy={isBusy}
       data-state={isBusy ? "regenerating" : "idle"}
-      className={
-        "h-7 gap-1.5 px-2 text-xs text-muted-foreground hover:text-foreground " +
-        (className ?? "")
-      }
+      className={`h-7 gap-1.5 px-2 text-xs text-muted-foreground hover:text-foreground ${className ?? ""}`}
     >
       {isBusy ? (
         <>

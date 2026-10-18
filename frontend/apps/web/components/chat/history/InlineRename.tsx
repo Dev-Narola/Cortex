@@ -43,13 +43,13 @@
  */
 
 import {
+  type FormEvent,
+  type KeyboardEvent,
+  type ReactNode,
   useCallback,
   useEffect,
   useRef,
   useState,
-  type FormEvent,
-  type KeyboardEvent,
-  type ReactNode,
 } from "react"
 
 import { Button, Icon, Input } from "@cortex/ui"
@@ -142,7 +142,7 @@ export function InlineRename({
       onSubmit={handleSubmit}
       aria-label="Rename conversation"
       data-inline-rename
-      className={"flex w-full flex-col gap-1 " + (className ?? "")}
+      className={`flex w-full flex-col gap-1 ${className ?? ""}`}
     >
       <div className="flex items-center gap-1.5">
         <Icon
@@ -198,22 +198,14 @@ export function InlineRename({
         </Button>
       </div>
       {error ? (
-        <p
-          id="rename-error"
-          role="alert"
-          className="ml-5 text-[10px] text-destructive"
-        >
+        <p id="rename-error" role="alert" className="ml-5 text-[10px] text-destructive">
           {error}
         </p>
       ) : null}
       {isSaving ? (
-        <p
-          role="status"
-          aria-live="polite"
-          className="ml-5 text-[10px] text-muted-foreground"
-        >
+        <output aria-live="polite" className="block ml-5 text-[10px] text-muted-foreground">
           Saving…
-        </p>
+        </output>
       ) : null}
     </form>
   )

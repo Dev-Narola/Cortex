@@ -143,10 +143,7 @@ function Column({
   columnClass: string
 }) {
   return (
-    <div
-      data-testid={`hybrid-search-column-${label.toLowerCase()}`}
-      className={columnClass}
-    >
+    <div data-testid={`hybrid-search-column-${label.toLowerCase()}`} className={columnClass}>
       <div className="rounded-xl border border-border bg-background/80 p-3 backdrop-blur-sm">
         <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
           {label}
@@ -171,7 +168,7 @@ function FusedColumn({ items }: { items: ReadonlyArray<ResultItem> }) {
         {/* "Fused" badge in the top-right. */}
         <span
           aria-hidden
-          className="absolute -top-2 right-2 inline-flex items-center rounded-full bg-spark px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-paper-50 shadow-sm"
+          className="absolute -top-2 right-2 inline-flex items-center rounded-full bg-spark px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-foreground shadow-sm"
         >
           Fused + reranked
         </span>
@@ -200,7 +197,7 @@ function ResultRow({
       className={`flex items-center gap-2 rounded-md border px-2 py-1.5 font-mono text-xs ${
         highlight
           ? "border-ember-500/40 bg-background/80 text-foreground"
-          : "border-border/60 bg-background/60 text-paper-200"
+          : "border-border/60 bg-background/60 text-muted-foreground"
       }`}
       data-testid={`hybrid-search-result-${item.tag}-${item.label.replace(/\W+/g, "-")}`}
     >

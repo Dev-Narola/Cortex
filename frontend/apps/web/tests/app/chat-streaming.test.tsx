@@ -23,26 +23,22 @@ import { act, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
-import { ToastProvider, ToastViewport, Toaster } from "@cortex/ui"
 import { ApiError } from "@cortex/api-client"
+import { ToastProvider, ToastViewport, Toaster } from "@cortex/ui"
 
 import { ConversationView } from "@/app/(app)/chat/[conversationId]/ConversationView"
-import { getApiClient } from "@/lib/auth/api-client"
-import { useAuthStore } from "@/lib/auth/store"
-import {
-  _resetConversationSockets,
-} from "@/hooks/chat"
+import { _resetConversationSockets } from "@/hooks/chat"
 import {
   conversationStreamStore,
   useConversationStreamStore,
 } from "@/hooks/chat/conversationStreamStore"
+import { getApiClient } from "@/lib/auth/api-client"
+import { useAuthStore } from "@/lib/auth/store"
 import type { Conversation } from "@/types/conversation"
 
 vi.mock("@/lib/auth/api-client", async () => {
   const actual =
-    await vi.importActual<typeof import("@/lib/auth/api-client")>(
-      "@/lib/auth/api-client",
-    )
+    await vi.importActual<typeof import("@/lib/auth/api-client")>("@/lib/auth/api-client")
   return { ...actual, getApiClient: vi.fn(), resetApiClient: vi.fn() }
 })
 
@@ -188,10 +184,7 @@ describe("Chat streaming integration (F4 Part 2, Tests B/C/D)", () => {
     // Optimistic user message in the
     // cache.
     await waitFor(() => {
-      const data = qc.getQueryData<Conversation>([
-        "conversations",
-        "c-1",
-      ])
+      const data = qc.getQueryData<Conversation>(["conversations", "c-1"])
       expect(data?.messages?.[0]?.role).toBe("user")
       expect(data?.messages?.[0]?.content).toBe("What is Cortex?")
     })
@@ -234,9 +227,7 @@ describe("Chat streaming integration (F4 Part 2, Tests B/C/D)", () => {
     })
     // The streaming slot shows the
     // accumulated text.
-    await waitFor(() =>
-      expect(screen.getByText("Cortex uses Postgres.")).toBeInTheDocument(),
-    )
+    await waitFor(() => expect(screen.getByText("Cortex uses Postgres.")).toBeInTheDocument())
     // Spark Glow + cursor are present.
     const article = screen.getByRole("article", {
       name: /assistant is generating/i,
@@ -252,9 +243,7 @@ describe("Chat streaming integration (F4 Part 2, Tests B/C/D)", () => {
       })
     })
     await waitFor(() => {
-      const stream = useConversationStreamStore
-        .getState()
-        .streams.get("c-1")
+      const stream = useConversationStreamStore.getState().streams.get("c-1")
       expect(stream?.status).toBe("completed")
     })
   })
@@ -304,9 +293,7 @@ describe("Chat streaming integration (F4 Part 2, Tests B/C/D)", () => {
     // The conversation id is the same;
     // the same socket is reused.
     await waitFor(() => expect(FakeSocket.instances).toHaveLength(1))
-    expect(FakeSocket.instances[0]!.url).toContain(
-      "/ws/conversations/c-1",
-    )
+    expect(FakeSocket.instances[0]!.url).toContain("/ws/conversations/c-1")
   })
 
   it("Duplicate submit guard (Task 28): second click is a no-op", async () => {
@@ -334,8 +321,7 @@ describe("Chat streaming integration (F4 Part 2, Tests B/C/D)", () => {
     // (The hook re-enables on
     // `completed` / `error`.)
     const stream = useConversationStreamStore.getState().streams.get("c-1")
-    expect(stream?.status === "sending" || stream?.status === "streaming")
-      .toBe(true)
+    expect(stream?.status === "sending" || stream?.status === "streaming").toBe(true)
   })
 
   it("WS error: a generation error surfaces as a toast", async () => {
@@ -375,9 +361,7 @@ describe("Chat streaming integration (F4 Part 2, Tests B/C/D)", () => {
     // waitFor)".
     await waitFor(
       () => {
-        expect(document.body.textContent).toMatch(
-          /couldn't complete this response/i,
-        )
+        expect(document.body.textContent).toMatch(/couldn't complete this response/i)
       },
       { timeout: 3000 },
     )
@@ -437,9 +421,7 @@ describe("Chat streaming integration (F4 Part 2, Tests B/C/D)", () => {
       type: "token",
       content: "world",
     })
-    const stream = useConversationStreamStore
-      .getState()
-      .streams.get("c-x")
+    const stream = useConversationStreamStore.getState().streams.get("c-x")
     expect(stream?.content).toBe("Hello world")
     expect(stream?.status).toBe("streaming")
   })

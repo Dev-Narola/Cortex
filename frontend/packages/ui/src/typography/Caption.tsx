@@ -21,7 +21,7 @@ const captionVariants = cva("text-xs text-muted-foreground", {
   variants: {
     tone: {
       default: "text-muted-foreground",
-      subtle: "text-ink-500",
+      subtle: "text-faint",
       accent: "text-ember-600",
     },
   },

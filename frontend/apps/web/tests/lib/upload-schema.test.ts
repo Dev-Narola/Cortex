@@ -9,8 +9,8 @@ import { describe, expect, it } from "vitest"
 
 import {
   ALLOWED_EXTENSIONS,
-  fileUploadSchema,
   MAX_FILE_SIZE_BYTES,
+  fileUploadSchema,
   urlUploadSchema,
 } from "@/lib/documents/upload.schema"
 

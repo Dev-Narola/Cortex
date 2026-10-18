@@ -93,10 +93,8 @@ export const useCitationPanelStore = create<CitationPanelState>((set) => ({
  * document experience — Task 52).
  */
 export const citationPanelStore = {
-  open: (citationId: string) =>
-    useCitationPanelStore.getState().open(citationId),
-  select: (citationId: string) =>
-    useCitationPanelStore.getState().select(citationId),
+  open: (citationId: string) => useCitationPanelStore.getState().open(citationId),
+  select: (citationId: string) => useCitationPanelStore.getState().select(citationId),
   close: () => useCitationPanelStore.getState().close(),
   reset: () => useCitationPanelStore.getState().reset(),
 }

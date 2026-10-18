@@ -32,16 +32,14 @@ describe("ConnectionIndicator", () => {
     const { container } = render(<ConnectionIndicator state="open" />)
     expect(screen.getByText("Live")).toBeInTheDocument()
     // The success dot is the first inline span.
-    const dot = container.querySelector("span span") as HTMLElement
+    const dot = container.querySelector("output > span") as HTMLElement
     expect(dot.className).toContain("bg-success")
   })
 
   it("renders 'Connecting…' for the connecting state with a pulsing warning dot", () => {
-    const { container } = render(
-      <ConnectionIndicator state="connecting" />,
-    )
+    const { container } = render(<ConnectionIndicator state="connecting" />)
     expect(screen.getByText("Connecting…")).toBeInTheDocument()
-    const dot = container.querySelector("span span") as HTMLElement
+    const dot = container.querySelector("output > span") as HTMLElement
     expect(dot.className).toContain("bg-warning")
     expect(dot.className).toContain("animate-pulse")
   })
@@ -49,7 +47,7 @@ describe("ConnectionIndicator", () => {
   it("renders 'Closing…' for the closing state with a warning dot", () => {
     const { container } = render(<ConnectionIndicator state="closing" />)
     expect(screen.getByText("Closing…")).toBeInTheDocument()
-    const dot = container.querySelector("span span") as HTMLElement
+    const dot = container.querySelector("output > span") as HTMLElement
     expect(dot.className).toContain("bg-warning")
     expect(dot.className).not.toContain("animate-pulse")
   })
@@ -57,14 +55,14 @@ describe("ConnectionIndicator", () => {
   it("renders 'Offline' for the closed state with a muted dot", () => {
     const { container } = render(<ConnectionIndicator state="closed" />)
     expect(screen.getByText("Offline")).toBeInTheDocument()
-    const dot = container.querySelector("span span") as HTMLElement
+    const dot = container.querySelector("output > span") as HTMLElement
     expect(dot.className).toContain("bg-muted-foreground")
   })
 
   it("V11.5 — renders 'Polling…' for the new polling state with a steady warning dot", () => {
     const { container } = render(<ConnectionIndicator state="polling" />)
     expect(screen.getByText("Polling…")).toBeInTheDocument()
-    const dot = container.querySelector("span span") as HTMLElement
+    const dot = container.querySelector("output > span") as HTMLElement
     // Steady amber, no pulse — different from
     // the connecting state so the user can tell
     // the difference between "trying to connect"

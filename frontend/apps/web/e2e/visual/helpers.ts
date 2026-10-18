@@ -22,7 +22,7 @@
  * baselines. These helpers are the single place where
  * those guarantees are implemented.
  */
-import { expect, type Page, type PlaywrightTestArgs } from "@playwright/test"
+import { type Page, type PlaywrightTestArgs, expect } from "@playwright/test"
 
 /**
  * Set up the page for a deterministic screenshot:

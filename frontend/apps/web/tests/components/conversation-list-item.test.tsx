@@ -84,15 +84,11 @@ describe("ConversationListItem", () => {
       />,
       { wrapper: makeWrapper() },
     )
-    await user.click(
-      screen.getByRole("button", { name: /open conversation actions/i }),
-    )
+    await user.click(screen.getByRole("button", { name: /open conversation actions/i }))
     await user.click(screen.getByRole("menuitem", { name: /rename/i }))
     // The InlineRename input is now mounted
     // with the prefilled value.
-    expect(
-      screen.getByDisplayValue("Old name"),
-    ).toBeInTheDocument()
+    expect(screen.getByDisplayValue("Old name")).toBeInTheDocument()
   })
 
   it("opens the delete mode when the action menu's Delete is clicked", async () => {
@@ -106,9 +102,7 @@ describe("ConversationListItem", () => {
       />,
       { wrapper: makeWrapper() },
     )
-    await user.click(
-      screen.getByRole("button", { name: /open conversation actions/i }),
-    )
+    await user.click(screen.getByRole("button", { name: /open conversation actions/i }))
     await user.click(screen.getByRole("menuitem", { name: /delete/i }))
     // The DeleteConfirmation shows the
     // conversation title + Cancel + Delete.
@@ -130,18 +124,14 @@ describe("ConversationListItem", () => {
       />,
       { wrapper: makeWrapper() },
     )
-    await user.click(
-      screen.getByRole("button", { name: /open conversation actions/i }),
-    )
+    await user.click(screen.getByRole("button", { name: /open conversation actions/i }))
     await user.click(screen.getByRole("menuitem", { name: /rename/i }))
     const input = screen.getByLabelText(/conversation title/i)
     input.focus()
     await user.keyboard("{Escape}")
     expect(onRenameCancel).toHaveBeenCalled()
     // Back to the navigation anchor.
-    expect(
-      screen.getByRole("link", { name: /title/i }),
-    ).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: /title/i })).toBeInTheDocument()
   })
 
   it("returns to normal mode when delete is cancelled", async () => {
@@ -155,15 +145,11 @@ describe("ConversationListItem", () => {
       />,
       { wrapper: makeWrapper() },
     )
-    await user.click(
-      screen.getByRole("button", { name: /open conversation actions/i }),
-    )
+    await user.click(screen.getByRole("button", { name: /open conversation actions/i }))
     await user.click(screen.getByRole("menuitem", { name: /delete/i }))
     await user.click(screen.getByRole("button", { name: /cancel/i }))
     expect(onDeleteCancel).toHaveBeenCalled()
-    expect(
-      screen.getByRole("link", { name: /doomed/i }),
-    ).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: /doomed/i })).toBeInTheDocument()
   })
 
   it("renders the rename error inline when provided", async () => {
@@ -176,12 +162,8 @@ describe("ConversationListItem", () => {
       />,
       { wrapper: makeWrapper() },
     )
-    await user.click(
-      screen.getByRole("button", { name: /open conversation actions/i }),
-    )
+    await user.click(screen.getByRole("button", { name: /open conversation actions/i }))
     await user.click(screen.getByRole("menuitem", { name: /rename/i }))
-    expect(
-      screen.getByText(/couldn't rename the conversation/i),
-    ).toBeInTheDocument()
+    expect(screen.getByText(/couldn't rename the conversation/i)).toBeInTheDocument()
   })
 })

@@ -26,10 +26,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
-import {
-  buildConversationSocketUrl,
-  ConversationSocket,
-} from "@/lib/websocket/conversation-client"
+import { ConversationSocket, buildConversationSocketUrl } from "@/lib/websocket/conversation-client"
 
 class FakeSocket {
   static instances: FakeSocket[] = []

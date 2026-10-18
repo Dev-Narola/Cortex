@@ -114,7 +114,7 @@ export function McpTokenCard() {
               <h2 className="font-display text-base font-semibold tracking-tight">
                 MCP Authentication
               </h2>
-              <p className="text-sm text-paper-200/70">
+              <p className="text-sm text-muted-foreground">
                 Generate an API key for use with MCP-compatible clients. The key is shown once at
                 creation and stored as a hash on the server.
               </p>
@@ -132,7 +132,7 @@ export function McpTokenCard() {
               </Button>
             ) : null}
           </div>
-          <p className="text-xs text-paper-200/50">
+          <p className="text-xs text-faint">
             All API keys you generate are listed under{" "}
             <a
               href="/app/settings/api-keys"

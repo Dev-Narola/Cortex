@@ -46,9 +46,29 @@ export async function uploadDocument({
   // api-client's `body` parameter is typed as
   // `unknown` — the runtime detection (`instanceof
   // FormData`) is what gates the multipart path.
-  return client.post<UploadDocumentAccepted>(
-    "/api/v1/documents",
-    form as unknown as never,
-    { signal },
+  return client.post<UploadDocumentAccepted>("/api/v1/documents", form as unknown as never, {
+    signal,
+  })
+}
+
+export interface ImportDocumentUrlParams {
+  /** https URL of a web page or a PDF/DOCX/TXT/MD file (8–2048 chars). */
+  url: string
+  title?: string
+  signal?: AbortSignal
+}
+
+/**
+ * `POST /api/v1/documents/url` — the server fetches the page (10 s timeout,
+ * size cap, SSRF-guarded) and queues it exactly like an upload.
+ */
+export async function importDocumentFromUrl({
+  signal,
+  ...body
+}: ImportDocumentUrlParams): Promise<UploadDocumentAccepted> {
+  return getApiClient().post<UploadDocumentAccepted>(
+    "/api/v1/documents/url",
+    body,
+    signal ? { signal } : {},
   )
 }

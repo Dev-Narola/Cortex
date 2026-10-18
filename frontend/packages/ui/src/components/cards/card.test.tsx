@@ -16,7 +16,18 @@ describe("Card", () => {
     expect(card.tagName).toBe("DIV")
     expect(card).toHaveTextContent("Body")
     expect(card.className).toMatch(/rounded-xl/)
-    expect(card.className).toMatch(/bg-background/)
+    expect(card.className).toMatch(/bg-card/)
+  })
+
+  it("glass variant uses the frosted surface, not bg-card", () => {
+    render(
+      <Card data-testid="card" variant="glass">
+        Body
+      </Card>,
+    )
+    const card = screen.getByTestId("card")
+    expect(card.className.split(" ")).toContain("glass")
+    expect(card.className).not.toMatch(/bg-card/)
   })
 
   it("applies variant classes", () => {

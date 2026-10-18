@@ -46,10 +46,7 @@
 
 import { publicEnv } from "@cortex/config"
 
-import {
-  WebSocketClient,
-  type WebSocketState,
-} from "@/lib/websocket/client"
+import { WebSocketClient, type WebSocketState } from "@/lib/websocket/client"
 import { parseConversationEvent } from "@/lib/websocket/parseConversationEvent"
 import type { ConversationEvent } from "@/types/websocket"
 
@@ -73,10 +70,7 @@ export interface ConversationSocketOptions {
  * Build the WS URL for the conversation channel.
  * Exported so tests can pin the contract.
  */
-export function buildConversationSocketUrl(
-  conversationId: string,
-  accessToken: string,
-): string {
+export function buildConversationSocketUrl(conversationId: string, accessToken: string): string {
   const base = publicEnv.NEXT_PUBLIC_WS_URL.replace(/\/+$/, "")
   const url = new URL(`${base}/ws/conversations/${encodeURIComponent(conversationId)}`)
   url.searchParams.set("token", accessToken)
@@ -99,10 +93,7 @@ export class ConversationSocket {
 
   constructor(options: ConversationSocketOptions) {
     this.client = new WebSocketClient({
-      url: buildConversationSocketUrl(
-        options.conversationId,
-        options.accessToken,
-      ),
+      url: buildConversationSocketUrl(options.conversationId, options.accessToken),
       maxReconnectDelayMs: options.maxReconnectDelayMs ?? 5_000,
       initialReconnectDelayMs: 500,
       onStateChange: (state) => {
@@ -112,10 +103,7 @@ export class ConversationSocket {
         const event = parseConversationEvent(data)
         if (!event) {
           if (typeof console !== "undefined") {
-            console.warn(
-              "[conversationSocket] dropped malformed event:",
-              data,
-            )
+            console.warn("[conversationSocket] dropped malformed event:", data)
           }
           return
         }

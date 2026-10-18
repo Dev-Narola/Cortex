@@ -53,24 +53,13 @@ interface DemoQuestionChipsProps {
   onSelect: (entry: DemoEntry) => void
 }
 
-export function DemoQuestionChips({
-  activeDemoId,
-  disabled,
-  onSelect,
-}: DemoQuestionChipsProps) {
+export function DemoQuestionChips({ activeDemoId, disabled, onSelect }: DemoQuestionChipsProps) {
   return (
-    <div
-      data-testid="demo-question-chips"
-      aria-label="Example questions"
-      className="space-y-2"
-    >
+    <div data-testid="demo-question-chips" aria-label="Example questions" className="space-y-2">
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
         Try an example
       </p>
-      <ul
-        role="list"
-        className="flex flex-wrap gap-2"
-      >
+      <ul className="flex flex-wrap gap-2">
         {DEMO_ENTRIES.map((entry) => {
           const isActive = activeDemoId === entry.id
           return (
@@ -83,7 +72,7 @@ export function DemoQuestionChips({
                 data-testid={`demo-chip-${entry.id}`}
                 className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
                   isActive
-                    ? "border-transparent bg-spark text-paper-50 shadow-spark"
+                    ? "border-transparent bg-spark text-foreground shadow-spark"
                     : "border-border bg-background text-foreground hover:border-volt-500 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-volt-500 disabled:cursor-not-allowed disabled:opacity-50"
                 }`}
               >

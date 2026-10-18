@@ -17,12 +17,7 @@
  */
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import {
-  render,
-  screen,
-  waitFor,
-  within,
-} from "@testing-library/react"
+import { render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
@@ -31,9 +26,7 @@ import { getApiClient } from "@/lib/auth/api-client"
 
 vi.mock("@/lib/auth/api-client", async () => {
   const actual =
-    await vi.importActual<typeof import("@/lib/auth/api-client")>(
-      "@/lib/auth/api-client",
-    )
+    await vi.importActual<typeof import("@/lib/auth/api-client")>("@/lib/auth/api-client")
   return { ...actual, getApiClient: vi.fn(), resetApiClient: vi.fn() }
 })
 
@@ -48,21 +41,19 @@ function makeWrapper() {
   )
 }
 
-function mockToolCallsResponse(
-  payload: {
-    run_id: string
-    agent_id: string
-    status: string
-    tool_calls: Array<{
-      id: string
-      name: string
-      result_summary: string
-      latency_ms: number | null
-      status: "ok" | "error" | "unknown"
-      error: string | null
-    }>
-  },
-) {
+function mockToolCallsResponse(payload: {
+  run_id: string
+  agent_id: string
+  status: string
+  tool_calls: Array<{
+    id: string
+    name: string
+    result_summary: string
+    latency_ms: number | null
+    status: "ok" | "error" | "unknown"
+    error: string | null
+  }>
+}) {
   getApiClientMock.mockReturnValue({
     get: vi.fn().mockResolvedValue(payload),
   } as never)
@@ -78,10 +69,7 @@ afterEach(() => {
 
 describe("AgentTrace", () => {
   it("renders nothing when runId is null (normal F4 messages)", () => {
-    const { container } = render(
-      <AgentTrace runId={null} />,
-      { wrapper: makeWrapper() },
-    )
+    const { container } = render(<AgentTrace runId={null} />, { wrapper: makeWrapper() })
     expect(container.firstChild).toBeNull()
   })
 
@@ -124,15 +112,11 @@ describe("AgentTrace", () => {
     // value. We wait for the data because the
     // component fetches on mount.
     await waitFor(() =>
-      expect(
-        screen.getByTestId("agent-trace-label").textContent,
-      ).toBe("Agent used 3 steps"),
+      expect(screen.getByTestId("agent-trace-label").textContent).toBe("Agent used 3 steps"),
     )
     // The toggle is collapsed by default; the
     // expanded panel is not yet in the DOM.
-    expect(
-      screen.queryByTestId("agent-trace-panel"),
-    ).not.toBeInTheDocument()
+    expect(screen.queryByTestId("agent-trace-panel")).not.toBeInTheDocument()
   })
 
   it("uses singular '1 step' when there is exactly one tool call", async () => {
@@ -153,9 +137,7 @@ describe("AgentTrace", () => {
     })
     render(<AgentTrace runId="r-1" />, { wrapper: makeWrapper() })
     await waitFor(() =>
-      expect(
-        screen.getByTestId("agent-trace-label").textContent,
-      ).toBe("Agent used 1 step"),
+      expect(screen.getByTestId("agent-trace-label").textContent).toBe("Agent used 1 step"),
     )
   })
 
@@ -177,9 +159,7 @@ describe("AgentTrace", () => {
     // arg is an object that contains a
     // ``signal`` key.
     expect(get).toHaveBeenCalled()
-    expect(get.mock.calls[0]?.[0]).toBe(
-      "/api/v1/agents/runs/r-1/tool-calls",
-    )
+    expect(get.mock.calls[0]?.[0]).toBe("/api/v1/agents/runs/r-1/tool-calls")
     expect(get.mock.calls[0]?.[1]).toMatchObject({})
 
     // Now resolve the request; the count label
@@ -200,9 +180,7 @@ describe("AgentTrace", () => {
       ],
     })
     await waitFor(() =>
-      expect(
-        screen.getByTestId("agent-trace-label").textContent,
-      ).toBe("Agent used 1 step"),
+      expect(screen.getByTestId("agent-trace-label").textContent).toBe("Agent used 1 step"),
     )
   })
 
@@ -303,9 +281,7 @@ describe("AgentTrace", () => {
 
     await user.click(screen.getByTestId("agent-trace-toggle"))
 
-    expect(
-      await screen.findByTestId("agent-trace-skeleton"),
-    ).toBeInTheDocument()
+    expect(await screen.findByTestId("agent-trace-skeleton")).toBeInTheDocument()
 
     resolveGet({
       run_id: "r-1",
@@ -323,9 +299,7 @@ describe("AgentTrace", () => {
       ],
     })
     await waitFor(() =>
-      expect(
-        screen.queryByTestId("agent-trace-skeleton"),
-      ).not.toBeInTheDocument(),
+      expect(screen.queryByTestId("agent-trace-skeleton")).not.toBeInTheDocument(),
     )
   })
 
@@ -374,22 +348,14 @@ describe("AgentTrace", () => {
     // to appear. 5 s covers TanStack Query's
     // exponential backoff for the two
     // automatic retries.
-    const error = await screen.findByTestId(
-      "agent-trace-error",
-      {},
-      { timeout: 5_000 },
-    )
+    const error = await screen.findByTestId("agent-trace-error", {}, { timeout: 5_000 })
     expect(error).toHaveTextContent(/couldn't be loaded/i)
-    expect(
-      within(error).getByTestId("agent-trace-retry"),
-    ).toBeInTheDocument()
+    expect(within(error).getByTestId("agent-trace-retry")).toBeInTheDocument()
 
     // Clicking Retry refires the request; this
     // time the mock returns a success and the
     // steps render.
-    await user.click(
-      within(error).getByTestId("agent-trace-retry"),
-    )
+    await user.click(within(error).getByTestId("agent-trace-retry"))
     const steps = await screen.findByTestId("agent-trace-steps")
     expect(within(steps).getAllByRole("listitem")).toHaveLength(1)
   })
@@ -404,9 +370,7 @@ describe("AgentTrace", () => {
     const user = userEvent.setup()
     render(<AgentTrace runId="r-1" />, { wrapper: makeWrapper() })
     await user.click(screen.getByTestId("agent-trace-toggle"))
-    expect(
-      await screen.findByTestId("agent-trace-empty"),
-    ).toBeInTheDocument()
+    expect(await screen.findByTestId("agent-trace-empty")).toBeInTheDocument()
   })
 
   it("surfaces an error tool call with the error string and error step styling", async () => {
@@ -458,14 +422,10 @@ describe("AgentTrace", () => {
     expect(toggle).toHaveAttribute("aria-expanded", "false")
     await user.click(toggle)
     expect(toggle).toHaveAttribute("aria-expanded", "true")
-    expect(
-      screen.getByTestId("agent-trace-panel"),
-    ).toBeInTheDocument()
+    expect(screen.getByTestId("agent-trace-panel")).toBeInTheDocument()
     await user.click(toggle)
     expect(toggle).toHaveAttribute("aria-expanded", "false")
-    expect(
-      screen.queryByTestId("agent-trace-panel"),
-    ).not.toBeInTheDocument()
+    expect(screen.queryByTestId("agent-trace-panel")).not.toBeInTheDocument()
   })
 
   it("starts expanded when defaultExpanded is true", () => {

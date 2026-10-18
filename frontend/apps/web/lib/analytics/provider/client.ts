@@ -62,10 +62,7 @@ export interface AnalyticsClient {
    *   phone, address, etc.) — the provider's server-side
    *   ingest is the second line of defense
    */
-  track(
-    event: string,
-    properties?: AnalyticsProperties,
-  ): void
+  track(event: string, properties?: AnalyticsProperties): void
 
   /**
    * Identify a user after authentication. The argument is

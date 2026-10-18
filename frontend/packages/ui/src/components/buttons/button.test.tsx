@@ -23,7 +23,7 @@ describe("Button", () => {
   it("defaults to the `default` variant + `md` size", () => {
     render(<Button>Save</Button>)
     const btn = screen.getByRole("button")
-    expect(btn.className).toMatch(/bg-ink-900/)
+    expect(btn.className).toMatch(/bg-primary/)
     expect(btn.className).toMatch(/h-10/)
   })
 
@@ -70,6 +70,17 @@ describe("Button", () => {
     expect(onClick).not.toHaveBeenCalled()
   })
 
+  it("icon-only buttons render their icon child (it was silently dropped)", () => {
+    render(
+      <Button size="icon" aria-label="Send">
+        <svg data-testid="icon" />
+      </Button>,
+    )
+    expect(screen.getByRole("button", { name: "Send" })).toContainElement(
+      screen.getByTestId("icon"),
+    )
+  })
+
   it("renders left + right icon slots", () => {
     render(
       <Button
@@ -97,7 +108,7 @@ describe("Button", () => {
     )
     const link = screen.getByRole("link", { name: "Save" })
     expect(link).toBeInTheDocument()
-    expect(link.className).toMatch(/bg-ink-900/)
+    expect(link.className).toMatch(/bg-primary/)
   })
 
   it("triggers click on Enter / Space", async () => {

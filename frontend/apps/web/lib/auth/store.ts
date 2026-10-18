@@ -212,8 +212,9 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: async () => {
-        // Clear local state immediately so the UI updates;
-        // tell the backend in the background. Best-effort.
+        // Clear local state immediately so the UI updates; then revoke the
+        // refresh token server-side (best effort). Capture it before clearing.
+        const refreshToken = get().refreshToken
         clearAuthHintCookie()
         set({
           accessToken: null,
@@ -226,10 +227,10 @@ export const useAuthStore = create<AuthState>()(
           restored: true,
           isRestoring: false,
         })
-        if (typeof window !== "undefined") {
+        if (typeof window !== "undefined" && refreshToken) {
           try {
-            const { logout } = await import("@/services/auth")
-            await logout()
+            const { revokeRefreshToken } = await import("@/services/auth")
+            await revokeRefreshToken(refreshToken)
           } catch {
             // No-op: local logout already cleared the UI state.
           }

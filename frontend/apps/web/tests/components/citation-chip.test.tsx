@@ -33,9 +33,7 @@ afterEach(() => {
 
 describe("CitationChip (Tasks 41, 42, 61)", () => {
   it("renders the index as the visible label", () => {
-    render(
-      <CitationChip id="citation:chunk-1" index={1} />,
-    )
+    render(<CitationChip id="citation:chunk-1" index={1} />)
     const chip = screen.getByRole("button", { name: /view source citation 1/i })
     expect(chip).toBeInTheDocument()
     expect(chip.textContent).toBe("1")
@@ -43,11 +41,7 @@ describe("CitationChip (Tasks 41, 42, 61)", () => {
 
   it("includes the document title in the aria-label when provided", () => {
     render(
-      <CitationChip
-        id="citation:chunk-1"
-        index={3}
-        documentTitle="Cortex architecture document"
-      />,
+      <CitationChip id="citation:chunk-1" index={3} documentTitle="Cortex architecture document" />,
     )
     const chip = screen.getByRole("button", {
       name: /view source citation 3, cortex architecture document/i,

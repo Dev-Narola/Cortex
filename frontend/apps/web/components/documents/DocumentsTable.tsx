@@ -20,13 +20,7 @@
 
 import type { ReactNode } from "react"
 
-import {
-  Table,
-  TableBody,
-  TableHead,
-  TableHeader,
-  TableRow as UiTableRow,
-} from "@cortex/ui"
+import { Table, TableBody, TableHead, TableHeader, TableRow as UiTableRow } from "@cortex/ui"
 
 import type { Document } from "@/services/documents"
 

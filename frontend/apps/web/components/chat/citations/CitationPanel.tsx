@@ -80,7 +80,7 @@
 
 "use client"
 
-import { useEffect, type ReactNode } from "react"
+import { type ReactNode, useEffect } from "react"
 
 import { Button, Icon } from "@cortex/ui"
 
@@ -98,14 +98,9 @@ export interface CitationPanelProps {
   className?: string
 }
 
-export function CitationPanel({
-  conversationId,
-  className,
-}: CitationPanelProps): ReactNode | null {
+export function CitationPanel({ conversationId, className }: CitationPanelProps): ReactNode | null {
   const isOpen = useCitationPanelStore((s) => s.isOpen)
-  const selectedCitationId = useCitationPanelStore(
-    (s) => s.selectedCitationId,
-  )
+  const selectedCitationId = useCitationPanelStore((s) => s.selectedCitationId)
   const close = useCitationPanelStore((s) => s.close)
 
   const { status, data } = useCitation({
@@ -148,19 +143,13 @@ export function CitationPanel({
     // settle.
     return (
       <aside
-        role="complementary"
         aria-label="Citation panel"
         data-citation-panel
         data-citation-panel-state={status}
-        className={
-          "flex h-full w-full flex-col gap-4 border-l border-border bg-card/60 p-4 " +
-          (className ?? "")
-        }
+        className={`flex h-full w-full flex-col gap-4 border-l border-border bg-card/60 p-4 ${className ?? ""}`}
       >
         <header className="flex items-start justify-between gap-2">
-          <h2 className="font-display text-base font-semibold tracking-tight">
-            Source
-          </h2>
+          <h2 className="font-display text-base font-semibold tracking-tight">Source</h2>
           <Button
             type="button"
             variant="ghost"
@@ -173,13 +162,10 @@ export function CitationPanel({
         </header>
         {status === "unavailable" ? (
           <div className="flex flex-col gap-3 text-sm text-muted-foreground">
-            <p className="font-medium text-foreground/80">
-              Source unavailable
-            </p>
+            <p className="font-medium text-foreground/80">Source unavailable</p>
             <p>
-              The metadata for this citation isn't in the current
-              session. The conversation can be re-streamed to
-              refresh it.
+              The metadata for this citation isn't in the current session. The conversation can be
+              re-streamed to refresh it.
             </p>
             <Button type="button" variant="outline" size="sm" onClick={close}>
               Close
@@ -192,15 +178,11 @@ export function CitationPanel({
 
   return (
     <aside
-      role="complementary"
       aria-label="Citation panel"
       data-citation-panel
       data-citation-panel-state={status}
       data-citation-id={data.id}
-      className={
-        "flex h-full w-full flex-col gap-4 border-l border-border bg-card/60 p-4 " +
-        (className ?? "")
-      }
+      className={`flex h-full w-full flex-col gap-4 border-l border-border bg-card/60 p-4 ${className ?? ""}`}
     >
       <header className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
@@ -226,10 +208,7 @@ export function CitationPanel({
       </div>
 
       <footer className="flex flex-col gap-2 border-t border-border pt-3">
-        <ViewDocumentButton
-          documentId={data.documentId}
-          chunkId={data.chunkId}
-        />
+        <ViewDocumentButton documentId={data.documentId} chunkId={data.chunkId} />
       </footer>
     </aside>
   )

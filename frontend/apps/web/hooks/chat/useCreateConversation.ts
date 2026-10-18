@@ -30,14 +30,11 @@
 
 "use client"
 
-import { useMutation, type UseMutationResult } from "@tanstack/react-query"
+import { type UseMutationResult, useMutation } from "@tanstack/react-query"
 
-import { useInvalidateConversations } from "./useInvalidateConversations"
-import {
-  createConversation,
-  type CreateConversationParams,
-} from "@/services/conversations"
+import { type CreateConversationParams, createConversation } from "@/services/conversations"
 import type { CreateConversationResponse } from "@/types/conversation"
+import { useInvalidateConversations } from "./useInvalidateConversations"
 
 export type UseCreateConversationResult = UseMutationResult<
   CreateConversationResponse,
@@ -47,11 +44,7 @@ export type UseCreateConversationResult = UseMutationResult<
 
 export function useCreateConversation(): UseCreateConversationResult {
   const invalidate = useInvalidateConversations()
-  return useMutation<
-    CreateConversationResponse,
-    Error,
-    CreateConversationParams
-  >({
+  return useMutation<CreateConversationResponse, Error, CreateConversationParams>({
     mutationFn: (params) => createConversation(params),
     onSuccess: () => {
       // The future conversation list (F5) will read

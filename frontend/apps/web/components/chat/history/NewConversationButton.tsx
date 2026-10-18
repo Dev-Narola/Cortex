@@ -38,7 +38,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { useCallback, type ReactNode } from "react"
+import { type ReactNode, useCallback } from "react"
 
 import { Button, Icon, Spinner } from "@cortex/ui"
 

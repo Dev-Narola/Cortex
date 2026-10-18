@@ -21,9 +21,7 @@ import { getApiClient } from "@/lib/auth/api-client"
 
 vi.mock("@/lib/auth/api-client", async () => {
   const actual =
-    await vi.importActual<typeof import("@/lib/auth/api-client")>(
-      "@/lib/auth/api-client",
-    )
+    await vi.importActual<typeof import("@/lib/auth/api-client")>("@/lib/auth/api-client")
   return {
     ...actual,
     getApiClient: vi.fn(),
@@ -144,9 +142,7 @@ describe("hooks/documents", () => {
     })
 
     it("does not retry on 404", async () => {
-      const get = vi
-        .fn()
-        .mockRejectedValue(new ApiError(404, { message: "not found" }))
+      const get = vi.fn().mockRejectedValue(new ApiError(404, { message: "not found" }))
       getApiClientMock.mockReturnValue({ get } as never)
 
       const { result } = renderHook(() => useDocument("d-missing"), {

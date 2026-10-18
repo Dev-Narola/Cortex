@@ -21,8 +21,8 @@
 
 import { useEffect } from "react"
 
-import { refresh } from "@/services/auth/refresh"
 import { useAuthStore } from "@/lib/auth/store"
+import { refresh } from "@/services/auth/refresh"
 
 export function useSessionRestore() {
   const hydrated = useAuthStore((s) => s.hydrated)
@@ -42,8 +42,7 @@ export function useSessionRestore() {
       const { accessToken, refreshToken, expiresAt } = useAuthStore.getState()
 
       // Case 1: Valid, non-expired token → done.
-      const hasValidToken =
-        accessToken !== null && expiresAt !== null && expiresAt > Date.now()
+      const hasValidToken = accessToken !== null && expiresAt !== null && expiresAt > Date.now()
 
       if (hasValidToken) {
         if (isMounted) useAuthStore.setState({ isRestoring: false, restored: true })

@@ -44,10 +44,7 @@
 
 "use client"
 
-import {
-  useCallback,
-  type ReactNode,
-} from "react"
+import { type ReactNode, useCallback } from "react"
 
 import { Icon, cn } from "@cortex/ui"
 
@@ -75,11 +72,10 @@ export function FeedbackButtons({
 }: FeedbackButtonsProps): ReactNode {
   const { feedback, setFeedback } = useFeedback({ conversationId, messageId })
   return (
-    <div
-      role="group"
+    <fieldset
       aria-label="Rate this answer"
       data-feedback={feedback ?? "none"}
-      className={"flex items-center gap-0.5 " + (className ?? "")}
+      className={`flex items-center gap-0.5 ${className ?? ""}`}
     >
       <FeedbackButton
         value="up"
@@ -95,7 +91,7 @@ export function FeedbackButtons({
         disabled={disabled}
         onClick={setFeedback}
       />
-    </div>
+    </fieldset>
   )
 }
 
@@ -139,10 +135,7 @@ function FeedbackButton({
         isActive && "bg-ember-500/15 text-ember-600 hover:text-ember-700",
       )}
     >
-      <Icon
-        name={value === "up" ? "ThumbsUp" : "ThumbsDown"}
-        className="h-3.5 w-3.5"
-      />
+      <Icon name={value === "up" ? "ThumbsUp" : "ThumbsDown"} className="h-3.5 w-3.5" />
     </button>
   )
 }

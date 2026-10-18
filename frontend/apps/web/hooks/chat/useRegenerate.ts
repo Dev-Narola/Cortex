@@ -57,8 +57,8 @@
 
 import { useCallback } from "react"
 
-import { useSendMessage } from "./useSendMessage"
 import { useConversationStreamStore } from "./conversationStreamStore"
+import { useSendMessage } from "./useSendMessage"
 
 export interface UseRegenerateParams {
   conversationId: string
@@ -87,9 +87,7 @@ export interface UseRegenerateResult {
   wasDropped: boolean
 }
 
-export function useRegenerate(
-  params: UseRegenerateParams,
-): UseRegenerateResult {
+export function useRegenerate(params: UseRegenerateParams): UseRegenerateResult {
   const send = useSendMessage({ conversationId: params.conversationId })
 
   const regenerate = useCallback(
@@ -103,13 +101,8 @@ export function useRegenerate(
       // own `isPending` (the socket sends + the
       // mutation resolves before `message_start`
       // arrives).
-      const current = useConversationStreamStore
-        .getState()
-        .streams.get(params.conversationId)
-      if (
-        current &&
-        (current.status === "sending" || current.status === "streaming")
-      ) {
+      const current = useConversationStreamStore.getState().streams.get(params.conversationId)
+      if (current && (current.status === "sending" || current.status === "streaming")) {
         // Drop on the floor. The caller (button)
         // already has `isBusy` to disable itself;
         // a toast would be noisy.

@@ -34,9 +34,7 @@ export function DocumentHeader({ document }: DocumentHeaderProps): ReactNode {
       </Heading>
       <div className="flex items-center gap-2">
         <DocumentStatusBadge status={document.status} />
-        <span className="font-mono text-xs text-muted-foreground">
-          {document.mime_type}
-        </span>
+        <span className="font-mono text-xs text-muted-foreground">{document.mime_type}</span>
       </div>
     </div>
   )

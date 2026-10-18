@@ -14,12 +14,9 @@
  */
 "use client"
 
-import { useQuery, type UseQueryResult } from "@tanstack/react-query"
+import { type UseQueryResult, useQuery } from "@tanstack/react-query"
 
-import {
-  getTenantUsage,
-  type TenantUsageAggregate,
-} from "@/services/usage"
+import { type TenantUsageAggregate, getTenantUsage } from "@/services/usage"
 
 import { usageKeys } from "./usageKeys"
 
@@ -32,9 +29,7 @@ export interface UseTenantUsageParams {
 
 export type UseTenantUsageResult = UseQueryResult<TenantUsageAggregate, Error>
 
-export function useTenantUsage(
-  params: UseTenantUsageParams = {},
-): UseTenantUsageResult {
+export function useTenantUsage(params: UseTenantUsageParams = {}): UseTenantUsageResult {
   const { period_start, period_end, enabled = true } = params
   return useQuery<TenantUsageAggregate, Error>({
     queryKey: usageKeys.aggregate({ period_start, period_end }),

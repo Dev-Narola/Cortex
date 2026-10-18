@@ -93,22 +93,16 @@ describe("categoryLabel", () => {
 
 describe("actorKind", () => {
   it("returns 'user' when actor_user_id is set", () => {
-    expect(
-      actorKind({ actor_user_id: "u-1", actor_api_key_id: null }),
-    ).toBe("user")
+    expect(actorKind({ actor_user_id: "u-1", actor_api_key_id: null })).toBe("user")
   })
   it("returns 'api_key' when only actor_api_key_id is set", () => {
-    expect(
-      actorKind({ actor_user_id: null, actor_api_key_id: "k-1" }),
-    ).toBe("api_key")
+    expect(actorKind({ actor_user_id: null, actor_api_key_id: "k-1" })).toBe("api_key")
   })
   it("returns 'system' when neither is set", () => {
     expect(actorKind({ actor_user_id: null, actor_api_key_id: null })).toBe("system")
   })
   it("prefers 'user' when both are set (defensive)", () => {
-    expect(
-      actorKind({ actor_user_id: "u-1", actor_api_key_id: "k-1" }),
-    ).toBe("user")
+    expect(actorKind({ actor_user_id: "u-1", actor_api_key_id: "k-1" })).toBe("user")
   })
 })
 

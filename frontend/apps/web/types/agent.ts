@@ -30,12 +30,7 @@
  * list is just empty.
  */
 
-export type AgentRunStatus =
-  | "started"
-  | "running"
-  | "completed"
-  | "failed"
-  | "stopped"
+export type AgentRunStatus = "started" | "running" | "completed" | "failed" | "stopped"
 
 export type AgentToolCallStatus = "ok" | "error" | "unknown"
 

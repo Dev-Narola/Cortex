@@ -41,9 +41,7 @@ export interface PaginatedDocuments {
   offset: number
 }
 
-export async function getDocuments(
-  params: GetDocumentsParams = {},
-): Promise<PaginatedDocuments> {
+export async function getDocuments(params: GetDocumentsParams = {}): Promise<PaginatedDocuments> {
   const client = getApiClient()
   const search = new URLSearchParams()
   if (params.limit !== undefined) search.set("limit", String(params.limit))

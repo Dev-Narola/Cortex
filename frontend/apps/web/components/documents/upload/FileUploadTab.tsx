@@ -23,14 +23,11 @@
 
 "use client"
 
-import { useId, useRef, useState, type ChangeEvent, type DragEvent, type ReactNode } from "react"
+import { type ChangeEvent, type DragEvent, type ReactNode, useId, useRef, useState } from "react"
 
 import { Button, Icon } from "@cortex/ui"
 
-import {
-  ALLOWED_EXTENSIONS,
-  MAX_FILE_SIZE_LABEL,
-} from "@/lib/documents/upload.schema"
+import { ALLOWED_EXTENSIONS, MAX_FILE_SIZE_LABEL } from "@/lib/documents/upload.schema"
 
 export interface FileUploadTabProps {
   /** The currently selected file (controlled). */
@@ -47,11 +44,7 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-export function FileUploadTab({
-  file,
-  onChange,
-  disabled,
-}: FileUploadTabProps): ReactNode {
+export function FileUploadTab({ file, onChange, disabled }: FileUploadTabProps): ReactNode {
   const inputId = useId()
   const inputRef = useRef<HTMLInputElement>(null)
   const [isDragging, setIsDragging] = useState(false)
@@ -79,13 +72,7 @@ export function FileUploadTab({
         }}
         onDragLeave={() => setIsDragging(false)}
         onDrop={handleDrop}
-        className={
-          "flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed bg-muted/30 px-6 py-10 text-center transition-colors " +
-          (isDragging
-            ? "border-ember-500 bg-ember-500/5"
-            : "border-border hover:bg-muted/50") +
-          (disabled ? " pointer-events-none opacity-60" : "")
-        }
+        className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed bg-muted/30 px-6 py-10 text-center transition-colors ${isDragging ? "border-ember-500 bg-ember-500/5" : "border-border hover:bg-muted/50"}${disabled ? " pointer-events-none opacity-60" : ""}`}
       >
         <div
           aria-hidden

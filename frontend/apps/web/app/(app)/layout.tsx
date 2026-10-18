@@ -13,11 +13,7 @@
  *      a tenant go through `/workspace-setup` first.
  *   3. `<BreadcrumbProvider>` — context for per-page
  *      breadcrumb overrides (Task 6).
- *   4. `<ThemeApplier>` — sets next-themes to `dark` on
- *      mount. The (app) shell is always dark; the
- *      marketing shell forces light. The light→dark
- *      morph fires once on the first mount.
- *   5. `<AppShell>` — the actual UI: sidebar + main
+ *   4. `<AppShell>` — the actual UI: sidebar + main
  *      column (topbar + breadcrumb + page content).
  *
  * **No business logic.** Layout only. Pages should
@@ -30,71 +26,44 @@
 
 "use client"
 
-import { useTheme } from "next-themes"
-import { useEffect, useState, type ReactNode } from "react"
+import { usePathname } from "next/navigation"
+import { type ReactNode, useState } from "react"
+
+import { Drawer, DrawerContent, DrawerTitle } from "@cortex/ui"
 
 import { OnboardingGuard, ProtectedRoute } from "@/components/auth"
 import { DocumentDetailHost } from "@/components/documents/DocumentDetailHost"
 import { RateLimitBanner } from "@/components/feedback/RateLimitBanner"
 import { AppSidebar, type AppSidebarState } from "@/components/navigation/AppSidebar"
 import { BreadcrumbProvider } from "@/components/navigation/BreadcrumbProvider"
+import { navItemFor } from "@/components/navigation/SidebarNav"
 import { Topbar } from "@/components/navigation/Topbar"
-import { UserMenu } from "@/components/navigation/UserMenu"
-import { useViewTransitions } from "@/lib/theme/view-transitions"
-
-import { cn } from "@cortex/ui"
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   return (
     <ProtectedRoute>
       <OnboardingGuard>
         <BreadcrumbProvider>
-          <ThemeApplier>
-            <AppShell>
-              {children}
-              {/* DocumentDetailHost is the (app) layout's
+          <AppShell>
+            {children}
+            {/* DocumentDetailHost is the (app) layout's
                   single mount point for the F3 document
                   drawer. F4 Part 3 promoted it from the
                   documents page to here so the chat
                   citation panel can open the same drawer
                   via the global document-selection store. */}
-              <DocumentDetailHost />
-            </AppShell>
-          </ThemeApplier>
+            <DocumentDetailHost />
+          </AppShell>
         </BreadcrumbProvider>
       </OnboardingGuard>
     </ProtectedRoute>
   )
 }
 
-function ThemeApplier({ children }: { children: ReactNode }) {
-  const { setTheme, resolvedTheme } = useTheme()
-  const { setAnimatedTheme, isSupported } = useViewTransitions()
-  // (F2 Part 2, Task 18) — the (app) shell is
-  // always dark; the marketing shell is always
-  // light. We ONLY set the theme on the first
-  // mount when `resolvedTheme` is undefined
-  // (the provider hasn't restored a choice yet).
-  //
-  // The previous version ran on every mount and
-  // forced dark, which clobbered the user's
-  // light-mode toggle (they'd flip to light,
-  // navigate, and the layout snapped back to
-  // dark). Honouring an existing resolved theme
-  // is the right behaviour for a settings-
-  // persistent toggle.
-  useEffect(() => {
-    if (resolvedTheme) return
-    if (isSupported) {
-      setAnimatedTheme("dark")
-    } else {
-      setTheme("dark")
-    }
-  }, [resolvedTheme, isSupported, setAnimatedTheme, setTheme])
-  return <>{children}</>
-}
-
 function AppShell({ children }: { children: ReactNode }) {
+  // The entry animation replays per nav section, not per URL, so switching
+  // conversations or opening a document doesn't remount the section's layout.
+  const pathname = usePathname() ?? ""
   // `viewport` here is the user-controlled desktop
   // state (expanded | collapsed) vs the mobile drawer.
   // Default expanded. The mobile state is opt-in
@@ -109,82 +78,34 @@ function AppShell({ children }: { children: ReactNode }) {
   // initial state the layout hands in.
 
   return (
-    <div
-      data-theme="dark"
-      className="flex min-h-screen bg-background text-foreground"
-    >
+    <div className="flex h-dvh overflow-hidden bg-ambient text-foreground">
       {/* Desktop sidebar (hidden on mobile). */}
       <div className="hidden md:block">
         <AppSidebar state={desktopState} />
       </div>
 
-      {/* Mobile drawer (Radix Dialog under the hood). */}
-      {mobileNavOpen ? (
-        <MobileNavOverlay onClose={() => setMobileNavOpen(false)}>
+      {/* Mobile drawer: Radix Dialog gives the focus trap, Esc and focus return. */}
+      <Drawer open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
+        <DrawerContent
+          side="left"
+          aria-describedby={undefined}
+          className="animate-slide-in-from-left w-72 max-w-[85vw] gap-0 border-border bg-background-2 p-0 md:hidden"
+        >
+          <DrawerTitle className="sr-only">Navigation</DrawerTitle>
           <AppSidebar state="mobile" onClose={() => setMobileNavOpen(false)} />
-        </MobileNavOverlay>
-      ) : null}
+        </DrawerContent>
+      </Drawer>
 
       {/* Main column: topbar + content. */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <div
-          className={cn(
-            "sticky top-0 z-30 flex h-14 w-full items-center gap-2 border-b border-border bg-background/80 px-4 backdrop-blur",
-          )}
-        >
-          <Topbar onOpenMobileNav={() => setMobileNavOpen(true)} />
-          {/* UserMenu lives in the end slot of the topbar;
-              importing it here keeps the topbar file
-              single-purpose. */}
-          <div className="ml-auto -mr-2 flex items-center gap-2 pr-2">
-            <UserMenu />
-          </div>
-        </div>
-        {/* RateLimitBanner is the (app) shell's
-            shared 429 surface (F4 Part 4, Task 97).
-            It mounts below the topbar so the count-down
-            is always visible. Sits `sticky` to stay put
-            while the user scrolls. */}
+        <Topbar onOpenMobileNav={() => setMobileNavOpen(true)} />
         <RateLimitBanner />
-        <main className="flex-1 overflow-y-auto p-6">{children}</main>
+        <main id="main" className="flex-1 overflow-y-auto px-4 py-5 sm:px-6 lg:px-8">
+          <div key={navItemFor(pathname)?.href ?? pathname} className="animate-rise-in">
+            {children}
+          </div>
+        </main>
       </div>
-    </div>
-  )
-}
-
-/**
- * Mobile nav overlay — a fixed-position sheet that
- * covers the viewport below the `md` breakpoint. The
- * F1 `Drawer` primitive lives in `@cortex/ui`; for F3
- * Part 1 we keep this minimal (no animations yet —
- * they land in F3 Part 2 alongside the rest of the
- * dashboard polish).
- */
-function MobileNavOverlay({
-  children,
-  onClose,
-}: {
-  children: ReactNode
-  onClose: () => void
-}) {
-  // Close on Escape.
-  useEffect(() => {
-    if (typeof window === "undefined") return
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose()
-    }
-    window.addEventListener("keydown", onKey)
-    return () => window.removeEventListener("keydown", onKey)
-  }, [onClose])
-  return (
-    <div className="fixed inset-0 z-40 md:hidden" role="dialog" aria-modal="true">
-      <button
-        type="button"
-        aria-label="Close navigation"
-        onClick={onClose}
-        className="absolute inset-0 bg-black/60"
-      />
-      <div className="relative h-full w-72 max-w-[85vw] bg-card">{children}</div>
     </div>
   )
 }

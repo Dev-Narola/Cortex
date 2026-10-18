@@ -15,6 +15,7 @@
  */
 
 import { getApiClient } from "@/lib/auth/api-client"
+import { type WireMessage, toMessage } from "./mappers"
 
 import type { Message } from "@/types/conversation"
 
@@ -30,8 +31,12 @@ export async function getConversationMessages({
   signal,
 }: GetConversationMessagesParams): Promise<Message[]> {
   const client = getApiClient()
-  return client.get<Message[]>(
+  const raw = await client.get<WireMessage[]>(
     `/api/v1/conversations/${encodeURIComponent(id)}/messages`,
-    { query: { limit }, signal },
+    {
+      query: { limit },
+      signal,
+    },
   )
+  return raw.map(toMessage)
 }

@@ -54,44 +54,28 @@ describe("createTenant service", () => {
   it("propagates a 409 (duplicate slug) as an ApiError with status 409", async () => {
     const apiErr = new ApiError(409, { message: "Slug already in use" })
     postMock.mockRejectedValueOnce(apiErr)
-    const err = await createTenant({ name: "Acme", slug: "taken" }).catch(
-      (e) => e,
-    )
+    const err = await createTenant({ name: "Acme", slug: "taken" }).catch((e) => e)
     expect(err).toBeInstanceOf(ApiError)
     expect((err as ApiError).status).toBe(409)
   })
 
   it("propagates a 422 (validation) as an ApiError", async () => {
-    postMock.mockRejectedValueOnce(
-      new ApiError(422, { message: "Invalid name" }),
-    )
-    await expect(
-      createTenant({ name: "", slug: "x" }),
-    ).rejects.toBeInstanceOf(ApiError)
+    postMock.mockRejectedValueOnce(new ApiError(422, { message: "Invalid name" }))
+    await expect(createTenant({ name: "", slug: "x" })).rejects.toBeInstanceOf(ApiError)
   })
 
   it("propagates a 401 (unauthorized) as an ApiError", async () => {
-    postMock.mockRejectedValueOnce(
-      new ApiError(401, { message: "Unauthorized" }),
-    )
-    await expect(
-      createTenant({ name: "Acme", slug: "acme" }),
-    ).rejects.toBeInstanceOf(ApiError)
+    postMock.mockRejectedValueOnce(new ApiError(401, { message: "Unauthorized" }))
+    await expect(createTenant({ name: "Acme", slug: "acme" })).rejects.toBeInstanceOf(ApiError)
   })
 
   it("propagates a 5xx (server error) as an ApiError", async () => {
-    postMock.mockRejectedValueOnce(
-      new ApiError(500, { message: "Internal Server Error" }),
-    )
-    await expect(
-      createTenant({ name: "Acme", slug: "acme" }),
-    ).rejects.toBeInstanceOf(ApiError)
+    postMock.mockRejectedValueOnce(new ApiError(500, { message: "Internal Server Error" }))
+    await expect(createTenant({ name: "Acme", slug: "acme" })).rejects.toBeInstanceOf(ApiError)
   })
 
   it("propagates a network failure as a generic Error", async () => {
     postMock.mockRejectedValueOnce(new Error("network down"))
-    await expect(
-      createTenant({ name: "Acme", slug: "acme" }),
-    ).rejects.toThrow(/network down/)
+    await expect(createTenant({ name: "Acme", slug: "acme" })).rejects.toThrow(/network down/)
   })
 })

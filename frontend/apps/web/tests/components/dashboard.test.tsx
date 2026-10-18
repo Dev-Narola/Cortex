@@ -1,106 +1,122 @@
 /**
- * DashboardView — empty dashboard (F3 Part 1, Task 7).
- *
- * Verifies the spec's "Empty Dashboard" surface:
- *   - Renders the "Welcome to Cortex" hero heading.
- *   - Renders the workspace name from the auth store.
- *   - Renders the "Upload your first document" primary CTA.
- *   - Renders the Quick Actions row (Upload + Search +
- *     Create Agent, two of which are disabled "Soon").
+ * DashboardView — every card renders backend data, fails per card, and
+ * gates owner/admin-only activity. Hooks are mocked at the module boundary.
  */
 
 import { render, screen } from "@testing-library/react"
-import { afterEach, beforeEach, describe, expect, it } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+
+type Q = { data?: unknown; isLoading?: boolean; isError?: boolean }
+const state: {
+  docs: Record<string, Q>
+  conversations: Q
+  usage: Q
+  audit: Q
+} = { docs: {}, conversations: {}, usage: {}, audit: {} }
+
+vi.mock("@/hooks/documents", () => ({
+  useDocuments: (p: { status?: string }) => state.docs[p.status ?? "all"] ?? {},
+}))
+vi.mock("@/hooks/chat", () => ({ useConversations: () => state.conversations }))
+vi.mock("@/hooks/usage", () => ({ useTenantUsageSummary: () => state.usage }))
+vi.mock("@/hooks/audit", () => ({
+  useAuditLog: (p: { enabled: boolean }) => (p.enabled ? state.audit : {}),
+}))
+vi.mock("@tanstack/react-query", () => ({
+  useQuery: () => ({ data: { kind: "healthy", latencyMs: 42, version: null }, isLoading: false }),
+}))
 
 import { DashboardView } from "@/app/(app)/app/dashboard/DashboardView"
 import { useAuthStore } from "@/lib/auth/store"
 
-describe("DashboardView (empty state — F3 Part 1)", () => {
+function seed(role: "owner" | "member") {
+  useAuthStore.setState({
+    user: { id: "u1", email: "ada@acme.dev", role, tenantId: "t1" },
+    tenant: { id: "t1", slug: "acme", workspace: "Acme Inc" },
+  })
+}
+
+const doc = {
+  id: "d1",
+  title: "Platform guide.md",
+  mime_type: "text/markdown",
+  status: "indexed",
+  created_at: "2026-10-18T10:00:00Z",
+}
+
+describe("DashboardView", () => {
   beforeEach(() => {
-    useAuthStore.getState().clear()
-    useAuthStore.setState({ hydrated: true, restored: true, isRestoring: false })
+    state.docs = {
+      all: { data: { items: [doc], total: 12, limit: 5, offset: 0 } },
+      indexed: { data: { items: [], total: 9 } },
+      failed: { data: { items: [], total: 1 } },
+    }
+    state.conversations = {
+      data: {
+        items: [
+          { id: "c1", title: "How does hybrid search work?", updatedAt: "2026-10-18T09:00:00Z" },
+        ],
+        total: 3,
+      },
+    }
+    state.usage = {
+      data: {
+        requests: 1530,
+        embedding_tokens: 1000,
+        completion_input_tokens: 500,
+        completion_output_tokens: 500,
+        rerank_units: 7,
+        estimated_cost_usd: 0.42,
+      },
+    }
+    state.audit = {
+      data: {
+        items: [{ id: "a1", action: "document.uploaded", created_at: "2026-10-18T09:30:00Z" }],
+      },
+    }
   })
+  afterEach(() => useAuthStore.getState().clear())
 
-  afterEach(() => {
-    useAuthStore.getState().clear()
-  })
-
-  it("renders the Welcome to Cortex heading", () => {
-    useAuthStore.getState().setTenant({
-      id: "t-1",
-      slug: "acme",
-      workspace: "Acme",
-    })
+  it("shows backend counts, never placeholders", () => {
+    seed("owner")
     render(<DashboardView />)
-    expect(
-      screen.getByRole("heading", { name: /welcome to cortex/i, level: 1 }),
-    ).toBeInTheDocument()
+    expect(screen.getByText("Acme Inc")).toBeInTheDocument()
+    expect(screen.getByText("12")).toBeInTheDocument()
+    expect(screen.getByText("9 indexed and searchable")).toBeInTheDocument()
+    expect(screen.getByText("2")).toBeInTheDocument() // 12 - 9 indexed - 1 failed
+    expect(screen.getByText("1 failed, retry from Documents")).toBeInTheDocument()
+    expect(screen.getByText("1.5K")).toBeInTheDocument()
+    expect(screen.getByText(/\$0\.42 estimated/)).toBeInTheDocument()
+    expect(screen.getByText("Platform guide.md")).toBeInTheDocument()
+    expect(screen.getByText("How does hybrid search work?")).toBeInTheDocument()
+    expect(screen.getByText("42 ms")).toBeInTheDocument()
   })
 
-  it("renders the 'Your workspace is ready.' copy", () => {
-    useAuthStore.getState().setTenant({
-      id: "t-1",
-      slug: "acme",
-      workspace: "Acme",
-    })
+  it("marks a failed source as unavailable instead of showing zero", () => {
+    seed("owner")
+    state.usage = { isError: true }
     render(<DashboardView />)
-    expect(screen.getByText(/your workspace is ready/i)).toBeInTheDocument()
+    expect(screen.getAllByText("Unavailable").length).toBeGreaterThanOrEqual(1)
+    expect(screen.queryByText(/estimated/)).not.toBeInTheDocument()
   })
 
-  it("renders the primary 'Upload your first document' CTA", () => {
-    useAuthStore.getState().setTenant({
-      id: "t-1",
-      slug: "acme",
-      workspace: "Acme",
-    })
+  it("leads with the upload call-to-action only when the workspace is empty", () => {
+    seed("member")
+    state.docs.all = { data: { items: [], total: 0, limit: 5, offset: 0 } }
     render(<DashboardView />)
-    expect(
-      screen.getByRole("button", { name: /upload your first document/i }),
-    ).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Add your first document" })).toBeInTheDocument()
   })
 
-  it("renders the workspace name from the auth store", () => {
-    useAuthStore.getState().setTenant({
-      id: "t-1",
-      slug: "acme",
-      workspace: "Acme Inc",
-    })
+  it("hides the audit activity panel from members", () => {
+    seed("member")
     render(<DashboardView />)
-    expect(screen.getByText(/acme inc/i)).toBeInTheDocument()
+    expect(screen.queryByText("Recent activity")).not.toBeInTheDocument()
+    expect(screen.queryByText("document.uploaded")).not.toBeInTheDocument()
   })
 
-  it("falls back to the slug when the workspace name is missing", () => {
-    useAuthStore.getState().setTenant({ id: "t-1", slug: "acme" })
+  it("shows recent activity to owners", () => {
+    seed("owner")
     render(<DashboardView />)
-    // The slug appears in the "{slug} is ready" heading
-    // so the dashboard always reads naturally even
-    // before the user has named their workspace.
-    expect(screen.getByText(/acme is ready/i)).toBeInTheDocument()
-  })
-
-  it("renders the Quick Actions row with all three cards", () => {
-    useAuthStore.getState().setTenant({
-      id: "t-1",
-      slug: "acme",
-      workspace: "Acme",
-    })
-    render(<DashboardView />)
-    expect(screen.getByText(/upload document/i)).toBeInTheDocument()
-    expect(screen.getByText(/ask cortex/i)).toBeInTheDocument()
-    expect(screen.getByText(/create agent/i)).toBeInTheDocument()
-  })
-
-  it("marks only the 'Create Agent' card as Coming Soon (Upload + Ask Cortex are live)", () => {
-    useAuthStore.getState().setTenant({
-      id: "t-1",
-      slug: "acme",
-      workspace: "Acme",
-    })
-    render(<DashboardView />)
-    const soonBadges = screen.getAllByText(/^soon$/i)
-    // F4 Part 1 — only "Create Agent" is disabled now.
-    // "Search Knowledge" was replaced by "Ask Cortex"
-    // (the F4 chat entry point).
-    expect(soonBadges.length).toBe(1)
+    expect(screen.getByText("document.uploaded")).toBeInTheDocument()
   })
 })

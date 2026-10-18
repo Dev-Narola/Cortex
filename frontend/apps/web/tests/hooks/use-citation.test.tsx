@@ -30,8 +30,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { act, renderHook } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it } from "vitest"
 
-import { useCitation } from "@/hooks/chat/useCitation"
 import { useConversationStreamStore } from "@/hooks/chat/conversationStreamStore"
+import { useCitation } from "@/hooks/chat/useCitation"
 
 function makeWrapper() {
   const qc = new QueryClient()
@@ -50,10 +50,9 @@ afterEach(() => {
 
 describe("useCitation (Task 66)", () => {
   it("returns 'missing' status when no citation is selected", () => {
-    const { result } = renderHook(
-      () => useCitation({ conversationId: "c-1", citationId: null }),
-      { wrapper: makeWrapper() },
-    )
+    const { result } = renderHook(() => useCitation({ conversationId: "c-1", citationId: null }), {
+      wrapper: makeWrapper(),
+    })
     expect(result.current.status).toBe("missing")
     expect(result.current.data).toBeNull()
   })
@@ -84,8 +83,7 @@ describe("useCitation (Task 66)", () => {
       })
     })
     const { result } = renderHook(
-      () =>
-        useCitation({ conversationId: "c-1", citationId: "citation:chunk-1" }),
+      () => useCitation({ conversationId: "c-1", citationId: "citation:chunk-1" }),
       { wrapper: makeWrapper() },
     )
     expect(result.current.status).toBe("ready")
@@ -106,8 +104,7 @@ describe("useCitation (Task 66)", () => {
       })
     })
     const { result } = renderHook(
-      () =>
-        useCitation({ conversationId: "c-1", citationId: "citation:chunk-X" }),
+      () => useCitation({ conversationId: "c-1", citationId: "citation:chunk-X" }),
       { wrapper: makeWrapper() },
     )
     expect(result.current.status).toBe("unavailable")

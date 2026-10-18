@@ -26,9 +26,7 @@ import {
   DocumentSelectionProvider,
   useDocumentSelection,
 } from "@/components/documents/DocumentSelectionProvider"
-import {
-  useDocumentSelectionStore,
-} from "@/components/documents/DocumentSelectionStore"
+import { useDocumentSelectionStore } from "@/components/documents/DocumentSelectionStore"
 import { DocumentStatusBadge } from "@/components/documents/DocumentStatusBadge"
 import { DocumentToolbar } from "@/components/documents/DocumentToolbar"
 import { DocumentsEmptyState } from "@/components/documents/DocumentsEmptyState"
@@ -85,7 +83,7 @@ describe("DocumentStatusBadge", () => {
 
   it("renders with the expected variant per status", () => {
     const cases: Array<[Document["status"], string]> = [
-      ["pending", "cloud-200"],
+      ["pending", "bg-muted"],
       ["parsing", "volt-200"],
       ["chunking", "volt-200"],
       ["embedding", "volt-200"],
@@ -178,9 +176,7 @@ describe("DocumentRow", () => {
 describe("DocumentsTable", () => {
   it("renders the F1 column headers", () => {
     render(
-      withSelection(
-        <DocumentsTable documents={[makeDoc({ id: "a" }), makeDoc({ id: "b" })]} />,
-      ),
+      withSelection(<DocumentsTable documents={[makeDoc({ id: "a" }), makeDoc({ id: "b" })]} />),
     )
     const table = screen.getByRole("table")
     const headerRow = within(table).getAllByRole("row")[0]!
@@ -366,9 +362,7 @@ describe("DocumentsEmptyState", () => {
 
 describe("DocumentToolbar", () => {
   it("renders the title + count", () => {
-    render(
-      <DocumentToolbar total={3} loading={false} onUpload={() => {}} />,
-    )
+    render(<DocumentToolbar total={3} loading={false} onUpload={() => {}} />)
     expect(screen.getByText(/all documents/i)).toBeInTheDocument()
     expect(screen.getByText(/3 documents/i)).toBeInTheDocument()
   })

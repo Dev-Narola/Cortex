@@ -33,11 +33,11 @@
 "use client"
 
 import {
-  useCallback,
   type ChangeEvent,
   type FormEvent,
   type KeyboardEvent,
   type ReactNode,
+  useCallback,
 } from "react"
 
 import { Button, Icon, Textarea } from "@cortex/ui"
@@ -104,10 +104,7 @@ export function MessageInput({
   return (
     <form
       onSubmit={handleSubmit}
-      className={
-        "border-t border-border bg-card/50 px-4 py-3 sm:px-6 " +
-        (className ?? "")
-      }
+      className={`border-t border-border bg-card/50 px-4 py-3 sm:px-6 ${className ?? ""}`}
       aria-label="Send a message"
     >
       <div

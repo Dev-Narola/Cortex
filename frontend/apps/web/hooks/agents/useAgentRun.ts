@@ -45,21 +45,12 @@
 
 "use client"
 
-import {
-  useQuery,
-  type UseQueryResult,
-} from "@tanstack/react-query"
+import { type UseQueryResult, useQuery } from "@tanstack/react-query"
 
 import { ApiError } from "@cortex/api-client"
 
-import {
-  getAgentRun,
-  getAgentToolCalls,
-} from "@/services/agents"
-import type {
-  AgentRun,
-  AgentToolCallsResponse,
-} from "@/types/agent"
+import { getAgentRun, getAgentToolCalls } from "@/services/agents"
+import type { AgentRun, AgentToolCallsResponse } from "@/types/agent"
 
 import { agentKeys } from "./agentKeys"
 
@@ -75,15 +66,12 @@ export interface UseAgentRunParams {
 
 export type UseAgentRunResult = UseQueryResult<AgentRun, Error>
 
-export function useAgentRun(
-  params: UseAgentRunParams,
-): UseAgentRunResult {
+export function useAgentRun(params: UseAgentRunParams): UseAgentRunResult {
   const { runId, enabled = true } = params
   const hasRunId = typeof runId === "string" && runId.length > 0
   return useQuery<AgentRun, Error>({
     queryKey: hasRunId ? agentKeys.run(runId) : agentKeys.runs(),
-    queryFn: ({ signal }) =>
-      getAgentRun({ runId: runId as string, signal }),
+    queryFn: ({ signal }) => getAgentRun({ runId: runId as string, signal }),
     enabled: enabled && hasRunId,
     staleTime: 5 * 60_000,
     retry: (failureCount, error) => {
@@ -110,22 +98,14 @@ export interface UseAgentToolCallsParams {
   enabled?: boolean
 }
 
-export type UseAgentToolCallsResult = UseQueryResult<
-  AgentToolCallsResponse,
-  Error
->
+export type UseAgentToolCallsResult = UseQueryResult<AgentToolCallsResponse, Error>
 
-export function useAgentToolCalls(
-  params: UseAgentToolCallsParams,
-): UseAgentToolCallsResult {
+export function useAgentToolCalls(params: UseAgentToolCallsParams): UseAgentToolCallsResult {
   const { runId, enabled = true } = params
   const hasRunId = typeof runId === "string" && runId.length > 0
   return useQuery<AgentToolCallsResponse, Error>({
-    queryKey: hasRunId
-      ? agentKeys.toolCalls(runId)
-      : agentKeys.runs(),
-    queryFn: ({ signal }) =>
-      getAgentToolCalls({ runId: runId as string, signal }),
+    queryKey: hasRunId ? agentKeys.toolCalls(runId) : agentKeys.runs(),
+    queryFn: ({ signal }) => getAgentToolCalls({ runId: runId as string, signal }),
     enabled: enabled && hasRunId,
     staleTime: 5 * 60_000,
     retry: (failureCount, error) => {

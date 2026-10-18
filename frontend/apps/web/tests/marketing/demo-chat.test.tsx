@@ -67,10 +67,7 @@ describe("DemoChat", () => {
     })
     // The message is no longer
     // streaming.
-    expect(screen.getByTestId("demo-message")).toHaveAttribute(
-      "data-streaming",
-      "false",
-    )
+    expect(screen.getByTestId("demo-message")).toHaveAttribute("data-streaming", "false")
     // The answer contains the expected
     // text.
     const text = screen.getByTestId("demo-message-text")
@@ -92,15 +89,11 @@ describe("DemoChat", () => {
     fireEvent.click(screen.getByTestId("demo-citation-hybrid-1"))
     // The source panel renders the
     // document title + location + excerpt.
-    expect(
-      screen.getByTestId("demo-source-title-hybrid-1"),
-    ).toBeInTheDocument()
+    expect(screen.getByTestId("demo-source-title-hybrid-1")).toBeInTheDocument()
     expect(screen.getByTestId("demo-source-title-hybrid-1")).toHaveTextContent(
       /Retrieval Notes\.md/i,
     )
-    expect(
-      screen.getByTestId("demo-source-excerpt-hybrid-1"),
-    ).toBeInTheDocument()
+    expect(screen.getByTestId("demo-source-excerpt-hybrid-1")).toBeInTheDocument()
   })
 
   it("clicking another question resets the demo (no chunks from the previous Q)", () => {
@@ -136,15 +129,11 @@ describe("DemoChat", () => {
     })
     // Open.
     fireEvent.click(screen.getByTestId("demo-citation-hybrid-1"))
-    expect(
-      screen.getByTestId("demo-source-title-hybrid-1"),
-    ).toBeInTheDocument()
+    expect(screen.getByTestId("demo-source-title-hybrid-1")).toBeInTheDocument()
     // Click the same chip again — the
     // panel closes.
     fireEvent.click(screen.getByTestId("demo-citation-hybrid-1"))
-    expect(
-      screen.queryByTestId("demo-source-title-hybrid-1"),
-    ).not.toBeInTheDocument()
+    expect(screen.queryByTestId("demo-source-title-hybrid-1")).not.toBeInTheDocument()
   })
 
   it("does not start a new stream while one is in progress", () => {

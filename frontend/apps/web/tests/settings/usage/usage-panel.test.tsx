@@ -155,7 +155,10 @@ describe("UsagePanel", () => {
   describe("rendering (Tasks 4 + 6)", () => {
     it("renders the page title + subtitle + period context", async () => {
       setRole("owner")
-      getMock.mockResolvedValueOnce(SUMMARY).mockResolvedValueOnce(AGGREGATE).mockResolvedValueOnce(EVENTS)
+      getMock
+        .mockResolvedValueOnce(SUMMARY)
+        .mockResolvedValueOnce(AGGREGATE)
+        .mockResolvedValueOnce(EVENTS)
       render(<UsagePanel />, { wrapper: makeWrapper() })
       // Title.
       expect(screen.getByRole("heading", { name: /usage & billing/i })).toBeInTheDocument()
@@ -172,7 +175,10 @@ describe("UsagePanel", () => {
 
     it("renders the 4 stat cards with backend values", async () => {
       setRole("owner")
-      getMock.mockResolvedValueOnce(SUMMARY).mockResolvedValueOnce(AGGREGATE).mockResolvedValueOnce(EVENTS)
+      getMock
+        .mockResolvedValueOnce(SUMMARY)
+        .mockResolvedValueOnce(AGGREGATE)
+        .mockResolvedValueOnce(EVENTS)
       render(<UsagePanel />, { wrapper: makeWrapper() })
       await waitFor(() => {
         expect(screen.getByTestId("usage-stat-requests")).toHaveTextContent("1,280")
@@ -233,14 +239,19 @@ describe("UsagePanel", () => {
   describe("breakdown section (Task 11 + Task 12 + Task 35)", () => {
     it("renders one row per event type with friendly labels", async () => {
       setRole("owner")
-      getMock.mockResolvedValueOnce(SUMMARY).mockResolvedValueOnce(AGGREGATE).mockResolvedValueOnce([])
+      getMock
+        .mockResolvedValueOnce(SUMMARY)
+        .mockResolvedValueOnce(AGGREGATE)
+        .mockResolvedValueOnce([])
       render(<UsagePanel />, { wrapper: makeWrapper() })
       await waitFor(() => {
         expect(screen.getByTestId("usage-breakdown")).toBeInTheDocument()
       })
       // Friendly labels.
       expect(screen.getByTestId("usage-breakdown-label-embedding")).toHaveTextContent("Embeddings")
-      expect(screen.getByTestId("usage-breakdown-label-completion")).toHaveTextContent("Completions")
+      expect(screen.getByTestId("usage-breakdown-label-completion")).toHaveTextContent(
+        "Completions",
+      )
       expect(screen.getByTestId("usage-breakdown-label-rerank")).toHaveTextContent("Rerank")
     })
 
@@ -255,7 +266,10 @@ describe("UsagePanel", () => {
           embedding: { tokens: 300, cost_usd: 0.3 },
         },
       }
-      getMock.mockResolvedValueOnce(SUMMARY).mockResolvedValueOnce(unordered).mockResolvedValueOnce([])
+      getMock
+        .mockResolvedValueOnce(SUMMARY)
+        .mockResolvedValueOnce(unordered)
+        .mockResolvedValueOnce([])
       render(<UsagePanel />, { wrapper: makeWrapper() })
       await waitFor(() => {
         expect(screen.getByTestId("usage-breakdown")).toBeInTheDocument()
@@ -287,16 +301,19 @@ describe("UsagePanel", () => {
       // The label is the raw enum (the
       // defensive default branch of
       // `eventTypeLabel`).
-      expect(
-        screen.getByTestId("usage-breakdown-label-future_event_type"),
-      ).toHaveTextContent("future_event_type")
+      expect(screen.getByTestId("usage-breakdown-label-future_event_type")).toHaveTextContent(
+        "future_event_type",
+      )
     })
   })
 
   describe("history section (Task 13 + Task 15 + Task 16)", () => {
     it("renders the events table with newest first", async () => {
       setRole("owner")
-      getMock.mockResolvedValueOnce(SUMMARY).mockResolvedValueOnce(AGGREGATE).mockResolvedValueOnce(EVENTS)
+      getMock
+        .mockResolvedValueOnce(SUMMARY)
+        .mockResolvedValueOnce(AGGREGATE)
+        .mockResolvedValueOnce(EVENTS)
       render(<UsagePanel />, { wrapper: makeWrapper() })
       await waitFor(() => {
         expect(screen.getByTestId("usage-history")).toBeInTheDocument()
@@ -311,7 +328,10 @@ describe("UsagePanel", () => {
 
     it("displays provider + model subtitle when present", async () => {
       setRole("owner")
-      getMock.mockResolvedValueOnce(SUMMARY).mockResolvedValueOnce(AGGREGATE).mockResolvedValueOnce(EVENTS)
+      getMock
+        .mockResolvedValueOnce(SUMMARY)
+        .mockResolvedValueOnce(AGGREGATE)
+        .mockResolvedValueOnce(EVENTS)
       render(<UsagePanel />, { wrapper: makeWrapper() })
       await waitFor(() => {
         expect(screen.getByTestId("usage-history-row-e-1")).toBeInTheDocument()
@@ -383,7 +403,10 @@ describe("UsagePanel", () => {
     it("shows the empty breakdown state when by_event is empty", async () => {
       setRole("owner")
       const emptyAggregate = { ...AGGREGATE, by_event: {} }
-      getMock.mockResolvedValueOnce(SUMMARY).mockResolvedValueOnce(emptyAggregate).mockResolvedValueOnce([])
+      getMock
+        .mockResolvedValueOnce(SUMMARY)
+        .mockResolvedValueOnce(emptyAggregate)
+        .mockResolvedValueOnce([])
       render(<UsagePanel />, { wrapper: makeWrapper() })
       await waitFor(() => {
         expect(screen.getByTestId("usage-breakdown-empty")).toBeInTheDocument()
@@ -393,7 +416,10 @@ describe("UsagePanel", () => {
 
     it("shows the empty history state when the events list is empty", async () => {
       setRole("owner")
-      getMock.mockResolvedValueOnce(SUMMARY).mockResolvedValueOnce(AGGREGATE).mockResolvedValueOnce([])
+      getMock
+        .mockResolvedValueOnce(SUMMARY)
+        .mockResolvedValueOnce(AGGREGATE)
+        .mockResolvedValueOnce([])
       render(<UsagePanel />, { wrapper: makeWrapper() })
       await waitFor(() => {
         expect(screen.getByTestId("usage-history-empty")).toBeInTheDocument()
@@ -405,7 +431,10 @@ describe("UsagePanel", () => {
   describe("tenant scope (Task 24 + Task 41)", () => {
     it("hits the /me/tenant-scoped endpoints — never sends a tenant_id", async () => {
       setRole("owner")
-      getMock.mockResolvedValueOnce(SUMMARY).mockResolvedValueOnce(AGGREGATE).mockResolvedValueOnce([])
+      getMock
+        .mockResolvedValueOnce(SUMMARY)
+        .mockResolvedValueOnce(AGGREGATE)
+        .mockResolvedValueOnce([])
       render(<UsagePanel />, { wrapper: makeWrapper() })
       await waitFor(() => {
         expect(getMock).toHaveBeenCalled()
@@ -416,10 +445,7 @@ describe("UsagePanel", () => {
         "/api/v1/tenants/me/usage/summary",
         expect.objectContaining({}),
       )
-      expect(getMock).toHaveBeenCalledWith(
-        "/api/v1/tenants/me/usage",
-        expect.objectContaining({}),
-      )
+      expect(getMock).toHaveBeenCalledWith("/api/v1/tenants/me/usage", expect.objectContaining({}))
       expect(getMock).toHaveBeenCalledWith(
         "/api/v1/tenants/me/usage/events",
         expect.objectContaining({}),

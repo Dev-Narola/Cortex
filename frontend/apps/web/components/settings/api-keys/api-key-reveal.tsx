@@ -144,8 +144,8 @@ export function ApiKeyReveal({ open, created, onClose }: ApiKeyRevealProps) {
 
         {created ? (
           <div className="space-y-3" data-testid="api-key-reveal-body">
-            <div className="rounded-md border border-slate-700 bg-slate-900/60 p-3">
-              <p className="mb-2 text-xs font-medium uppercase tracking-wider text-paper-200/50">
+            <div className="rounded-md border border-border bg-muted p-3">
+              <p className="mb-2 text-xs font-medium uppercase tracking-wider text-faint">
                 {created.name}
               </p>
               {/* The raw key. The font-mono utility
@@ -156,12 +156,12 @@ export function ApiKeyReveal({ open, created, onClose }: ApiKeyRevealProps) {
                   whole key as a fallback. */}
               <code
                 data-testid="api-key-reveal-value"
-                className="block break-all font-mono text-sm text-paper-50 select-all"
+                className="block break-all font-mono text-sm text-foreground select-all"
               >
                 {created.raw_key}
               </code>
             </div>
-            <p className="text-xs text-paper-200/60">
+            <p className="text-xs text-faint">
               Store this key in your secret manager or CI configuration. Anyone with this key can
               authenticate as your tenant.
             </p>

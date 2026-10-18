@@ -44,7 +44,7 @@
 
 "use client"
 
-import { useState, type ReactNode } from "react"
+import { type ReactNode, useState } from "react"
 
 import { Button, Icon } from "@cortex/ui"
 
@@ -72,20 +72,12 @@ export function InterruptedBanner({
   // `isBusy` to reset the message.
   const [hint, setHint] = useState<string | null>(null)
   return (
-    <div
-      role="status"
+    <output
       aria-live="polite"
       data-interrupted-banner
-      className={
-        "mt-2 flex items-center gap-3 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-foreground " +
-        (className ?? "")
-      }
+      className={`mt-2 flex items-center gap-3 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-foreground ${className ?? ""}`}
     >
-      <Icon
-        name="TriangleAlert"
-        className="h-4 w-4 shrink-0 text-amber-600"
-        aria-hidden
-      />
+      <Icon name="TriangleAlert" className="h-4 w-4 shrink-0 text-amber-600" aria-hidden />
       <div className="flex flex-1 flex-col gap-0.5">
         <span className="font-medium">Response interrupted</span>
         <span className="text-muted-foreground">
@@ -93,9 +85,7 @@ export function InterruptedBanner({
           <span className="mx-1 font-medium">Retry</span>
           to resend the same question.
         </span>
-        {hint ? (
-          <span className="text-[10px] text-muted-foreground">{hint}</span>
-        ) : null}
+        {hint ? <span className="text-[10px] text-muted-foreground">{hint}</span> : null}
       </div>
       <Button
         type="button"
@@ -113,6 +103,6 @@ export function InterruptedBanner({
         <Icon name="RefreshCw" className="h-3.5 w-3.5" />
         <span>{isBusy ? "Retrying…" : "Retry"}</span>
       </Button>
-    </div>
+    </output>
   )
 }

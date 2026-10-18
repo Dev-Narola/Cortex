@@ -116,9 +116,7 @@ describe("CitationsVisual", () => {
     // a future contributor doesn't
     // accidentally switch to a real
     // internal file.
-    expect(screen.getByTestId("citation-source-name")).toHaveTextContent(
-      /retrieval notes\.md/i,
-    )
+    expect(screen.getByTestId("citation-source-name")).toHaveTextContent(/retrieval notes\.md/i)
   })
 
   it("the citation marker is labelled with a number", () => {
@@ -141,8 +139,6 @@ describe("CitationsVisual", () => {
     // user with reduced motion) gets the
     // full traceability story.
     render(<CitationsVisual />)
-    expect(screen.getByTestId("citation-source-name")).toHaveTextContent(
-      /retrieval notes\.md/i,
-    )
+    expect(screen.getByTestId("citation-source-name")).toHaveTextContent(/retrieval notes\.md/i)
   })
 })

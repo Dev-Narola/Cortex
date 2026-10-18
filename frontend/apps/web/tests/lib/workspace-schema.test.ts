@@ -14,10 +14,7 @@
 
 import { describe, expect, it } from "vitest"
 
-import {
-  suggestSlug,
-  workspaceSetupSchema,
-} from "@/lib/onboarding/workspace.schema"
+import { suggestSlug, workspaceSetupSchema } from "@/lib/onboarding/workspace.schema"
 
 describe("workspaceSetupSchema", () => {
   describe("name", () => {

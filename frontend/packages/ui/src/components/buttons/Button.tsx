@@ -65,7 +65,6 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     ref,
   ) => {
     const Comp = asChild ? Slot : "button"
-    const isIconOnly = size === "icon"
     const trailing = loading ? (
       <span aria-hidden="true" data-testid="button-spinner" className="inline-flex shrink-0">
         <Spinner size="sm" />
@@ -119,7 +118,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
             {Loader2.displayName ?? "Loading"}
           </span>
         ) : null}
-        {!isIconOnly ? children : null}
+        {children}
         {!loading ? trailing : null}
       </Comp>
     )

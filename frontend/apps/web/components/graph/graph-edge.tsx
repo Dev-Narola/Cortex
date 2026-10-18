@@ -327,7 +327,7 @@ function EdgeLabel({
       zIndexRange={[-1, -1]}
     >
       <span
-        className="select-none whitespace-nowrap rounded bg-void-900/60 px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-paper-200/80"
+        className="select-none whitespace-nowrap rounded bg-background/60 px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-muted-foreground"
         data-active={active || undefined}
         data-testid={`graph-edge-label-${text}`}
       >

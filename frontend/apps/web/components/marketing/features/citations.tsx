@@ -43,12 +43,10 @@ export function CitationsSection() {
       title="Every answer comes from somewhere."
       description={
         <>
-          Cortex cites the source behind every important claim. The
-          citation marker in the answer traces directly to the
-          document, section, and page that{" "}
-          <strong>actually supports it</strong> — so a sceptical
-          reader can verify the answer in one click, not by reading
-          the whole knowledge base.
+          Cortex cites the source behind every important claim. The citation marker in the answer
+          traces directly to the document, section, and page that{" "}
+          <strong>actually supports it</strong> — so a sceptical reader can verify the answer in one
+          click, not by reading the whole knowledge base.
         </>
       }
       icon={<Quote className="h-5 w-5" aria-hidden />}

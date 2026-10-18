@@ -53,12 +53,7 @@
  * provides the data + the mutations.
  */
 
-import {
-  useCallback,
-  useState,
-  type MouseEvent,
-  type ReactNode,
-} from "react"
+import { type MouseEvent, type ReactNode, useCallback, useState } from "react"
 
 import { Icon, cn } from "@cortex/ui"
 
@@ -216,12 +211,15 @@ export function ConversationListItem({
   // the click TARGET is the wrapper itself —
   // descendant button clicks (Cancel, Save,
   // etc.) should still reach their own handlers.
-  const stopNav = useCallback((e: MouseEvent) => {
-    if (mode !== "normal" && e.target === e.currentTarget) {
-      e.preventDefault()
-      e.stopPropagation()
-    }
-  }, [mode])
+  const stopNav = useCallback(
+    (e: MouseEvent) => {
+      if (mode !== "normal" && e.target === e.currentTarget) {
+        e.preventDefault()
+        e.stopPropagation()
+      }
+    },
+    [mode],
+  )
 
   if (mode === "renaming") {
     return (
@@ -241,10 +239,7 @@ export function ConversationListItem({
             onCancel={handleRenameCancel}
           />
           {renameError ? (
-            <p
-              role="alert"
-              className="ml-5 text-[10px] text-destructive"
-            >
+            <p role="alert" className="ml-5 text-[10px] text-destructive">
               {renameError}
             </p>
           ) : null}
@@ -287,9 +282,7 @@ export function ConversationListItem({
         className={cn(
           "group relative flex w-full items-start gap-1 rounded-md px-2.5 py-2 text-left text-sm transition-colors",
           "hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-volt-500/40",
-          isActive
-            ? "bg-ember-500/10 text-foreground"
-            : "text-foreground/80",
+          isActive ? "bg-ember-500/10 text-foreground" : "text-foreground/80",
           className,
         )}
       >
@@ -312,20 +305,14 @@ export function ConversationListItem({
           aria-hidden
         />
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span
-            data-conversation-title
-            className="min-w-0 truncate font-medium"
-          >
+          <span data-conversation-title className="min-w-0 truncate font-medium">
             {conversation.title}
           </span>
           <span className="truncate text-[10px] text-muted-foreground tabular-nums">
             {formatRelative(conversation.updatedAt)}
           </span>
         </div>
-        <ConversationActionMenu
-          onRename={startRename}
-          onDelete={handleDeleteRequest}
-        />
+        <ConversationActionMenu onRename={startRename} onDelete={handleDeleteRequest} />
       </a>
     </li>
   )

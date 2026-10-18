@@ -16,7 +16,7 @@
 
 import { describe, expect, it } from "vitest"
 
-import { eventTypeLabel, EVENT_TYPES } from "@/services/usage"
+import { EVENT_TYPES, eventTypeLabel } from "@/services/usage"
 
 describe("eventTypeLabel", () => {
   it("maps every known event type to its friendly label", () => {

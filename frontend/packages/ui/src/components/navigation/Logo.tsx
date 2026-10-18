@@ -68,15 +68,15 @@ const Logo = forwardRef<HTMLSpanElement, LogoProps>(
               y2="32"
               gradientUnits="userSpaceOnUse"
             >
-              <stop stopColor="var(--ember-500)" />
-              <stop offset="0.5" stopColor="var(--ember-300)" />
-              <stop offset="1" stopColor="var(--volt-500)" />
+              <stop stopColor="var(--emerald-400)" />
+              <stop offset="0.55" stopColor="var(--teal-400)" />
+              <stop offset="1" stopColor="var(--signal-400)" />
             </linearGradient>
           </defs>
           <rect width="32" height="32" rx="8" fill="url(#cortex-logo-gradient)" />
           <path
             d="M9 22V10h6.5a3.5 3.5 0 0 1 1.4 6.7L20 22h-3.2l-2.6-4.6H12V22H9zm3-7.4h3.1a1.2 1.2 0 1 0 0-2.4H12v2.4z"
-            fill="var(--cloud-50)"
+            fill="var(--gray-950)"
           />
         </svg>
         {showText ? (

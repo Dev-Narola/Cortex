@@ -18,15 +18,13 @@ import userEvent from "@testing-library/user-event"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import { DocumentsView } from "@/app/(app)/app/documents/DocumentsView"
-import { FrontendError } from "@/lib/http/errors"
 import { getApiClient } from "@/lib/auth/api-client"
+import { FrontendError } from "@/lib/http/errors"
 import type { Document } from "@/services/documents"
 
 vi.mock("@/lib/auth/api-client", async () => {
   const actual =
-    await vi.importActual<typeof import("@/lib/auth/api-client")>(
-      "@/lib/auth/api-client",
-    )
+    await vi.importActual<typeof import("@/lib/auth/api-client")>("@/lib/auth/api-client")
   return {
     ...actual,
     getApiClient: vi.fn(),
@@ -71,9 +69,7 @@ describe("DocumentsView", () => {
       get: vi.fn().mockReturnValue(new Promise(() => {})),
     } as never)
     render(<DocumentsView />, { wrapper: makeWrapper() })
-    expect(
-      screen.getByRole("heading", { name: /documents/i, level: 1 }),
-    ).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: /documents/i, level: 1 })).toBeInTheDocument()
   })
 
   it("renders the loading spinner while the initial fetch is in flight", () => {
@@ -99,36 +95,26 @@ describe("DocumentsView", () => {
     } as never)
     render(<DocumentsView />, { wrapper: makeWrapper() })
     expect(await screen.findByText(/no documents yet/i)).toBeInTheDocument()
-    expect(
-      screen.getByRole("button", { name: /^upload document$/i }),
-    ).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /^upload document$/i })).toBeInTheDocument()
   })
 
   it("renders the error state when the service rejects", async () => {
     getApiClientMock.mockReturnValue({
       get: vi
         .fn()
-        .mockRejectedValue(
-          new FrontendError({ kind: "server", status: 500, message: "boom" }),
-        ),
+        .mockRejectedValue(new FrontendError({ kind: "server", status: 500, message: "boom" })),
     } as never)
     render(<DocumentsView />, { wrapper: makeWrapper() })
-    expect(
-      await screen.findByText(/the server hit an error/i),
-    ).toBeInTheDocument()
+    expect(await screen.findByText(/the server hit an error/i)).toBeInTheDocument()
     // The error surface hides the toolbar so the user is
     // funneled to the retry button.
-    expect(
-      screen.queryByLabelText(/search documents/i),
-    ).not.toBeInTheDocument()
+    expect(screen.queryByLabelText(/search documents/i)).not.toBeInTheDocument()
   })
 
   it("calls refetch when the Try again button is clicked", async () => {
     const get = vi
       .fn()
-      .mockRejectedValueOnce(
-        new FrontendError({ kind: "network", message: "offline" }),
-      )
+      .mockRejectedValueOnce(new FrontendError({ kind: "network", message: "offline" }))
       .mockResolvedValueOnce({
         items: [],
         total: 0,

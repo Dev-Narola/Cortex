@@ -1,73 +1,79 @@
 /**
- * SidebarNav — the actual list of nav items.
+ * SidebarNav — the app's navigation, grouped Workspace / Management / System.
  *
- * **F3 Part 1 (Task 2).** Maps the 8 app routes to the
- * F1 `SidebarItem` primitive. The list is the *single
- * source of truth* for what's in the sidebar; every other
- * "what's the app's nav?" answer should read from here.
+ * Single source of truth for the nav. Every entry is a working route backed
+ * by a real endpoint; items whose endpoint is owner/admin-only on the backend
+ * are hidden for other roles instead of leading to a 403.
  *
- * **Routes that aren't implemented yet** are rendered as
- * `disabled` with a `Coming Soon` hint (per the spec).
- * The spec is explicit: never navigate to half-built pages.
- *
- * **Active state** is derived from the current pathname
- * (via `usePathname`). The match is by `startsWith` for
- * the parent + exact-match for the leaf, so `/app/documents`
- * keeps `Documents` highlighted when the user is on
- * `/app/documents/123`.
- *
- * **Collapsed.** When the parent sidebar is `collapsed`,
- * the label is hidden and the icon centres itself
- * (handled by the F1 `SidebarItem`). We also wrap each
- * item in a `TooltipRoot` so the label is still discoverable.
+ * Active state: exact match, or prefix match for nested routes
+ * (`/app/documents/123` keeps Documents active). Links are client-side
+ * (`next/link` through SidebarItem's `asChild`). Collapsed mode hides the
+ * labels and puts them in tooltips.
  */
 
 "use client"
 
+import Link from "next/link"
 import { usePathname } from "next/navigation"
 import type { ReactNode } from "react"
 
-import {
-  Icon,
-  type IconName,
-  SidebarItem,
-  TooltipRoot,
-} from "@cortex/ui"
+import { Icon, type IconName, SidebarItem, TooltipRoot } from "@cortex/ui"
 
-type Status = "active" | "default" | "disabled"
+import { useAuthStore } from "@/lib/auth/store"
 
 interface NavItem {
   href: string
   label: string
   icon: IconName
-  /** Coming soon — rendered as `disabled`. */
-  comingSoon?: boolean
+  /** Backend restricts this to owner/admin. */
+  adminOnly?: boolean
 }
 
-const NAV: readonly NavItem[] = [
-  { href: "/app/dashboard", label: "Dashboard", icon: "House" },
-  // F4 P1: the chat route lives at `/chat` (the
-  // `(app)` group doesn't add a URL segment). The
-  // old `/app/chat` link in this sidebar 404'd
-  // because the route group is parens-only.
-  { href: "/chat", label: "Chat", icon: "MessageSquare" },
-  { href: "/app/documents", label: "Documents", icon: "FileText" },
-  { href: "/app/search", label: "Search", icon: "Search", comingSoon: true },
+interface NavGroup {
+  label: string
+  items: readonly NavItem[]
+}
+
+export const NAV_GROUPS: readonly NavGroup[] = [
   {
-    href: "/app/graph",
-    label: "Knowledge Graph",
-    icon: "Network",
+    label: "Workspace",
+    items: [
+      { href: "/app/dashboard", label: "Dashboard", icon: "House" },
+      { href: "/chat", label: "Chat", icon: "MessageSquare" },
+      { href: "/app/documents", label: "Documents", icon: "FileText" },
+      { href: "/app/search", label: "Search", icon: "Search" },
+      { href: "/app/graph", label: "Knowledge Graph", icon: "Network" },
+      { href: "/app/agents", label: "Agents", icon: "Bot" },
+    ],
   },
-  { href: "/app/agents", label: "Agents", icon: "Bot", comingSoon: true },
-  { href: "/app/mcp", label: "MCP", icon: "Workflow", comingSoon: true },
-  { href: "/app/settings", label: "Settings", icon: "Settings" },
+  {
+    label: "Management",
+    items: [
+      { href: "/app/settings/team", label: "Team", icon: "Users", adminOnly: true },
+      { href: "/app/settings/api-keys", label: "API keys", icon: "KeyRound" },
+      { href: "/app/settings/mcp", label: "MCP", icon: "Workflow" },
+    ],
+  },
+  {
+    label: "System",
+    items: [
+      { href: "/app/settings/usage", label: "Usage", icon: "ChartColumn" },
+      { href: "/app/settings/audit-log", label: "Audit log", icon: "ScrollText", adminOnly: true },
+    ],
+  },
 ] as const
 
-function resolveStatus(pathname: string, href: string, comingSoon: boolean): Status {
-  if (comingSoon) return "disabled"
-  if (pathname === href) return "active"
-  if (href !== "/app/dashboard" && pathname.startsWith(`${href}/`)) return "active"
-  return "default"
+function isActive(pathname: string, href: string): boolean {
+  return pathname === href || pathname.startsWith(`${href}/`)
+}
+
+const NAV_ITEMS = NAV_GROUPS.flatMap((g) => g.items)
+
+/** The nav entry owning `pathname` (longest matching prefix), if any. */
+export function navItemFor(pathname: string): NavItem | undefined {
+  return NAV_ITEMS.filter((i) => isActive(pathname, i.href)).sort(
+    (a, b) => b.href.length - a.href.length,
+  )[0]
 }
 
 export interface SidebarNavProps {
@@ -77,47 +83,50 @@ export interface SidebarNavProps {
 
 export function SidebarNav({ collapsed = false }: SidebarNavProps): ReactNode {
   const pathname = usePathname() ?? ""
+  const role = useAuthStore((s) => s.user?.role)
+  const isAdmin = role === "owner" || role === "admin"
 
   return (
-    <nav aria-label="App sections" className="px-2">
-      <ul className="flex flex-col gap-0.5">
-        {NAV.map((item) => {
-          const status = resolveStatus(pathname, item.href, !!item.comingSoon)
-          const labelText = item.comingSoon ? `${item.label} — Coming Soon` : item.label
-          const inner = (
-            <SidebarItem
-              href={item.href as never}
-              state={status}
-              iconLeft={<Icon name={item.icon} className="h-4 w-4" />}
-              aria-label={labelText}
-              aria-disabled={status === "disabled" || undefined}
-              tabIndex={status === "disabled" ? -1 : undefined}
-              onClick={(e) => {
-                if (status === "disabled") e.preventDefault()
-              }}
-            >
-              {item.label}
-              {item.comingSoon ? (
-                <span className="ml-auto rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                  Soon
-                </span>
-              ) : null}
-            </SidebarItem>
-          )
-
-          return (
-            <li key={item.href}>
-              {collapsed ? (
-                <TooltipRoot content={labelText} side="right">
-                  {inner}
-                </TooltipRoot>
-              ) : (
-                inner
-              )}
-            </li>
-          )
-        })}
-      </ul>
+    <nav aria-label="App sections" className="flex flex-col gap-5 px-2">
+      {NAV_GROUPS.map((group) => {
+        const items = group.items.filter((i) => isAdmin || !i.adminOnly)
+        if (items.length === 0) return null
+        return (
+          <div key={group.label}>
+            {collapsed ? (
+              <div className="mx-3 mb-2 h-px bg-divider" aria-hidden />
+            ) : (
+              <p className="mb-1.5 px-3 text-[11px] font-medium uppercase tracking-[0.08em] text-faint">
+                {group.label}
+              </p>
+            )}
+            <ul className="flex flex-col gap-0.5" aria-label={collapsed ? group.label : undefined}>
+              {items.map((item) => {
+                const active = isActive(pathname, item.href)
+                const link = (
+                  <SidebarItem asChild state={active ? "active" : "default"}>
+                    <Link href={item.href as never} aria-label={collapsed ? item.label : undefined}>
+                      <Icon name={item.icon} className="h-4 w-4 shrink-0" aria-hidden />
+                      {collapsed ? null : <span className="flex-1 truncate">{item.label}</span>}
+                    </Link>
+                  </SidebarItem>
+                )
+                return (
+                  <li key={item.href}>
+                    {collapsed ? (
+                      <TooltipRoot content={item.label} side="right">
+                        {link}
+                      </TooltipRoot>
+                    ) : (
+                      link
+                    )}
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
+        )
+      })}
     </nav>
   )
 }

@@ -25,13 +25,9 @@ beforeEach(() => {
 
 describe("InterruptedBanner", () => {
   it("renders the interrupted copy + a Retry button", () => {
-    render(
-      <InterruptedBanner
-        conversationId="c-1"
-        content="the question"
-      />,
-      { wrapper: makeWrapper() },
-    )
+    render(<InterruptedBanner conversationId="c-1" content="the question" />, {
+      wrapper: makeWrapper(),
+    })
     expect(screen.getByText(/response interrupted/i)).toBeInTheDocument()
     expect(
       screen.getByRole("button", { name: /retry the interrupted response/i }),

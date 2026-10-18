@@ -27,13 +27,9 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest"
 import { ToastProvider, ToastViewport } from "@cortex/ui"
 
 import { CitationPanel } from "@/components/chat/citations/CitationPanel"
-import {
-  useCitationPanelStore,
-} from "@/hooks/chat/citationPanelStore"
+import { useDocumentSelectionStore } from "@/components/documents/DocumentSelectionStore"
+import { useCitationPanelStore } from "@/hooks/chat/citationPanelStore"
 import { useConversationStreamStore } from "@/hooks/chat/conversationStreamStore"
-import {
-  useDocumentSelectionStore,
-} from "@/components/documents/DocumentSelectionStore"
 
 function makeWrapper() {
   const qc = new QueryClient({
@@ -131,9 +127,7 @@ describe("CitationPanel (Task 44)", () => {
       screen.getByRole("heading", { name: /cortex architecture document/i }),
     ).toBeInTheDocument()
     expect(screen.getByText(/chunk 3/i)).toBeInTheDocument()
-    expect(
-      screen.getByText(/Cortex uses PostgreSQL for vector storage\./),
-    ).toBeInTheDocument()
+    expect(screen.getByText(/Cortex uses PostgreSQL for vector storage\./)).toBeInTheDocument()
   })
 
   it("renders the 'View full document' button", () => {
@@ -146,9 +140,7 @@ describe("CitationPanel (Task 44)", () => {
       useCitationPanelStore.getState().open("citation:chunk-1")
     })
     render(<CitationPanel conversationId="c-1" />, { wrapper: makeWrapper() })
-    expect(
-      screen.getByRole("button", { name: /view full document/i }),
-    ).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /view full document/i })).toBeInTheDocument()
   })
 
   it("'View full document' closes the panel + opens the F3 document drawer", async () => {
@@ -216,9 +208,7 @@ describe("CitationPanel (Task 44)", () => {
     const { rerender } = render(<CitationPanel conversationId="c-1" />, {
       wrapper: makeWrapper(),
     })
-    expect(
-      screen.getByRole("heading", { name: /doc one/i }),
-    ).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: /doc one/i })).toBeInTheDocument()
     // Add a second citation to the stream.
     act(() => {
       useConversationStreamStore.getState().applyEvent("c-1", {
@@ -237,9 +227,7 @@ describe("CitationPanel (Task 44)", () => {
       useCitationPanelStore.getState().select("citation:chunk-2")
     })
     rerender(<CitationPanel conversationId="c-1" />)
-    expect(
-      screen.getByRole("heading", { name: /doc two/i }),
-    ).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: /doc two/i })).toBeInTheDocument()
     // Panel is still open.
     expect(useCitationPanelStore.getState().isOpen).toBe(true)
   })

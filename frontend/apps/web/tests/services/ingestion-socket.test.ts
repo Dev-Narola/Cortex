@@ -13,10 +13,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
-import {
-  buildIngestionSocketUrl,
-  IngestionSocket,
-} from "@/services/documents/ingestionSocket"
+import { IngestionSocket, buildIngestionSocketUrl } from "@/services/documents/ingestionSocket"
 
 class FakeSocket {
   static instances: FakeSocket[] = []
@@ -93,16 +90,13 @@ describe("IngestionSocket", () => {
     socket.connect()
     const sock = FakeSocket.instances[0]!
     sock.dispatch("open", {})
-    sock.dispatch(
-      "message",
-      {
-        data: JSON.stringify({
-          type: "ingestion.status",
-          document_id: "doc-1",
-          status: "parsing",
-        }),
-      },
-    )
+    sock.dispatch("message", {
+      data: JSON.stringify({
+        type: "ingestion.status",
+        document_id: "doc-1",
+        status: "parsing",
+      }),
+    })
     expect(received).toEqual(["parsing"])
     socket.disconnect()
   })
@@ -117,19 +111,16 @@ describe("IngestionSocket", () => {
     const sock = FakeSocket.instances[0]!
     sock.dispatch("open", {})
     // Advance: parsing → chunking.
-    sock.dispatch(
-      "message",
-      { data: JSON.stringify({ type: "ingestion.status", document_id: "d", status: "parsing" }) },
-    )
-    sock.dispatch(
-      "message",
-      { data: JSON.stringify({ type: "ingestion.status", document_id: "d", status: "chunking" }) },
-    )
+    sock.dispatch("message", {
+      data: JSON.stringify({ type: "ingestion.status", document_id: "d", status: "parsing" }),
+    })
+    sock.dispatch("message", {
+      data: JSON.stringify({ type: "ingestion.status", document_id: "d", status: "chunking" }),
+    })
     // Stale: parsing arrives after chunking → dropped.
-    sock.dispatch(
-      "message",
-      { data: JSON.stringify({ type: "ingestion.status", document_id: "d", status: "parsing" }) },
-    )
+    sock.dispatch("message", {
+      data: JSON.stringify({ type: "ingestion.status", document_id: "d", status: "parsing" }),
+    })
     expect(received).toEqual(["parsing", "chunking"])
     socket.disconnect()
   })

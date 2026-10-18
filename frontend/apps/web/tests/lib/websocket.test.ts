@@ -19,11 +19,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
-import {
-  nextReconnectDelay,
-  WebSocketClient,
-  type WebSocketState,
-} from "@/lib/websocket/client"
+import { WebSocketClient, type WebSocketState, nextReconnectDelay } from "@/lib/websocket/client"
 
 /**
  * Minimal in-memory WebSocket stand-in. Not

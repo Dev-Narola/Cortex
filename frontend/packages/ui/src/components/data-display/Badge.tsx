@@ -35,14 +35,14 @@ export const badgeVariants = cva(
   {
     variants: {
       variant: {
-        default: "border-transparent bg-ink-900 text-paper-50",
+        default: "border-transparent bg-secondary text-secondary-foreground",
         secondary: "border-transparent bg-muted text-foreground",
         success: "border-transparent bg-success/15 text-success",
         warning: "border-transparent bg-warning/15 text-warning",
         error: "border-transparent bg-destructive/15 text-destructive",
         outline: "text-foreground",
         // V9 ingestion-state aliases (consumed by the F3 document list).
-        pending: "border-transparent bg-cloud-200 text-ink-700",
+        pending: "border-transparent bg-muted text-muted-foreground",
         processing: "border-transparent bg-volt-200 text-volt-900",
         completed: "border-transparent bg-success/15 text-success",
         failed: "border-transparent bg-destructive/15 text-destructive",

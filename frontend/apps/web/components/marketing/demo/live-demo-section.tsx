@@ -72,9 +72,8 @@ export function LiveDemoSection() {
           Ask Cortex a real question.
         </h2>
         <p className="mx-auto mt-4 max-w-2xl text-base text-muted-foreground sm:text-lg">
-          Pick an example below — or type your own. Watch the
-          answer stream in, then click a citation to see the
-          source behind it.
+          Pick an example below — or type your own. Watch the answer stream in, then click a
+          citation to see the source behind it.
         </p>
         <div className="mx-auto mt-10 max-w-3xl text-left">
           <DemoChat />

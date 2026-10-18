@@ -41,7 +41,7 @@
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 
 import {
@@ -65,7 +65,9 @@ import {
 } from "@cortex/ui"
 
 import { useInviteMember } from "@/hooks/team"
+import { useAuthStore } from "@/lib/auth/store"
 import { toFrontendError } from "@/lib/http/errors"
+import type { InviteMemberResponse } from "@/services/team"
 import { toast } from "@cortex/ui"
 
 import {
@@ -97,6 +99,11 @@ export interface InviteMemberModalProps {
 
 export function InviteMemberModal({ open, onOpenChange, onClose }: InviteMemberModalProps) {
   const invite = useInviteMember()
+  const [created, setCreated] = useState<InviteMemberResponse | null>(null)
+  const [copied, setCopied] = useState(false)
+  // Only an owner may grant admin (backend returns 403 otherwise).
+  const isOwner = useAuthStore((s) => s.user?.role) === "owner"
+  const roles = INVITABLE_ROLES.filter((r) => isOwner || r !== "admin")
 
   const {
     register,
@@ -116,22 +123,18 @@ export function InviteMemberModal({ open, onOpenChange, onClose }: InviteMemberM
   // leak into the next attempt). A successful
   // mutation also clears the form.
   useEffect(() => {
-    if (open) reset({ email: "", role: "member" })
+    if (open) {
+      reset({ email: "", role: "member" })
+      setCreated(null)
+      setCopied(false)
+    }
   }, [open, reset])
 
   const currentRole = watch("role")
 
   async function onSubmit(values: InviteMemberFormValues) {
     try {
-      const result = await invite.mutateAsync({ email: values.email, role: values.role })
-      const name = result.member.full_name || result.member.email
-      toast({
-        title: "Invitation sent",
-        description: `${name} will receive an email to join your workspace.`,
-        variant: "success",
-      })
-      onOpenChange(false)
-      onClose?.()
+      setCreated(await invite.mutateAsync({ email: values.email, role: values.role }))
     } catch (err) {
       const fe = toFrontendError(err)
       // Map common backend errors to inline form
@@ -168,102 +171,175 @@ export function InviteMemberModal({ open, onOpenChange, onClose }: InviteMemberM
         <DialogHeader>
           <DialogTitle>Invite teammate</DialogTitle>
           <DialogDescription>
-            Send an email invitation to join your Cortex workspace. The invitee will receive a
-            sign-up link with the role you choose.
+            {created
+              ? "Share this link with your teammate. Cortex doesn't send invitation emails."
+              : "Create an invitation link with the role you choose. You'll share the link yourself."}
           </DialogDescription>
         </DialogHeader>
 
-        <form
-          onSubmit={handleSubmit(onSubmit)}
-          className="space-y-4"
-          noValidate
-          data-testid="invite-member-form"
-        >
-          <div className="space-y-1.5">
-            <Label htmlFor="invite-email">Email</Label>
-            <Input
-              id="invite-email"
-              type="email"
-              autoComplete="email"
-              placeholder="teammate@company.com"
-              aria-invalid={Boolean(errors.email)}
-              data-testid="invite-email-input"
-              {...register("email")}
-            />
-            {errors.email ? (
-              <p className="text-xs text-destructive" role="alert" data-testid="invite-email-error">
-                {errors.email.message}
-              </p>
-            ) : null}
-          </div>
+        {created ? (
+          <InviteLink
+            invite={created}
+            copied={copied}
+            onCopied={() => setCopied(true)}
+            onDone={() => {
+              onOpenChange(false)
+              onClose?.()
+            }}
+          />
+        ) : (
+          <form
+            onSubmit={handleSubmit(onSubmit)}
+            className="space-y-4"
+            noValidate
+            data-testid="invite-member-form"
+          >
+            <div className="space-y-1.5">
+              <Label htmlFor="invite-email">Email</Label>
+              <Input
+                id="invite-email"
+                type="email"
+                autoComplete="email"
+                placeholder="teammate@company.com"
+                aria-invalid={Boolean(errors.email)}
+                data-testid="invite-email-input"
+                {...register("email")}
+              />
+              {errors.email ? (
+                <p
+                  className="text-xs text-destructive"
+                  role="alert"
+                  data-testid="invite-email-error"
+                >
+                  {errors.email.message}
+                </p>
+              ) : null}
+            </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="invite-role">Role</Label>
-            <Select
-              value={currentRole}
-              onValueChange={(value) => {
-                // The form state is typed as the
-                // schema's union; the Select only
-                // emits one of the three valid values.
-                setValue("role", value as InviteMemberFormValues["role"], {
-                  shouldValidate: true,
-                })
-              }}
-            >
-              <SelectTrigger id="invite-role" aria-label="Role" data-testid="invite-role-trigger">
-                <SelectValue placeholder="Choose a role" />
-              </SelectTrigger>
-              <SelectContent>
-                {INVITABLE_ROLES.map((role) => (
-                  <SelectItem key={role} value={role} data-testid={`invite-role-option-${role}`}>
-                    {ROLE_LABELS[role]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.role ? (
-              <p className="text-xs text-destructive" role="alert" data-testid="invite-role-error">
-                {errors.role.message}
-              </p>
-            ) : null}
-          </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="invite-role">Role</Label>
+              <Select
+                value={currentRole}
+                onValueChange={(value) => {
+                  // The form state is typed as the
+                  // schema's union; the Select only
+                  // emits one of the three valid values.
+                  setValue("role", value as InviteMemberFormValues["role"], {
+                    shouldValidate: true,
+                  })
+                }}
+              >
+                <SelectTrigger id="invite-role" aria-label="Role" data-testid="invite-role-trigger">
+                  <SelectValue placeholder="Choose a role" />
+                </SelectTrigger>
+                <SelectContent>
+                  {roles.map((role) => (
+                    <SelectItem key={role} value={role} data-testid={`invite-role-option-${role}`}>
+                      {ROLE_LABELS[role]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.role ? (
+                <p
+                  className="text-xs text-destructive"
+                  role="alert"
+                  data-testid="invite-role-error"
+                >
+                  {errors.role.message}
+                </p>
+              ) : null}
+            </div>
 
-          <DialogFooter className="gap-2 sm:gap-2">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                onOpenChange(false)
-                onClose?.()
-              }}
-              disabled={isSubmitting}
-              data-testid="invite-cancel"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              variant="default"
-              size="sm"
-              disabled={isSubmitting}
-              data-testid="invite-submit"
-            >
-              {isSubmitting ? (
-                <>
-                  <Icon name="RefreshCw" className="h-3.5 w-3.5 animate-spin" />
-                  <span>Inviting…</span>
-                </>
-              ) : (
-                <>
-                  <Icon name="Mail" className="h-3.5 w-3.5" />
-                  <span>Invite</span>
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </form>
+            <DialogFooter className="gap-2 sm:gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  onOpenChange(false)
+                  onClose?.()
+                }}
+                disabled={isSubmitting}
+                data-testid="invite-cancel"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                variant="default"
+                size="sm"
+                disabled={isSubmitting}
+                data-testid="invite-submit"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Icon name="RefreshCw" className="h-3.5 w-3.5 animate-spin" />
+                    <span>Creating…</span>
+                  </>
+                ) : (
+                  <>
+                    <Icon name="Link" className="h-3.5 w-3.5" />
+                    <span>Create invite link</span>
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        )}
       </DialogContent>
     </Dialog>
+  )
+}
+
+function InviteLink({
+  invite,
+  copied,
+  onCopied,
+  onDone,
+}: {
+  invite: InviteMemberResponse
+  copied: boolean
+  onCopied: () => void
+  onDone: () => void
+}) {
+  const url = `${window.location.origin}/accept-invite?token=${encodeURIComponent(invite.invite_token)}`
+  const hours = Math.round(invite.expires_in / 3600)
+  return (
+    <div className="space-y-4" data-testid="invite-link">
+      <p className="text-sm text-muted-foreground">
+        <span className="font-medium text-foreground">{invite.email}</span> joins as{" "}
+        <span className="capitalize">{invite.role}</span>. The link works once and expires in{" "}
+        {hours >= 1
+          ? `${hours} hour${hours === 1 ? "" : "s"}`
+          : `${Math.round(invite.expires_in / 60)} minutes`}
+        .
+      </p>
+      <div className="flex gap-2">
+        <Input
+          readOnly
+          value={url}
+          aria-label="Invitation link"
+          className="font-mono text-xs"
+          onFocus={(e) => e.target.select()}
+        />
+        <Button
+          type="button"
+          variant="outline"
+          onClick={async () => {
+            await navigator.clipboard.writeText(url)
+            onCopied()
+          }}
+        >
+          <Icon name={copied ? "Check" : "Copy"} className="h-4 w-4" aria-hidden />
+          {copied ? "Copied" : "Copy"}
+        </Button>
+      </div>
+      <DialogFooter>
+        <Button type="button" onClick={onDone}>
+          Done
+        </Button>
+      </DialogFooter>
+    </div>
   )
 }

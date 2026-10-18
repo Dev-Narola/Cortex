@@ -23,10 +23,7 @@ export interface ChatErrorStateProps {
   message?: string
 }
 
-export function ChatErrorState({
-  onRetry,
-  message,
-}: ChatErrorStateProps): ReactNode {
+export function ChatErrorState({ onRetry, message }: ChatErrorStateProps): ReactNode {
   return (
     <Card>
       <CardContent className="py-12">

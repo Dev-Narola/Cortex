@@ -10,8 +10,10 @@ export {
   type DocumentStatus,
 } from "./types"
 export {
+  type ImportDocumentUrlParams,
   type UploadDocumentAccepted,
   type UploadDocumentParams,
+  importDocumentFromUrl,
   uploadDocument,
 } from "./uploadDocument"
 export {

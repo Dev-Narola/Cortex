@@ -21,7 +21,7 @@ const replaceMock = vi.fn()
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: replaceMock, push: pushMock }),
-  usePathname: vi.fn().mockReturnValue("/app/dashboard"),
+  usePathname: () => "/app/dashboard",
   useSearchParams: () => new URLSearchParams(),
 }))
 
@@ -67,38 +67,22 @@ describe("UserMenu", () => {
     useAuthStore.getState().clear()
   })
 
-  it("renders the user's email when present", async () => {
+  it("shows name, email and workspace in the open menu", async () => {
     const user = userEvent.setup()
     seedSession()
     render(<UserMenu />, { wrapper: makeWrapper() })
-    // The email shows up in both the trigger label
-    // (next to the avatar) and the dropdown header.
-    // Assert at least one match (the email is in the DOM
-    // before the dropdown opens).
-    expect(screen.getAllByText("ada@cortex.dev").length).toBeGreaterThanOrEqual(1)
-    // Open the dropdown with a real pointer-down/pointer-up
-    // cycle (Radix needs the pointer events, not just click).
-    await user.click(screen.getByRole("button", { name: /open user menu/i }))
-    // The dropdown surfaces the email inside the
-    // `DropdownMenuLabel`. With the dropdown open, the
-    // email is now in at least 2 places.
-    await waitFor(() => {
-      expect(screen.getAllByText("ada@cortex.dev").length).toBeGreaterThanOrEqual(2)
-    })
+    await user.click(screen.getByRole("button", { name: /open user menu for ada/i }))
+    expect(await screen.findByText("ada@cortex.dev")).toBeInTheDocument()
+    expect(screen.getByText("Acme")).toBeInTheDocument()
   })
 
-  it("the menu exposes Profile / Workspace / Settings / Log out", async () => {
+  it("links only to pages that exist", async () => {
     const user = userEvent.setup()
     seedSession()
     render(<UserMenu />, { wrapper: makeWrapper() })
     await user.click(screen.getByRole("button", { name: /open user menu/i }))
-    expect(await screen.findByText("Profile")).toBeInTheDocument()
-    expect(await screen.findByText("Workspace")).toBeInTheDocument()
-    expect(await screen.findByText("Settings")).toBeInTheDocument()
-    // Log out is rendered both in the items list and
-    // the footer.
-    const logOuts = screen.getAllByText(/log out/i)
-    expect(logOuts.length).toBeGreaterThanOrEqual(1)
+    await user.click(await screen.findByRole("menuitem", { name: /api keys/i }))
+    expect(pushMock).toHaveBeenCalledWith("/app/settings/api-keys")
   })
 
   it("clicking 'Log out' clears the store + redirects to /login", async () => {
@@ -106,12 +90,7 @@ describe("UserMenu", () => {
     seedSession()
     render(<UserMenu />, { wrapper: makeWrapper() })
     await user.click(screen.getByRole("button", { name: /open user menu/i }))
-    // The first "Log out" entry is the items list
-    // version. (The footer also has a "Log out" inside
-    // a nested user menu; both end up clearing the
-    // store + pushing /login.)
-    const logOuts = await screen.findAllByRole("button", { name: /log out/i })
-    await user.click(logOuts[0]!)
+    await user.click(await screen.findByRole("menuitem", { name: /log out/i }))
     await waitFor(() => {
       expect(useAuthStore.getState().accessToken).toBeNull()
     })

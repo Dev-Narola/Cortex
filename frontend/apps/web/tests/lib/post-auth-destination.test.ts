@@ -51,12 +51,8 @@ describe("resolvePostAuthDestination", () => {
 
   it("rejects an absolute external URL (open-redirect)", () => {
     useAuthStore.getState().setTenant({ id: "t", slug: "a" })
-    expect(resolvePostAuthDestination("https://evil.com")).toBe(
-      "/app/dashboard",
-    )
-    expect(resolvePostAuthDestination("http://evil.com/x")).toBe(
-      "/app/dashboard",
-    )
+    expect(resolvePostAuthDestination("https://evil.com")).toBe("/app/dashboard")
+    expect(resolvePostAuthDestination("http://evil.com/x")).toBe("/app/dashboard")
   })
 
   it("rejects a protocol-relative URL (//evil.com)", () => {
@@ -67,12 +63,8 @@ describe("resolvePostAuthDestination", () => {
 
   it("rejects a next that doesn't start with `/`", () => {
     useAuthStore.getState().setTenant({ id: "t", slug: "a" })
-    expect(resolvePostAuthDestination("app/dashboard")).toBe(
-      "/app/dashboard",
-    )
-    expect(resolvePostAuthDestination("javascript:alert(1)")).toBe(
-      "/app/dashboard",
-    )
+    expect(resolvePostAuthDestination("app/dashboard")).toBe("/app/dashboard")
+    expect(resolvePostAuthDestination("javascript:alert(1)")).toBe("/app/dashboard")
   })
 
   it("returns the tenant-based default when ?next= is null + user has no tenant", () => {
@@ -80,8 +72,6 @@ describe("resolvePostAuthDestination", () => {
   })
 
   it("ignores the unsafe next and falls back to the tenant default (no-tenant)", () => {
-    expect(resolvePostAuthDestination("https://evil.com")).toBe(
-      "/workspace-setup",
-    )
+    expect(resolvePostAuthDestination("https://evil.com")).toBe("/workspace-setup")
   })
 })

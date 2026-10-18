@@ -54,22 +54,13 @@ export function UsagePanel() {
   const summary = useTenantUsageSummary()
 
   return (
-    <div
-      className="space-y-6"
-      data-testid="usage-panel"
-      aria-label="Usage and billing"
-    >
+    <div className="space-y-6" data-testid="usage-panel" aria-label="Usage and billing">
       <header className="space-y-1">
-        <h2 className="font-display text-base font-semibold tracking-tight">
-          Usage &amp; Billing
-        </h2>
-        <p className="text-sm text-paper-200/70">
+        <h2 className="font-display text-base font-semibold tracking-tight">Usage &amp; Billing</h2>
+        <p className="text-sm text-muted-foreground">
           Track your workspace usage, estimated cost, and current limits.
         </p>
-        <p
-          className="text-xs text-paper-200/50"
-          data-testid="usage-period-context"
-        >
+        <p className="text-xs text-faint" data-testid="usage-period-context">
           {summary.data
             ? `Current period: ${formatPeriodLabel(summary.data.period.from, summary.data.period.to)}`
             : "Current period: loading…"}

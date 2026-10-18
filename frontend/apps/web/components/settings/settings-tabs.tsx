@@ -28,8 +28,8 @@
  * **Visual shell.** Per the UI spec: a tabbed Slate
  * panel, left tab list, content right. The tabs are a
  * stacked list of `<Link>`s styled with the existing
- * design tokens (`text-paper-200/70` for the resting
- * state, `bg-slate-700/60 text-paper-50` for the
+ * design tokens (`text-muted-foreground` for the resting
+ * state, `bg-muted text-foreground` for the
  * active state). No new colors.
  *
  * **Per-tab RBAC (F7 Part 5).** The Audit Log tab is
@@ -105,10 +105,7 @@ function isActive(pathname: string | null, href: string): boolean {
  * (the same role gate is in
  * `Cortex/src/observability/interface/rest/audit_routes.py:140-148`).
  */
-function canSeeTab(
-  role: string | null | undefined,
-  tab: SettingsTab,
-): boolean {
+function canSeeTab(role: string | null | undefined, tab: SettingsTab): boolean {
   if (!tab.visibleTo) return true
   if (!role) return false
   return tab.visibleTo.includes(role as "owner" | "admin")
@@ -144,8 +141,8 @@ export function SettingsTabs() {
                 data-testid={`settings-tab-${tab.href.split("/").pop()}`}
                 className={
                   active
-                    ? "flex items-center gap-2 rounded-md bg-slate-700/60 px-3 py-2 text-sm font-medium text-paper-50 transition-colors"
-                    : "flex items-center gap-2 rounded-md px-3 py-2 text-sm text-paper-200/70 transition-colors hover:bg-slate-800/60 hover:text-paper-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-volt-500"
+                    ? "flex items-center gap-2 rounded-md bg-muted px-3 py-2 text-sm font-medium text-foreground transition-colors"
+                    : "flex items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-card/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-volt-500"
                 }
               >
                 <Icon name={tab.icon} size="sm" tone={active ? "accent" : "muted"} aria-hidden />

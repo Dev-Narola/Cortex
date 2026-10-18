@@ -92,9 +92,7 @@ function formatPeriod(from: string, to: string): string {
 
 function tokensConsumed(s: UsageSummaryData): number {
   return (
-    (s.embedding_tokens ?? 0) +
-    (s.completion_input_tokens ?? 0) +
-    (s.completion_output_tokens ?? 0)
+    (s.embedding_tokens ?? 0) + (s.completion_input_tokens ?? 0) + (s.completion_output_tokens ?? 0)
   )
 }
 
@@ -171,16 +169,14 @@ function StatCard({
   return (
     <Card>
       <CardContent className="space-y-1 p-4">
-        <p className="text-xs font-medium uppercase tracking-wider text-paper-200/50">
-          {label}
-        </p>
+        <p className="text-xs font-medium uppercase tracking-wider text-faint">{label}</p>
         <p
-          className="font-display text-2xl font-semibold tracking-tight text-paper-50"
+          className="font-display text-2xl font-semibold tracking-tight text-foreground"
           data-testid={testId}
         >
           {value}
         </p>
-        {sublabel ? <p className="text-xs text-paper-200/60">{sublabel}</p> : null}
+        {sublabel ? <p className="text-xs text-faint">{sublabel}</p> : null}
       </CardContent>
     </Card>
   )

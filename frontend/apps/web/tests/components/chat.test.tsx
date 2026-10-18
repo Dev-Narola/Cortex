@@ -31,9 +31,7 @@ import type { Message } from "@/types/conversation"
 
 vi.mock("@/lib/auth/api-client", async () => {
   const actual =
-    await vi.importActual<typeof import("@/lib/auth/api-client")>(
-      "@/lib/auth/api-client",
-    )
+    await vi.importActual<typeof import("@/lib/auth/api-client")>("@/lib/auth/api-client")
   return { ...actual, getApiClient: vi.fn(), resetApiClient: vi.fn() }
 })
 
@@ -109,9 +107,7 @@ describe("MessageBubble", () => {
       { wrapper: makeWrapper() },
     )
     expect(screen.getByText("Assistant")).toBeInTheDocument()
-    expect(
-      screen.getByText(/Cortex uses pgvector for semantic retrieval/i),
-    ).toBeInTheDocument()
+    expect(screen.getByText(/Cortex uses pgvector for semantic retrieval/i)).toBeInTheDocument()
     const article = screen.getByRole("article")
     expect(article).toHaveAttribute("data-role", "assistant")
   })
@@ -142,18 +138,10 @@ describe("MessageBubble", () => {
 
 describe("MessageList", () => {
   it("renders the empty state when there are no messages", () => {
-    render(
-      <MessageList
-        messages={[]}
-        stream={null}
-        conversationId="c-1"
-        isBusy={false}
-      />,
-      { wrapper: makeWrapper() },
-    )
-    expect(
-      screen.getByText(/ask anything about your knowledge base/i),
-    ).toBeInTheDocument()
+    render(<MessageList messages={[]} stream={null} conversationId="c-1" isBusy={false} />, {
+      wrapper: makeWrapper(),
+    })
+    expect(screen.getByText(/ask anything about your knowledge base/i)).toBeInTheDocument()
   })
 
   it("renders one bubble per message when present", () => {
@@ -172,22 +160,16 @@ describe("MessageList", () => {
     expect(screen.getByText("Hi")).toBeInTheDocument()
     expect(screen.getByText("Hello")).toBeInTheDocument()
     // No empty state copy.
-    expect(
-      screen.queryByText(/ask anything about your knowledge base/i),
-    ).toBeNull()
+    expect(screen.queryByText(/ask anything about your knowledge base/i)).toBeNull()
   })
 })
 
 describe("ChatEmptyState", () => {
   it("renders the spec's exact copy", () => {
     render(<ChatEmptyState />)
+    expect(screen.getByText(/ask anything about your knowledge base/i)).toBeInTheDocument()
     expect(
-      screen.getByText(/ask anything about your knowledge base/i),
-    ).toBeInTheDocument()
-    expect(
-      screen.getByText(
-        /Cortex can answer questions using your indexed documents/i,
-      ),
+      screen.getByText(/Cortex can answer questions using your indexed documents/i),
     ).toBeInTheDocument()
   })
 })
@@ -198,27 +180,17 @@ describe("ChatEmptyState", () => {
 
 describe("MessageInput", () => {
   it("disables the Send button when the value is empty", () => {
-    render(
-      <MessageInput
-        value=""
-        onChange={() => {}}
-        onSubmit={() => {}}
-      />,
-      { wrapper: makeWrapper() },
-    )
+    render(<MessageInput value="" onChange={() => {}} onSubmit={() => {}} />, {
+      wrapper: makeWrapper(),
+    })
     const send = screen.getByRole("button", { name: /send message/i })
     expect(send).toBeDisabled()
   })
 
   it("enables the Send button when the value has content", () => {
-    render(
-      <MessageInput
-        value="hello"
-        onChange={() => {}}
-        onSubmit={() => {}}
-      />,
-      { wrapper: makeWrapper() },
-    )
+    render(<MessageInput value="hello" onChange={() => {}} onSubmit={() => {}} />, {
+      wrapper: makeWrapper(),
+    })
     const send = screen.getByRole("button", { name: /send message/i })
     expect(send).not.toBeDisabled()
   })
@@ -226,14 +198,9 @@ describe("MessageInput", () => {
   it("calls onSubmit with the trimmed value on plain Enter", async () => {
     const onSubmit = vi.fn()
     const user = userEvent.setup()
-    render(
-      <MessageInput
-        value="hi"
-        onChange={() => {}}
-        onSubmit={onSubmit}
-      />,
-      { wrapper: makeWrapper() },
-    )
+    render(<MessageInput value="hi" onChange={() => {}} onSubmit={onSubmit} />, {
+      wrapper: makeWrapper(),
+    })
     const textarea = screen.getByLabelText(/^message$/i)
     textarea.focus()
     await user.keyboard("{Enter}")
@@ -243,14 +210,9 @@ describe("MessageInput", () => {
   it("does not submit on Shift+Enter (newline instead)", async () => {
     const onSubmit = vi.fn()
     const user = userEvent.setup()
-    render(
-      <MessageInput
-        value="hi"
-        onChange={() => {}}
-        onSubmit={onSubmit}
-      />,
-      { wrapper: makeWrapper() },
-    )
+    render(<MessageInput value="hi" onChange={() => {}} onSubmit={onSubmit} />, {
+      wrapper: makeWrapper(),
+    })
     const textarea = screen.getByLabelText(/^message$/i)
     textarea.focus()
     await user.keyboard("{Shift>}{Enter}{/Shift}")
@@ -260,14 +222,9 @@ describe("MessageInput", () => {
   it("does not submit when the value is whitespace only", async () => {
     const onSubmit = vi.fn()
     const user = userEvent.setup()
-    render(
-      <MessageInput
-        value="   "
-        onChange={() => {}}
-        onSubmit={onSubmit}
-      />,
-      { wrapper: makeWrapper() },
-    )
+    render(<MessageInput value="   " onChange={() => {}} onSubmit={onSubmit} />, {
+      wrapper: makeWrapper(),
+    })
     const textarea = screen.getByLabelText(/^message$/i)
     textarea.focus()
     await user.keyboard("{Enter}")
@@ -277,28 +234,18 @@ describe("MessageInput", () => {
   it("calls onChange on input", async () => {
     const onChange = vi.fn()
     const user = userEvent.setup()
-    render(
-      <MessageInput
-        value=""
-        onChange={onChange}
-        onSubmit={() => {}}
-      />,
-      { wrapper: makeWrapper() },
-    )
+    render(<MessageInput value="" onChange={onChange} onSubmit={() => {}} />, {
+      wrapper: makeWrapper(),
+    })
     const textarea = screen.getByLabelText(/^message$/i)
     await user.type(textarea, "h")
     expect(onChange).toHaveBeenCalledWith("h")
   })
 
   it("renders the Slate placeholder + Volt focus hint", () => {
-    render(
-      <MessageInput
-        value=""
-        onChange={() => {}}
-        onSubmit={() => {}}
-      />,
-      { wrapper: makeWrapper() },
-    )
+    render(<MessageInput value="" onChange={() => {}} onSubmit={() => {}} />, {
+      wrapper: makeWrapper(),
+    })
     expect(
       screen.getByPlaceholderText(/ask something about your knowledge base/i),
     ).toBeInTheDocument()
@@ -315,9 +262,7 @@ describe("ChatErrorState", () => {
   it("renders the spec's title + a Try again retry button", () => {
     const onRetry = vi.fn()
     render(<ChatErrorState onRetry={onRetry} />)
-    expect(
-      screen.getByText(/we couldn't load this conversation/i),
-    ).toBeInTheDocument()
+    expect(screen.getByText(/we couldn't load this conversation/i)).toBeInTheDocument()
     const retry = screen.getByRole("button", { name: /try again/i })
     expect(retry).toBeInTheDocument()
   })
@@ -340,16 +285,12 @@ describe("ConversationHeader", () => {
     render(<ConversationHeader title="Architecture" />, {
       wrapper: makeWrapper(),
     })
-    expect(
-      screen.getByRole("heading", { name: /architecture/i }),
-    ).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: /architecture/i })).toBeInTheDocument()
   })
 
   it("falls back to 'New conversation' when no title is provided", () => {
     render(<ConversationHeader title={null} />, { wrapper: makeWrapper() })
-    expect(
-      screen.getByRole("heading", { name: /new conversation/i }),
-    ).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: /new conversation/i })).toBeInTheDocument()
   })
 
   it("calls POST /conversations + navigates to /chat/{id} on New", async () => {
@@ -397,13 +338,9 @@ describe("ChatLayout", () => {
       wrapper: makeWrapper(),
     })
     // Header (heading)
-    expect(
-      screen.getByRole("heading", { name: /new conversation/i }),
-    ).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: /new conversation/i })).toBeInTheDocument()
     // Empty state
-    expect(
-      screen.getByText(/ask anything about your knowledge base/i),
-    ).toBeInTheDocument()
+    expect(screen.getByText(/ask anything about your knowledge base/i)).toBeInTheDocument()
     // Input
     expect(screen.getByLabelText(/^message$/i)).toBeInTheDocument()
   })

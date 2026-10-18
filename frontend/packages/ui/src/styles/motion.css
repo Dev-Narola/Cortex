@@ -211,7 +211,21 @@
   }
 }
 
+/* Page entry + bento stagger: a short 6px rise. */
+@keyframes cortex-rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 @theme {
+  --animate-rise-in: cortex-rise-in 240ms
+    var(--motion-ease-out-quint, cubic-bezier(0.22, 1, 0.36, 1)) both;
   --animate-fade-in: cortex-fade-in var(--motion-duration-base, 250ms)
     var(--motion-ease-out-quint, cubic-bezier(0.22, 1, 0.36, 1)) both;
   --animate-fade-out: cortex-fade-out var(--motion-duration-base, 250ms)
@@ -267,6 +281,32 @@
  * cascade is purely on the children's animation-delay). */
 .stagger-children > * {
   animation-fill-mode: both;
+}
+
+/* Bento grids: each card rises 45ms after the previous one (capped at 8). */
+.stagger-rise > * {
+  animation: cortex-rise-in 260ms var(--motion-ease-out-quint, cubic-bezier(0.22, 1, 0.36, 1)) both;
+}
+.stagger-rise > :nth-child(2) {
+  animation-delay: 45ms;
+}
+.stagger-rise > :nth-child(3) {
+  animation-delay: 90ms;
+}
+.stagger-rise > :nth-child(4) {
+  animation-delay: 135ms;
+}
+.stagger-rise > :nth-child(5) {
+  animation-delay: 180ms;
+}
+.stagger-rise > :nth-child(6) {
+  animation-delay: 225ms;
+}
+.stagger-rise > :nth-child(7) {
+  animation-delay: 270ms;
+}
+.stagger-rise > :nth-child(n + 8) {
+  animation-delay: 315ms;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -55,9 +55,7 @@ export interface GetEntityParams {
   signal?: AbortSignal
 }
 
-export async function getEntity(
-  params: GetEntityParams,
-): Promise<KGEntity> {
+export async function getEntity(params: GetEntityParams): Promise<KGEntity> {
   const client = getApiClient()
   return client.get<KGEntity>(
     `/api/v1/graph/entities/${encodeURIComponent(params.id)}`,
@@ -85,13 +83,12 @@ export async function listEntityRelations(
   const query: Record<string, string | number> = {}
   if (params.type) query.type = params.type
   if (params.limit !== undefined) query.limit = params.limit
-  return client.get<KGRelationshipListResponse>(
-    "/api/v1/graph/relationships",
-    {
-      ...(Object.keys(query).length > 0 ? { query: { ...query, entity_id: params.id } } : { query: { entity_id: params.id } }),
-      ...(params.signal ? { signal: params.signal } : {}),
-    },
-  )
+  return client.get<KGRelationshipListResponse>("/api/v1/graph/relationships", {
+    ...(Object.keys(query).length > 0
+      ? { query: { ...query, entity_id: params.id } }
+      : { query: { entity_id: params.id } }),
+    ...(params.signal ? { signal: params.signal } : {}),
+  })
 }
 
 // ---------------------------------------------------------------------------
@@ -132,9 +129,7 @@ export interface SearchGraphParams {
   signal?: AbortSignal
 }
 
-export async function searchGraph(
-  params: SearchGraphParams,
-): Promise<KGSearchResponse> {
+export async function searchGraph(params: SearchGraphParams): Promise<KGSearchResponse> {
   const client = getApiClient()
   const query: Record<string, string | number> = { query: params.query }
   if (params.type) query.type = params.type
@@ -156,9 +151,7 @@ export interface GetPathParams {
   signal?: AbortSignal
 }
 
-export async function getPath(
-  params: GetPathParams,
-): Promise<KGPathResponse> {
+export async function getPath(params: GetPathParams): Promise<KGPathResponse> {
   const client = getApiClient()
   const query: Record<string, string | number> = {
     source: params.source,

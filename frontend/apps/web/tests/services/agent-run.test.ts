@@ -24,16 +24,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 import { getApiClient } from "@/lib/auth/api-client"
-import {
-  getAgentRun,
-  getAgentToolCalls,
-} from "@/services/agents"
+import { getAgentRun, getAgentToolCalls } from "@/services/agents"
 
 vi.mock("@/lib/auth/api-client", async () => {
   const actual =
-    await vi.importActual<typeof import("@/lib/auth/api-client")>(
-      "@/lib/auth/api-client",
-    )
+    await vi.importActual<typeof import("@/lib/auth/api-client")>("@/lib/auth/api-client")
   return { ...actual, getApiClient: vi.fn(), resetApiClient: vi.fn() }
 })
 
@@ -83,10 +78,7 @@ describe("services/getAgentRun", () => {
 
     const result = await getAgentRun({ runId: backend.id })
 
-    expect(get).toHaveBeenCalledWith(
-      `/api/v1/agents/runs/${backend.id}`,
-      {},
-    )
+    expect(get).toHaveBeenCalledWith(`/api/v1/agents/runs/${backend.id}`, {})
     expect(result.id).toBe(backend.id)
     expect(result.agentId).toBe(backend.agent_id)
     expect(result.toolCallCount).toBe(2)
@@ -123,10 +115,7 @@ describe("services/getAgentRun", () => {
 
     await getAgentRun({ runId: "a/b c" })
 
-    expect(get).toHaveBeenCalledWith(
-      "/api/v1/agents/runs/a%2Fb%20c",
-      {},
-    )
+    expect(get).toHaveBeenCalledWith("/api/v1/agents/runs/a%2Fb%20c", {})
   })
 
   it("passes the abort signal through to the client", async () => {
@@ -162,9 +151,7 @@ describe("services/getAgentRun", () => {
       get: vi.fn().mockRejectedValue(new Error("404 not found")),
     } as never)
 
-    await expect(getAgentRun({ runId: "missing" })).rejects.toThrow(
-      "404 not found",
-    )
+    await expect(getAgentRun({ runId: "missing" })).rejects.toThrow("404 not found")
   })
 })
 
@@ -200,10 +187,7 @@ describe("services/getAgentToolCalls", () => {
 
     const result = await getAgentToolCalls({ runId: "r-1" })
 
-    expect(get).toHaveBeenCalledWith(
-      "/api/v1/agents/runs/r-1/tool-calls",
-      {},
-    )
+    expect(get).toHaveBeenCalledWith("/api/v1/agents/runs/r-1/tool-calls", {})
     expect(result.runId).toBe("r-1")
     expect(result.agentId).toBe("a-1")
     expect(result.toolCalls).toHaveLength(2)
@@ -272,8 +256,6 @@ describe("services/getAgentToolCalls", () => {
       get: vi.fn().mockRejectedValue(new Error("network down")),
     } as never)
 
-    await expect(
-      getAgentToolCalls({ runId: "r-1" }),
-    ).rejects.toThrow("network down")
+    await expect(getAgentToolCalls({ runId: "r-1" })).rejects.toThrow("network down")
   })
 })

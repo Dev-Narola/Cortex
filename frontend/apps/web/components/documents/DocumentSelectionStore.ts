@@ -44,33 +44,30 @@ interface DocumentSelectionState {
   reset: () => void
 }
 
-export const useDocumentSelectionStore = create<DocumentSelectionState>(
-  (set) => ({
-    selectedId: null,
-    isOpen: false,
-    select: (id) => {
-      set({ selectedId: id })
-    },
-    clear: () => {
-      set({ selectedId: null, isOpen: false })
-    },
-    openDetail: (id) => {
-      set({ selectedId: id, isOpen: true })
-    },
-    closeDetail: () => {
-      set({ selectedId: null, isOpen: false })
-    },
-    reset: () => {
-      set({ selectedId: null, isOpen: false })
-    },
-  }),
-)
+export const useDocumentSelectionStore = create<DocumentSelectionState>((set) => ({
+  selectedId: null,
+  isOpen: false,
+  select: (id) => {
+    set({ selectedId: id })
+  },
+  clear: () => {
+    set({ selectedId: null, isOpen: false })
+  },
+  openDetail: (id) => {
+    set({ selectedId: id, isOpen: true })
+  },
+  closeDetail: () => {
+    set({ selectedId: null, isOpen: false })
+  },
+  reset: () => {
+    set({ selectedId: null, isOpen: false })
+  },
+}))
 
 /** Imperative handle for cross-tree access
  *  (e.g. the chat citation panel). */
 export const documentSelectionStore = {
-  openDetail: (id: string) =>
-    useDocumentSelectionStore.getState().openDetail(id),
+  openDetail: (id: string) => useDocumentSelectionStore.getState().openDetail(id),
   closeDetail: () => useDocumentSelectionStore.getState().closeDetail(),
   clear: () => useDocumentSelectionStore.getState().clear(),
   select: (id: string) => useDocumentSelectionStore.getState().select(id),

@@ -39,9 +39,8 @@ export async function refresh(): Promise<RefreshResponse> {
     throw new Error("No refresh token available")
   }
   const client = getApiClient()
-  const data = await client.post<RefreshResponse>(
-    "/api/v1/auth/refresh",
-    { refresh_token: refreshToken },
-  )
+  const data = await client.post<RefreshResponse>("/api/v1/auth/refresh", {
+    refresh_token: refreshToken,
+  })
   return data
 }

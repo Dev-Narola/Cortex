@@ -62,10 +62,7 @@
 import { create } from "zustand"
 
 import type { WebSocketState } from "@/lib/websocket/client"
-import type {
-  ConversationCitation,
-  ConversationEvent,
-} from "@/types/websocket"
+import type { ConversationCitation, ConversationEvent } from "@/types/websocket"
 
 /**
  * Per-conversation turn state. We don't keep
@@ -171,146 +168,134 @@ interface ConversationStreamState {
   resetAll: () => void
 }
 
-export const useConversationStreamStore =
-  create<ConversationStreamState>((set) => ({
-    streams: new Map(),
-    connections: new Map(),
+export const useConversationStreamStore = create<ConversationStreamState>((set) => ({
+  streams: new Map(),
+  connections: new Map(),
 
-    beginTurn: ({ conversationId, userMessageId, content }) => {
-      set((s) => {
-        const current = s.streams.get(conversationId)
-        if (
-          current &&
-          (current.status === "sending" ||
-            current.status === "streaming")
-        ) {
-          // Duplication guard (Task 28). Drop
-          // the second submit on the floor.
-          return s
-        }
-        const nextStreams = new Map(s.streams)
-        nextStreams.set(conversationId, {
-          ...EMPTY_STREAM,
-          conversationId,
-          status: "sending",
-          optimisticUserMessageId: userMessageId,
-          pendingContent: content,
-        })
-        return { streams: nextStreams }
+  beginTurn: ({ conversationId, userMessageId, content }) => {
+    set((s) => {
+      const current = s.streams.get(conversationId)
+      if (current && (current.status === "sending" || current.status === "streaming")) {
+        // Duplication guard (Task 28). Drop
+        // the second submit on the floor.
+        return s
+      }
+      const nextStreams = new Map(s.streams)
+      nextStreams.set(conversationId, {
+        ...EMPTY_STREAM,
+        conversationId,
+        status: "sending",
+        optimisticUserMessageId: userMessageId,
+        pendingContent: content,
       })
-    },
+      return { streams: nextStreams }
+    })
+  },
 
-    resetTurn: (conversationId) => {
-      set((s) => {
-        const nextStreams = new Map(s.streams)
-        nextStreams.set(conversationId, { ...EMPTY_STREAM })
-        return { streams: nextStreams }
+  resetTurn: (conversationId) => {
+    set((s) => {
+      const nextStreams = new Map(s.streams)
+      nextStreams.set(conversationId, { ...EMPTY_STREAM })
+      return { streams: nextStreams }
+    })
+  },
+
+  applyEvent: (conversationId, event) => {
+    set((s) => {
+      const current = s.streams.get(conversationId) ?? { ...EMPTY_STREAM, conversationId }
+      let next: ActiveStream = current
+      switch (event.type) {
+        case "message_start":
+          next = {
+            ...current,
+            assistantMessageId: event.messageId,
+            status: "streaming",
+          }
+          break
+        case "token":
+          next = {
+            ...current,
+            content: current.content + event.content,
+          }
+          break
+        case "citation":
+          next = {
+            ...current,
+            citations: [...current.citations, event.citation],
+          }
+          break
+        case "message_complete":
+          next = {
+            ...current,
+            status: "completed",
+          }
+          break
+        case "error":
+          next = {
+            ...current,
+            status: "error",
+            error: {
+              code: event.code,
+              ...(event.message !== undefined ? { message: event.message } : {}),
+            },
+          }
+          break
+      }
+      const nextStreams = new Map(s.streams)
+      nextStreams.set(conversationId, next)
+      return { streams: nextStreams }
+    })
+  },
+
+  setConnectionState: (conversationId, state) => {
+    set((s) => {
+      const nextConnections = new Map(s.connections)
+      nextConnections.set(conversationId, state)
+      return { connections: nextConnections }
+    })
+  },
+
+  markInterrupted: (conversationId, reason) => {
+    set((s) => {
+      const current = s.streams.get(conversationId)
+      if (!current) return s
+      // Only meaningful if a turn is in
+      // flight. We don't downgrade a
+      // `completed` or `error` status.
+      if (current.status !== "sending" && current.status !== "streaming") {
+        return s
+      }
+      const nextStreams = new Map(s.streams)
+      nextStreams.set(conversationId, {
+        ...current,
+        status: "interrupted",
+        error: {
+          code: "INTERRUPTED",
+          ...(reason !== undefined ? { message: reason } : {}),
+        },
       })
-    },
+      return { streams: nextStreams }
+    })
+  },
 
-    applyEvent: (conversationId, event) => {
-      set((s) => {
-        const current =
-          s.streams.get(conversationId) ??
-          { ...EMPTY_STREAM, conversationId }
-        let next: ActiveStream = current
-        switch (event.type) {
-          case "message_start":
-            next = {
-              ...current,
-              assistantMessageId: event.messageId,
-              status: "streaming",
-            }
-            break
-          case "token":
-            next = {
-              ...current,
-              content: current.content + event.content,
-            }
-            break
-          case "citation":
-            next = {
-              ...current,
-              citations: [...current.citations, event.citation],
-            }
-            break
-          case "message_complete":
-            next = {
-              ...current,
-              status: "completed",
-            }
-            break
-          case "error":
-            next = {
-              ...current,
-              status: "error",
-              error: {
-                code: event.code,
-                ...(event.message !== undefined
-                  ? { message: event.message }
-                  : {}),
-              },
-            }
-            break
-        }
-        const nextStreams = new Map(s.streams)
-        nextStreams.set(conversationId, next)
-        return { streams: nextStreams }
-      })
-    },
+  clearPendingContent: (conversationId) => {
+    set((s) => {
+      const current = s.streams.get(conversationId)
+      if (!current) return s
+      if (current.pendingContent === null) return s
+      const nextStreams = new Map(s.streams)
+      nextStreams.set(conversationId, { ...current, pendingContent: null })
+      return { streams: nextStreams }
+    })
+  },
 
-    setConnectionState: (conversationId, state) => {
-      set((s) => {
-        const nextConnections = new Map(s.connections)
-        nextConnections.set(conversationId, state)
-        return { connections: nextConnections }
-      })
-    },
-
-    markInterrupted: (conversationId, reason) => {
-      set((s) => {
-        const current = s.streams.get(conversationId)
-        if (!current) return s
-        // Only meaningful if a turn is in
-        // flight. We don't downgrade a
-        // `completed` or `error` status.
-        if (
-          current.status !== "sending" &&
-          current.status !== "streaming"
-        ) {
-          return s
-        }
-        const nextStreams = new Map(s.streams)
-        nextStreams.set(conversationId, {
-          ...current,
-          status: "interrupted",
-          error: {
-            code: "INTERRUPTED",
-            ...(reason !== undefined ? { message: reason } : {}),
-          },
-        })
-        return { streams: nextStreams }
-      })
-    },
-
-    clearPendingContent: (conversationId) => {
-      set((s) => {
-        const current = s.streams.get(conversationId)
-        if (!current) return s
-        if (current.pendingContent === null) return s
-        const nextStreams = new Map(s.streams)
-        nextStreams.set(conversationId, { ...current, pendingContent: null })
-        return { streams: nextStreams }
-      })
-    },
-
-    resetAll: () => {
-      set(() => ({
-        streams: new Map(),
-        connections: new Map(),
-      }))
-    },
-  }))
+  resetAll: () => {
+    set(() => ({
+      streams: new Map(),
+      connections: new Map(),
+    }))
+  },
+}))
 
 /**
  * The store handle used by `sendMessage` to

@@ -143,15 +143,10 @@ export function KnowledgeGraphVisual() {
         viewBox="0 0 600 400"
         xmlns="http://www.w3.org/2000/svg"
         className="h-auto w-full"
+        aria-hidden="true"
       >
         <defs>
-          <linearGradient
-            id="kg-edge-highlight"
-            x1="0"
-            y1="0"
-            x2="1"
-            y2="0"
-          >
+          <linearGradient id="kg-edge-highlight" x1="0" y1="0" x2="1" y2="0">
             <stop offset="0%" stopColor="#FF6A3D" />
             <stop offset="100%" stopColor="#0BE3C4" />
           </linearGradient>
@@ -159,12 +154,7 @@ export function KnowledgeGraphVisual() {
 
         {/* Edges (drawn first so they sit
             behind the node circles). */}
-        <g
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          className="text-muted-foreground/40"
-        >
+        <g fill="none" stroke="currentColor" strokeWidth="1.5" className="text-muted-foreground/40">
           {EDGES.map((edge) => {
             const from = NODES.find((n) => n.id === edge.from)
             const to = NODES.find((n) => n.id === edge.to)

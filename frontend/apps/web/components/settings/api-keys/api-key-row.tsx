@@ -104,9 +104,9 @@ export function ApiKeyRow({
     <TableRow data-testid={`api-key-row-${apiKey.id}`} data-status={status}>
       <TableCell>
         <div className="flex flex-col">
-          <span className="text-sm font-medium text-paper-50">{apiKey.name}</span>
+          <span className="text-sm font-medium text-foreground">{apiKey.name}</span>
           {apiKey.scopes.length > 0 ? (
-            <span className="text-[10px] uppercase tracking-wider text-paper-200/50">
+            <span className="text-[10px] uppercase tracking-wider text-faint">
               {apiKey.scopes.join(" · ")}
             </span>
           ) : null}
@@ -116,14 +116,18 @@ export function ApiKeyRow({
         {/* JetBrains Mono per the UI spec — the
             key/token/code-like typography axis. */}
         <code
-          className="font-mono text-xs text-paper-200/70"
+          className="font-mono text-xs text-muted-foreground"
           data-testid={`api-key-masked-${apiKey.id}`}
         >
           {maskedKeyFor(apiKey.id)}
         </code>
       </TableCell>
-      <TableCell className="text-xs text-paper-200/70">{formatDate(apiKey.created_at)}</TableCell>
-      <TableCell className="text-xs text-paper-200/70">{formatDate(apiKey.last_used_at)}</TableCell>
+      <TableCell className="text-xs text-muted-foreground">
+        {formatDate(apiKey.created_at)}
+      </TableCell>
+      <TableCell className="text-xs text-muted-foreground">
+        {formatDate(apiKey.last_used_at)}
+      </TableCell>
       <TableCell>
         <Badge
           variant={isRevoked ? "secondary" : "success"}
@@ -142,13 +146,13 @@ export function ApiKeyRow({
             onClick={() => onRequestRevoke(apiKey)}
             disabled={confirmingRevoke}
             data-testid={`api-key-revoke-${apiKey.id}`}
-            className="text-paper-200 hover:bg-destructive/10 hover:text-destructive"
+            className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
           >
             <Icon name="X" className="h-3.5 w-3.5" />
             <span>Revoke</span>
           </Button>
         ) : (
-          <span className="text-xs text-paper-200/40">—</span>
+          <span className="text-xs text-faint">—</span>
         )}
       </TableCell>
     </TableRow>

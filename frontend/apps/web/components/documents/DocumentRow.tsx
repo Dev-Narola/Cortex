@@ -32,15 +32,9 @@
 
 import type { ReactNode } from "react"
 
-import {
-  cn,
-  Icon,
-  TableCell,
-  TableRow,
-  TooltipRoot,
-} from "@cortex/ui"
+import { Icon, TableCell, TableRow, TooltipRoot, cn } from "@cortex/ui"
 
-import { type Document } from "@/services/documents"
+import type { Document } from "@/services/documents"
 
 import { DocumentIngestionProgress } from "./DocumentIngestionProgress"
 import { DocumentStatusBadge } from "./DocumentStatusBadge"
@@ -95,10 +89,7 @@ export function DocumentRow({
         }
       }}
       tabIndex={0}
-      className={cn(
-        "cursor-pointer transition-colors",
-        isSelected && "bg-ember-500/10",
-      )}
+      className={cn("cursor-pointer transition-colors", isSelected && "bg-ember-500/10")}
     >
       <TableCell>
         <div className="flex items-center gap-3">
@@ -117,18 +108,12 @@ export function DocumentRow({
       <TableCell>
         <div className="flex flex-col gap-1.5">
           <DocumentStatusBadge status={document.status} />
-          <DocumentIngestionProgress
-            status={document.status}
-            className="w-32"
-          />
+          <DocumentIngestionProgress status={document.status} className="w-32" />
         </div>
       </TableCell>
 
       <TableCell>
-        <span
-          className="font-mono text-xs text-muted-foreground"
-          title={document.mime_type}
-        >
+        <span className="font-mono text-xs text-muted-foreground" title={document.mime_type}>
           {document.mime_type}
         </span>
       </TableCell>
@@ -138,10 +123,7 @@ export function DocumentRow({
       </TableCell>
 
       <TableCell>
-        <time
-          dateTime={document.created_at}
-          className="text-sm text-muted-foreground"
-        >
+        <time dateTime={document.created_at} className="text-sm text-muted-foreground">
           {formatDate(document.created_at)}
         </time>
       </TableCell>

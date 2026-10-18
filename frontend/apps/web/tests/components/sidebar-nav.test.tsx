@@ -1,8 +1,8 @@
 /**
  * SidebarNav — F3 Part 1 (Task 2).
  *
- * Verifies the per-route list + active state + "Coming Soon"
- * disabled rendering.
+ * Verifies the grouped nav, role gating of admin-only items, and the
+ * active state.
  */
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
@@ -13,7 +13,7 @@ const pushMock = vi.fn()
 const replaceMock = vi.fn()
 
 vi.mock("next/navigation", () => ({
-  usePathname: vi.fn().mockReturnValue("/app/dashboard"),
+  usePathname: () => "/app/dashboard",
   useRouter: () => ({ replace: replaceMock, push: pushMock }),
   useSearchParams: () => new URLSearchParams(),
 }))
@@ -38,39 +38,52 @@ describe("SidebarNav", () => {
     useAuthStore.getState().clear()
   })
 
-  it("renders all 8 nav items", () => {
+  function setRole(role: "owner" | "admin" | "member" | "viewer") {
+    useAuthStore.setState({ user: { id: "u1", email: "a@b.co", role, tenantId: "t1" } })
+  }
+
+  it("renders the three groups with every live route for admins", () => {
+    setRole("admin")
     render(<SidebarNav />, { wrapper: makeWrapper() })
-    expect(screen.getByText("Dashboard")).toBeInTheDocument()
-    // F4 Part 1: "Chat" replaces the old
-    // "Conversations" placeholder (now a real route).
-    expect(screen.getByText("Chat")).toBeInTheDocument()
-    expect(screen.getByText("Documents")).toBeInTheDocument()
-    expect(screen.getByText("Search")).toBeInTheDocument()
-    expect(screen.getByText("Knowledge Graph")).toBeInTheDocument()
-    expect(screen.getByText("Agents")).toBeInTheDocument()
-    expect(screen.getByText("MCP")).toBeInTheDocument()
-    expect(screen.getByText("Settings")).toBeInTheDocument()
+    for (const g of ["Workspace", "Management", "System"]) {
+      expect(screen.getByText(g)).toBeInTheDocument()
+    }
+    for (const name of [
+      "Dashboard",
+      "Chat",
+      "Documents",
+      "Search",
+      "Knowledge Graph",
+      "Agents",
+      "Team",
+      "API keys",
+      "MCP",
+      "Usage",
+      "Audit log",
+    ]) {
+      expect(screen.getByRole("link", { name: new RegExp(`^${name}$`) })).toBeInTheDocument()
+    }
+    expect(screen.queryByText(/^soon$/i)).not.toBeInTheDocument()
   })
 
-  it("marks the 'Coming Soon' items as disabled + visible badge", () => {
+  it("hides owner/admin-only items from members", () => {
+    setRole("member")
     render(<SidebarNav />, { wrapper: makeWrapper() })
-    const soonBadges = screen.getAllByText(/^soon$/i)
-    // F4 Part 1: 3 items are "coming soon"
-    // (Search, Agents, MCP). Chat + Knowledge
-    // Graph are now live routes (the graph
-    // shipped in F6 Part 1).
-    expect(soonBadges.length).toBe(3)
+    expect(screen.queryByRole("link", { name: /^Team$/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole("link", { name: /^Audit log$/ })).not.toBeInTheDocument()
+    expect(screen.getByRole("link", { name: /^Usage$/ })).toBeInTheDocument()
   })
 
-  it("marks the live items as links (active state wiring is exercised by `pathname === href`)", () => {
+  it("marks only the current route as the active page", () => {
+    setRole("member")
     render(<SidebarNav />, { wrapper: makeWrapper() })
-    // The three live items render as `<a>` (links).
-    // Documents + Settings are non-active on the
-    // dashboard route — assert they have no
-    // `aria-current="page"` (the active link is).
-    const documentsLink = screen.getByRole("link", { name: /^Documents$/i })
-    expect(documentsLink).not.toHaveAttribute("aria-current", "page")
-    const settingsLink = screen.getByRole("link", { name: /^Settings$/i })
-    expect(settingsLink).not.toHaveAttribute("aria-current", "page")
+    expect(screen.getByRole("link", { name: /^Dashboard$/ })).toHaveAttribute(
+      "aria-current",
+      "page",
+    )
+    expect(screen.getByRole("link", { name: /^Documents$/ })).not.toHaveAttribute(
+      "aria-current",
+      "page",
+    )
   })
 })

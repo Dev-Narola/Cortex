@@ -77,7 +77,7 @@
 
 "use client"
 
-import { type ReactNode } from "react"
+import type { ReactNode } from "react"
 
 import { CopyMessageButton } from "./CopyMessageButton"
 import { FeedbackButtons } from "./FeedbackButtons"
@@ -126,10 +126,7 @@ export function MessageActions({
     <div
       data-message-actions
       data-message-id={messageId}
-      className={
-        "mt-2 flex items-center gap-1 text-muted-foreground " +
-        (className ?? "")
-      }
+      className={`mt-2 flex items-center gap-1 text-muted-foreground ${className ?? ""}`}
     >
       <CopyMessageButton content={content} disabled={isBusy} />
       {regenerateFor ? (
@@ -140,11 +137,7 @@ export function MessageActions({
         />
       ) : null}
       <div className="ml-auto">
-        <FeedbackButtons
-          conversationId={conversationId}
-          messageId={messageId}
-          disabled={isBusy}
-        />
+        <FeedbackButtons conversationId={conversationId} messageId={messageId} disabled={isBusy} />
       </div>
     </div>
   )

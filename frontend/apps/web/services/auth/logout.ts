@@ -1,31 +1,29 @@
 /**
  * Auth service — logout.
  *
- * **F2 Part 1 (Task 5).** Best-effort call to
- * `POST /auth/logout`. The auth store's `logout()`
- * action calls this; failures are silently swallowed
- * so the user is always logged out locally even when
- * the backend is unreachable.
- *
- * **No throw.** Every consumer calls this from a
- * `try/finally`-like context where a thrown error
- * would block the local clear. The auth store is the
- * source of truth for "is the user logged out", not
- * the backend.
+ * `revokeRefreshToken` tells the server (`POST /api/v1/auth/logout`) that the
+ * refresh token may no longer mint sessions. The store's `logout()` clears the
+ * UI first, then calls it in the background; access tokens are short-lived and
+ * simply expire. Neither function throws.
  */
 
 import { getApiClient, resetApiClient } from "@/lib/auth/api-client"
 import { useAuthStore } from "@/lib/auth/store"
 
-export async function logout(): Promise<void> {
+export async function revokeRefreshToken(refreshToken: string): Promise<void> {
   try {
-    const client = getApiClient()
-    await client.post("/api/v1/auth/logout")
+    await getApiClient().post("/api/v1/auth/logout", { refresh_token: refreshToken })
   } catch {
-    // No-op: local logout still proceeds even if the
-    // backend is down or the cookie has already expired.
+    // Best effort: the user is already signed out locally.
   } finally {
-    useAuthStore.getState().clear()
     resetApiClient()
   }
+}
+
+/** Clear the local session and revoke its refresh token. */
+export async function logout(): Promise<void> {
+  const refreshToken = useAuthStore.getState().refreshToken
+  useAuthStore.getState().clear()
+  if (refreshToken) await revokeRefreshToken(refreshToken)
+  else resetApiClient()
 }

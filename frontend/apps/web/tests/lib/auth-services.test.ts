@@ -198,10 +198,7 @@ describe("auth services", () => {
       // empty body with 422 and the
       // ``useSessionRestore`` flow bounces the
       // user to /login on every hard refresh.
-      expect(postMock).toHaveBeenCalledWith(
-        "/api/v1/auth/refresh",
-        { refresh_token: "rt-seed-1" },
-      )
+      expect(postMock).toHaveBeenCalledWith("/api/v1/auth/refresh", { refresh_token: "rt-seed-1" })
     })
 
     it("throws when no refresh token is in the store", async () => {
@@ -215,16 +212,19 @@ describe("auth services", () => {
   })
 
   describe("logout", () => {
-    it("swallows network errors (best-effort logout)", async () => {
-      postMock.mockRejectedValueOnce(new Error("network down"))
-      // Should NOT throw — the local logout must still proceed
-      // even if the backend call fails.
+    it("revokes the refresh token server-side, then clears the session", async () => {
+      postMock.mockResolvedValueOnce(undefined)
+      useAuthStore.setState({ refreshToken: "rt-123", accessToken: "at" })
       await expect(logout()).resolves.toBeUndefined()
+      expect(postMock).toHaveBeenCalledWith("/api/v1/auth/logout", { refresh_token: "rt-123" })
+      expect(useAuthStore.getState().accessToken).toBeNull()
     })
 
-    it("resolves cleanly on success", async () => {
-      postMock.mockResolvedValueOnce({})
+    it("still clears the session when the server is unreachable", async () => {
+      postMock.mockRejectedValueOnce(new Error("network down"))
+      useAuthStore.setState({ refreshToken: "rt-123", accessToken: "at" })
       await expect(logout()).resolves.toBeUndefined()
+      expect(useAuthStore.getState().accessToken).toBeNull()
     })
   })
 })

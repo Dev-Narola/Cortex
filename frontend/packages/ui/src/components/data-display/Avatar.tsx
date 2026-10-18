@@ -38,7 +38,7 @@ const TONES = {
   default: "bg-muted text-muted-foreground",
   primary: "bg-ember-100 text-ember-700",
   accent: "bg-volt-100 text-volt-800",
-  inverse: "bg-ink-900 text-paper-50",
+  inverse: "bg-gray-900 text-gray-50",
 } as const
 
 export type AvatarSize = keyof typeof SIZES

@@ -10,7 +10,7 @@
  * `delayDuration={0}` for a hint that should appear
  * immediately.
  *
- * **Theme integration.** Surface uses `bg-ink-900 text-paper-50`
+ * **Theme integration.** Surface uses `bg-popover text-popover-foreground`
  * — both tokens, both flip on the dark-theme selector.
  *
  * **Usage.**
@@ -39,7 +39,7 @@ const TooltipContent = forwardRef<
       ref={ref}
       sideOffset={sideOffset}
       className={cn(
-        "z-50 overflow-hidden rounded-md border border-border bg-ink-900 px-3 py-1.5 text-xs text-paper-50 shadow-md",
+        "z-50 overflow-hidden rounded-md border border-border bg-popover px-3 py-1.5 text-xs text-popover-foreground shadow-md",
         "data-[state=delayed-open]:animate-in data-[state=closed]:animate-out",
         "data-[state=closed]:fade-out-0 data-[state=delayed-open]:fade-in-0",
         "data-[state=closed]:zoom-out-95 data-[state=delayed-open]:zoom-in-95",

@@ -5,7 +5,6 @@ import { Button, Card, CardContent } from "@cortex/ui"
  * Global error boundary — every route group inherits this.
  * Logs the error to the console and shows a recovery link.
  */
-import { useEffect } from "react"
 
 export default function GlobalError({
   error,
@@ -14,9 +13,9 @@ export default function GlobalError({
   error: Error & { digest?: string }
   reset: () => void
 }) {
-  useEffect(() => {
-    console.error("[cortex] route error:", error)
-  }, [error])
+  if (error.digest?.startsWith("NEXT_REDIRECT")) {
+    throw error
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center p-6">

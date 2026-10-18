@@ -23,11 +23,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { act, renderHook } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
-import { useSendMessage } from "@/hooks/chat/useSendMessage"
 import {
   conversationStreamStore,
   useConversationStreamStore,
 } from "@/hooks/chat/conversationStreamStore"
+import { useSendMessage } from "@/hooks/chat/useSendMessage"
 import { useAuthStore } from "@/lib/auth/store"
 import type { Conversation } from "@/types/conversation"
 
@@ -71,17 +71,13 @@ describe("useSendMessage", () => {
   it("patches the user message into the conversation cache (Task 14)", async () => {
     const qc = new QueryClient()
     qc.setQueryData<Conversation>(["conversations", "c-1"], makeConversation())
-    const { result } = renderHook(
-      () => useSendMessage({ conversationId: "c-1" }),
-      { wrapper: makeWrapper(qc) },
-    )
+    const { result } = renderHook(() => useSendMessage({ conversationId: "c-1" }), {
+      wrapper: makeWrapper(qc),
+    })
     await act(async () => {
       await result.current.mutateAsync({ content: "What is Cortex?" })
     })
-    const cacheData = qc.getQueryData<Conversation>([
-      "conversations",
-      "c-1",
-    ])
+    const cacheData = qc.getQueryData<Conversation>(["conversations", "c-1"])
     expect(cacheData?.messages).toHaveLength(1)
     expect(cacheData?.messages?.[0]?.role).toBe("user")
     expect(cacheData?.messages?.[0]?.content).toBe("What is Cortex?")
@@ -90,16 +86,13 @@ describe("useSendMessage", () => {
   it("flips the stream store to `sending`", async () => {
     const qc = new QueryClient()
     qc.setQueryData<Conversation>(["conversations", "c-1"], makeConversation())
-    const { result } = renderHook(
-      () => useSendMessage({ conversationId: "c-1" }),
-      { wrapper: makeWrapper(qc) },
-    )
+    const { result } = renderHook(() => useSendMessage({ conversationId: "c-1" }), {
+      wrapper: makeWrapper(qc),
+    })
     await act(async () => {
       await result.current.mutateAsync({ content: "hi" })
     })
-    const stream = useConversationStreamStore
-      .getState()
-      .streams.get("c-1")
+    const stream = useConversationStreamStore.getState().streams.get("c-1")
     expect(stream?.status).toBe("sending")
     expect(stream?.pendingContent).toBe("hi")
   })
@@ -122,10 +115,9 @@ describe("useSendMessage", () => {
       ],
     })
     qc.setQueryData<Conversation>(["conversations", "c-1"], original)
-    const { result } = renderHook(
-      () => useSendMessage({ conversationId: "c-1" }),
-      { wrapper: makeWrapper(qc) },
-    )
+    const { result } = renderHook(() => useSendMessage({ conversationId: "c-1" }), {
+      wrapper: makeWrapper(qc),
+    })
     // Force the mutation to throw by
     // pre-setting an auth-lacking state
     // (the service throws on missing
@@ -135,14 +127,9 @@ describe("useSendMessage", () => {
     useAuthStore.setState({ accessToken: null })
     try {
       await act(async () => {
-        await result.current
-          .mutateAsync({ content: "new message" })
-          .catch(() => {})
+        await result.current.mutateAsync({ content: "new message" }).catch(() => {})
       })
-      const after = qc.getQueryData<Conversation>([
-        "conversations",
-        "c-1",
-      ])
+      const after = qc.getQueryData<Conversation>(["conversations", "c-1"])
       // The optimistic patch was rolled
       // back, so the messages list is back
       // to the prior state.
@@ -157,10 +144,9 @@ describe("useSendMessage", () => {
       defaultOptions: { mutations: { retry: false }, queries: { retry: false } },
     })
     qc.setQueryData<Conversation>(["conversations", "c-1"], makeConversation())
-    const { result } = renderHook(
-      () => useSendMessage({ conversationId: "c-1" }),
-      { wrapper: makeWrapper(qc) },
-    )
+    const { result } = renderHook(() => useSendMessage({ conversationId: "c-1" }), {
+      wrapper: makeWrapper(qc),
+    })
     await act(async () => {
       await result.current.mutateAsync({ content: "first" })
     })
@@ -175,10 +161,7 @@ describe("useSendMessage", () => {
         // expected: the guard throws
       }
     })
-    const cacheData = qc.getQueryData<Conversation>([
-      "conversations",
-      "c-1",
-    ])
+    const cacheData = qc.getQueryData<Conversation>(["conversations", "c-1"])
     expect(cacheData?.messages).toHaveLength(1)
     expect(cacheData?.messages?.[0]?.content).toBe("first")
   })
@@ -186,12 +169,10 @@ describe("useSendMessage", () => {
   it("emits a mutation result with the user message id", async () => {
     const qc = new QueryClient()
     qc.setQueryData<Conversation>(["conversations", "c-1"], makeConversation())
-    const { result } = renderHook(
-      () => useSendMessage({ conversationId: "c-1" }),
-      { wrapper: makeWrapper(qc) },
-    )
-    let mutationResult: { userMessageId: string; conversationId: string } | null =
-      null
+    const { result } = renderHook(() => useSendMessage({ conversationId: "c-1" }), {
+      wrapper: makeWrapper(qc),
+    })
+    let mutationResult: { userMessageId: string; conversationId: string } | null = null
     await act(async () => {
       mutationResult = await result.current.mutateAsync({
         content: "hi",

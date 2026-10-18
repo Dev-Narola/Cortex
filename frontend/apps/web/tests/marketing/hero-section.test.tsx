@@ -65,16 +65,12 @@ describe("HeroSection", () => {
 
   it("renders the supporting copy", () => {
     render(<HeroSection />)
-    expect(
-      screen.getByText(/hybrid search, a live knowledge graph/i),
-    ).toBeInTheDocument()
+    expect(screen.getByText(/hybrid search, a live knowledge graph/i)).toBeInTheDocument()
   })
 
   it("renders the primary CTA pointing to /register", () => {
     render(<HeroSection />)
-    expect(
-      screen.getByRole("link", { name: /start free/i }),
-    ).toHaveAttribute("href", "/register")
+    expect(screen.getByRole("link", { name: /start free/i })).toHaveAttribute("href", "/register")
   })
 
   it("renders the 'See it work' secondary CTA targeting the demo section", () => {
@@ -95,9 +91,7 @@ describe("HeroSection", () => {
     // hero used to ship its own "Sign in"
     // CTA (F8 P1); F8 P5 removed it.
     render(<HeroSection />)
-    expect(
-      screen.queryByRole("link", { name: /^sign in$/i }),
-    ).not.toBeInTheDocument()
+    expect(screen.queryByRole("link", { name: /^sign in$/i })).not.toBeInTheDocument()
   })
 
   it("renders the hero visual and marks it decorative", () => {

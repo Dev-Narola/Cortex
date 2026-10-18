@@ -49,6 +49,7 @@ function asOptional(doc: Document): {
 }
 
 function clearStartViewTransition(): void {
+  // biome-ignore lint/performance/noDelete: support detection uses `in`, so the key itself must go
   delete (
     document as unknown as {
       startViewTransition?: unknown

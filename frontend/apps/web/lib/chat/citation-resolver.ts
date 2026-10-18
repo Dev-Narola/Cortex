@@ -52,12 +52,9 @@
  * with the same data.
  */
 
-import type { Message } from "@/types/conversation"
 import type { Citation } from "@/types/citation"
-import {
-  makeCitationFromStream,
-  makeCitationId,
-} from "@/types/citation"
+import { makeCitationFromStream, makeCitationId } from "@/types/citation"
+import type { Message } from "@/types/conversation"
 
 export interface ResolveCitationsInput {
   message: Pick<Message, "id" | "retrievedChunkIds">
@@ -87,9 +84,7 @@ export interface ResolveCitationsInput {
  * answer (e.g. a simple greeting, or the
  * knowledge base was empty for this query).
  */
-export function resolveCitations(
-  input: ResolveCitationsInput,
-): Citation[] {
+export function resolveCitations(input: ResolveCitationsInput): Citation[] {
   const { message, streamed } = input
 
   // No chunks recorded on the message → no

@@ -5,15 +5,8 @@
  * **F3 Part 3 (Task 22).** Captures a URL + validates
  * it via `lib/documents/upload.schema`.
  *
- * **Backend status.** The current `/api/v1/documents`
- * endpoint only accepts multipart file uploads. The
- * URL tab is the F3 Part 3 spec's surface for a future
- * URL-ingestion endpoint (Cortex will likely add
- * `POST /api/v1/documents/url` in a later phase). For
- * Part 3 the tab collects + validates the URL; the
- * submit handler shows a "Coming soon" toast. The form
- * is wired so when the endpoint lands, swapping the
- * handler is the only change.
+ * **Backend.** Submitted to `POST /api/v1/documents/url`
+ * by the modal; the server fetches and queues the page.
  *
  * **Validation.** Zod runs on change + on submit;
  * errors render below the input in the F1
@@ -22,7 +15,7 @@
 
 "use client"
 
-import { useId, type ReactNode } from "react"
+import { type ReactNode, useId } from "react"
 
 import { Icon, Input, Label, Text } from "@cortex/ui"
 
@@ -33,12 +26,7 @@ export interface UrlUploadTabProps {
   disabled?: boolean
 }
 
-export function UrlUploadTab({
-  value,
-  onChange,
-  error,
-  disabled,
-}: UrlUploadTabProps): ReactNode {
+export function UrlUploadTab({ value, onChange, error, disabled }: UrlUploadTabProps): ReactNode {
   const id = useId()
   return (
     <div className="space-y-2">

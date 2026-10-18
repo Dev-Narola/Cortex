@@ -19,19 +19,17 @@
 
 "use client"
 
-import { useQuery, type UseQueryResult } from "@tanstack/react-query"
+import { type UseQueryResult, useQuery } from "@tanstack/react-query"
 
 import {
-  getDocuments,
   type GetDocumentsParams,
   type PaginatedDocuments,
+  getDocuments,
 } from "@/services/documents"
 
 export type UseDocumentsResult = UseQueryResult<PaginatedDocuments, Error>
 
-export function useDocuments(
-  params: GetDocumentsParams = {},
-): UseDocumentsResult {
+export function useDocuments(params: GetDocumentsParams = {}): UseDocumentsResult {
   return useQuery<PaginatedDocuments, Error>({
     queryKey: ["documents", params],
     queryFn: () => getDocuments(params),

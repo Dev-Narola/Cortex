@@ -46,26 +46,23 @@
 "use client"
 
 import {
+  type UseMutationResult,
+  type UseQueryResult,
   useMutation,
   useQuery,
   useQueryClient,
-  type UseMutationResult,
-  type UseQueryResult,
 } from "@tanstack/react-query"
 
 import { ApiError } from "@cortex/api-client"
 
 import {
+  type DeleteConversationParams,
+  type RenameConversationParams,
   deleteConversation,
   listConversations,
   renameConversation,
-  type DeleteConversationParams,
-  type RenameConversationParams,
 } from "@/services/conversations"
-import type {
-  Conversation,
-  ConversationListResponse,
-} from "@/types/conversation"
+import type { Conversation, ConversationListResponse } from "@/types/conversation"
 
 import { conversationsKeys } from "./conversationKeys"
 
@@ -83,14 +80,9 @@ export interface UseConversationsParams {
   enabled?: boolean
 }
 
-export type UseConversationsResult = UseQueryResult<
-  ConversationListResponse,
-  Error
->
+export type UseConversationsResult = UseQueryResult<ConversationListResponse, Error>
 
-export function useConversations(
-  params: UseConversationsParams = {},
-): UseConversationsResult {
+export function useConversations(params: UseConversationsParams = {}): UseConversationsResult {
   const { limit, offset, enabled = true } = params
   return useQuery<ConversationListResponse, Error>({
     queryKey: conversationsKeys.list({ limit, offset }),
@@ -174,9 +166,7 @@ export function useRenameConversation(): UseRenameConversationResult {
           if (!prev) return prev
           return {
             ...prev,
-            items: prev.items.map((c) =>
-              c.id === id ? { ...c, title } : c,
-            ),
+            items: prev.items.map((c) => (c.id === id ? { ...c, title } : c)),
           }
         },
       )
@@ -204,15 +194,12 @@ export function useRenameConversation(): UseRenameConversationResult {
           if (!prev) return prev
           return {
             ...prev,
-            items: prev.items.map((c) =>
-              c.id === updated.id ? updated : c,
-            ),
+            items: prev.items.map((c) => (c.id === updated.id ? updated : c)),
           }
         },
       )
-      qc.setQueryData<Conversation>(
-        conversationsKeys.detail(updated.id),
-        (prev) => (prev ? { ...prev, ...updated } : prev),
+      qc.setQueryData<Conversation>(conversationsKeys.detail(updated.id), (prev) =>
+        prev ? { ...prev, ...updated } : prev,
       )
     },
   })
@@ -268,9 +255,7 @@ export function useDeleteConversation(): UseDeleteConversationResult {
       const previousLists = qc.getQueriesData<ConversationListResponse>({
         queryKey: conversationsKeys.lists(),
       })
-      const previousDetail = qc.getQueryData<Conversation>(
-        conversationsKeys.detail(id),
-      )
+      const previousDetail = qc.getQueryData<Conversation>(conversationsKeys.detail(id))
       qc.setQueriesData<ConversationListResponse>(
         { queryKey: conversationsKeys.lists() },
         (prev) => {

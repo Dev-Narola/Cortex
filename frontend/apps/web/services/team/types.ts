@@ -82,12 +82,8 @@ export interface TeamMember {
  * need pagination, but modelling it now keeps the
  * service call forward-compatible.
  */
-export interface TeamListResponse {
-  items: TeamMember[]
-  total: number
-  limit: number
-  offset: number
-}
+/** `GET /api/v1/users` returns a bare array (owner/admin only). */
+export type TeamListResponse = TeamMember[]
 
 /**
  * Body for the invite mutation.
@@ -110,15 +106,19 @@ export interface InviteMemberRequest {
  * member resource. We model the minimum the UI needs
  * to refresh the list and to surface a success toast.
  */
+/**
+ * `POST /api/v1/users/invite`. The backend sends no email: the inviter
+ * shares `/accept-invite?token=<invite_token>`, valid for `expires_in` seconds.
+ */
 export interface InviteMemberResponse {
-  /** The newly created / invited member. */
-  member: TeamMember
-  /**
-   * Optional: an invitation token the platform
-   * emails to the invitee. Most teams won't see
-   * this — it's an implementation detail of the
-   * backend's invitation flow. The UI never
-   * displays it.
-   */
-  invitation_token?: string
+  email: string
+  role: TeamMemberRole
+  invite_token: string
+  expires_in: number
+}
+
+/** `PATCH /api/v1/users/{id}` — change role and/or activation. */
+export interface UpdateMemberRequest {
+  role?: TeamMemberRole
+  is_active?: boolean
 }

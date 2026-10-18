@@ -45,7 +45,7 @@ export default function PricingPage() {
             <p className="mt-4 text-sm text-muted-foreground">{tier.blurb}</p>
             <a
               href="/register"
-              className="mt-6 inline-flex h-10 items-center justify-center rounded-md bg-ink-900 px-4 text-sm font-medium text-paper-50 hover:bg-ink-800"
+              className="mt-6 inline-flex h-10 items-center justify-center rounded-md bg-ink-900 px-4 text-sm font-medium text-foreground hover:bg-ink-800"
             >
               {tier.cta}
             </a>

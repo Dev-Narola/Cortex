@@ -81,7 +81,7 @@ export function GraphSearch({
       data-testid="graph-search"
       className="pointer-events-auto w-full max-w-sm"
     >
-      <div className="flex h-9 w-full items-center gap-2 rounded-md border border-slate-600 bg-slate-700/80 px-3 text-sm text-paper-50 shadow-sm backdrop-blur-sm focus-within:ring-2 focus-within:ring-volt-500/50">
+      <div className="flex h-9 w-full items-center gap-2 rounded-md border border-border bg-muted px-3 text-sm text-foreground shadow-sm backdrop-blur-sm focus-within:ring-2 focus-within:ring-volt-500/50">
         <Icon name="Search" size="sm" tone="muted" aria-hidden />
         <input
           type="search"
@@ -91,14 +91,14 @@ export function GraphSearch({
           value={value}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
-          className="h-full w-full min-w-0 flex-1 border-0 bg-transparent p-0 text-sm text-paper-50 placeholder:text-paper-200/40 outline-none focus:outline-none focus:ring-0"
+          className="h-full w-full min-w-0 flex-1 border-0 bg-transparent p-0 text-sm text-foreground placeholder:text-faint outline-none focus:outline-none focus:ring-0"
         />
         {value ? (
           <button
             type="button"
             onClick={handleClear}
             aria-label="Clear search"
-            className="inline-flex shrink-0 items-center justify-center rounded-sm p-0.5 text-paper-200/60 transition-colors hover:bg-slate-600/50 hover:text-paper-50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-volt-500"
+            className="inline-flex shrink-0 items-center justify-center rounded-sm p-0.5 text-faint transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-volt-500"
           >
             <Icon name="X" size="xs" />
           </button>

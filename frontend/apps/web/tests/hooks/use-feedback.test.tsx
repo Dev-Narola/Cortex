@@ -24,24 +24,18 @@ afterEach(() => {
 
 describe("useFeedback", () => {
   it("starts with feedback = null", () => {
-    const { result } = renderHook(() =>
-      useFeedback({ conversationId: "c-1", messageId: "m-1" }),
-    )
+    const { result } = renderHook(() => useFeedback({ conversationId: "c-1", messageId: "m-1" }))
     expect(result.current.feedback).toBeNull()
   })
 
   it("apply('up') sets feedback to 'up'", () => {
-    const { result } = renderHook(() =>
-      useFeedback({ conversationId: "c-1", messageId: "m-1" }),
-    )
+    const { result } = renderHook(() => useFeedback({ conversationId: "c-1", messageId: "m-1" }))
     act(() => result.current.setFeedback("up"))
     expect(result.current.feedback).toBe("up")
   })
 
   it("switches to the new value (mutual exclusion)", () => {
-    const { result } = renderHook(() =>
-      useFeedback({ conversationId: "c-1", messageId: "m-1" }),
-    )
+    const { result } = renderHook(() => useFeedback({ conversationId: "c-1", messageId: "m-1" }))
     act(() => result.current.setFeedback("up"))
     act(() => result.current.setFeedback("down"))
     expect(result.current.feedback).toBe("down")
@@ -50,30 +44,22 @@ describe("useFeedback", () => {
   })
 
   it("applying null clears the value (the component owns the toggle)", () => {
-    const { result } = renderHook(() =>
-      useFeedback({ conversationId: "c-1", messageId: "m-1" }),
-    )
+    const { result } = renderHook(() => useFeedback({ conversationId: "c-1", messageId: "m-1" }))
     act(() => result.current.setFeedback("down"))
     act(() => result.current.setFeedback(null))
     expect(result.current.feedback).toBeNull()
   })
 
   it("different (conversation, message) pairs don't leak", () => {
-    const a = renderHook(() =>
-      useFeedback({ conversationId: "c-1", messageId: "m-1" }),
-    )
-    const b = renderHook(() =>
-      useFeedback({ conversationId: "c-1", messageId: "m-2" }),
-    )
+    const a = renderHook(() => useFeedback({ conversationId: "c-1", messageId: "m-1" }))
+    const b = renderHook(() => useFeedback({ conversationId: "c-1", messageId: "m-2" }))
     act(() => a.result.current.setFeedback("up"))
     expect(a.result.current.feedback).toBe("up")
     expect(b.result.current.feedback).toBeNull()
   })
 
   it("reset() drops every entry", () => {
-    const a = renderHook(() =>
-      useFeedback({ conversationId: "c-1", messageId: "m-1" }),
-    )
+    const a = renderHook(() => useFeedback({ conversationId: "c-1", messageId: "m-1" }))
     act(() => a.result.current.setFeedback("up"))
     act(() => feedbackStore.reset())
     expect(a.result.current.feedback).toBeNull()

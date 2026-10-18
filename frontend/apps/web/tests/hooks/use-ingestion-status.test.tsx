@@ -23,8 +23,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { act, renderHook, waitFor } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
-import { useAuthStore } from "@/lib/auth/store"
 import { useIngestionStatus } from "@/hooks/documents/useIngestionStatus"
+import { useAuthStore } from "@/lib/auth/store"
 import type { Document } from "@/services/documents"
 
 class FakeSocket {
@@ -131,9 +131,7 @@ describe("useIngestionStatus (Task 49)", () => {
     const { unmount } = renderHook(() => useIngestionStatus(), {
       wrapper: makeWrapper(qc),
     })
-    await waitFor(() =>
-      expect(FakeSocket.instances).toHaveLength(1),
-    )
+    await waitFor(() => expect(FakeSocket.instances).toHaveLength(1))
     act(() => {
       FakeSocket.instances[0]!.dispatch("open", {})
     })
@@ -160,9 +158,7 @@ describe("useIngestionStatus (Task 49)", () => {
     const { unmount } = renderHook(() => useIngestionStatus(), {
       wrapper: makeWrapper(qc),
     })
-    await waitFor(() =>
-      expect(FakeSocket.instances).toHaveLength(1),
-    )
+    await waitFor(() => expect(FakeSocket.instances).toHaveLength(1))
     act(() => {
       FakeSocket.instances[0]!.dispatch("open", {})
     })
@@ -187,9 +183,7 @@ describe("useIngestionStatus (Task 49)", () => {
     const { unmount } = renderHook(() => useIngestionStatus(), {
       wrapper: makeWrapper(qc),
     })
-    await waitFor(() =>
-      expect(FakeSocket.instances).toHaveLength(1),
-    )
+    await waitFor(() => expect(FakeSocket.instances).toHaveLength(1))
     act(() => {
       FakeSocket.instances[0]!.dispatch("open", {})
     })
@@ -216,9 +210,7 @@ describe("useIngestionStatus (Task 49)", () => {
     const { unmount } = renderHook(() => useIngestionStatus(), {
       wrapper: makeWrapper(qc),
     })
-    await waitFor(() =>
-      expect(FakeSocket.instances).toHaveLength(1),
-    )
+    await waitFor(() => expect(FakeSocket.instances).toHaveLength(1))
     act(() => {
       FakeSocket.instances[0]!.dispatch("open", {})
     })
@@ -261,9 +253,7 @@ describe("useIngestionStatus (Task 49)", () => {
     const { unmount } = renderHook(() => useIngestionStatus(), {
       wrapper: makeWrapper(qc),
     })
-    await waitFor(() =>
-      expect(FakeSocket.instances).toHaveLength(1),
-    )
+    await waitFor(() => expect(FakeSocket.instances).toHaveLength(1))
     act(() => {
       FakeSocket.instances[0]!.dispatch("open", {})
     })
@@ -303,9 +293,7 @@ describe("useIngestionStatus (Task 49)", () => {
     const { unmount } = renderHook(() => useIngestionStatus(), {
       wrapper: makeWrapper(qc),
     })
-    await waitFor(() =>
-      expect(FakeSocket.instances).toHaveLength(1),
-    )
+    await waitFor(() => expect(FakeSocket.instances).toHaveLength(1))
     act(() => {
       FakeSocket.instances[0]!.dispatch("open", {})
     })
@@ -334,9 +322,7 @@ describe("useIngestionStatus (Task 49)", () => {
     const first = renderHook(() => useIngestionStatus(), {
       wrapper: makeWrapper(qc),
     })
-    await waitFor(() =>
-      expect(FakeSocket.instances).toHaveLength(1),
-    )
+    await waitFor(() => expect(FakeSocket.instances).toHaveLength(1))
     const initialSocket = FakeSocket.instances[0]!
     const second = renderHook(() => useIngestionStatus(), {
       wrapper: makeWrapper(qc),
@@ -409,9 +395,7 @@ describe("useIngestionStatus (Task 49)", () => {
       wrapper: makeWrapper(qc),
     })
     // Drive the WS into the closed state.
-    await waitFor(() =>
-      expect(FakeSocket.instances).toHaveLength(1),
-    )
+    await waitFor(() => expect(FakeSocket.instances).toHaveLength(1))
     act(() => {
       FakeSocket.instances[0]!.dispatch("open", {})
       FakeSocket.instances[0]!.dispatch("close", { code: 1006 })
@@ -419,9 +403,7 @@ describe("useIngestionStatus (Task 49)", () => {
     // The hook should fall back to polling now
     // because the WS is down + we have an
     // in-flight doc.
-    await waitFor(() =>
-      expect(result.current.connectionState).toBe("polling"),
-    )
+    await waitFor(() => expect(result.current.connectionState).toBe("polling"))
     unmount()
   })
 
@@ -442,24 +424,18 @@ describe("useIngestionStatus (Task 49)", () => {
     const { result, unmount } = renderHook(() => useIngestionStatus(), {
       wrapper: makeWrapper(qc),
     })
-    await waitFor(() =>
-      expect(FakeSocket.instances).toHaveLength(1),
-    )
+    await waitFor(() => expect(FakeSocket.instances).toHaveLength(1))
     act(() => {
       FakeSocket.instances[0]!.dispatch("open", {})
       FakeSocket.instances[0]!.dispatch("close", { code: 1006 })
     })
-    await waitFor(() =>
-      expect(result.current.connectionState).toBe("polling"),
-    )
+    await waitFor(() => expect(result.current.connectionState).toBe("polling"))
     // The polling interval must be set up with
     // the documented cadence (5_000ms). We don't
     // actually wait for the timer to fire — that
     // would add 5s to every CI run; the spy pin
     // is the contract.
-    const intervalCall = setIntervalSpy.mock.calls.find(
-      (c) => c[1] === 5_000,
-    )
+    const intervalCall = setIntervalSpy.mock.calls.find((c) => c[1] === 5_000)
     expect(intervalCall).toBeDefined()
     // And the immediate refetch landed as soon
     // as polling started (one invalidate per
@@ -483,16 +459,12 @@ describe("useIngestionStatus (Task 49)", () => {
     const { result, unmount } = renderHook(() => useIngestionStatus(), {
       wrapper: makeWrapper(qc),
     })
-    await waitFor(() =>
-      expect(FakeSocket.instances).toHaveLength(1),
-    )
+    await waitFor(() => expect(FakeSocket.instances).toHaveLength(1))
     act(() => {
       FakeSocket.instances[0]!.dispatch("open", {})
       FakeSocket.instances[0]!.dispatch("close", { code: 1006 })
     })
-    await waitFor(() =>
-      expect(result.current.connectionState).toBe("polling"),
-    )
+    await waitFor(() => expect(result.current.connectionState).toBe("polling"))
 
     // Simulate the doc reaching ``indexed``
     // via a cache update (the same way the
@@ -508,9 +480,7 @@ describe("useIngestionStatus (Task 49)", () => {
     // The hook should drop back to ``closed``
     // because there are no in-flight docs
     // anymore.
-    await waitFor(() =>
-      expect(result.current.connectionState).toBe("closed"),
-    )
+    await waitFor(() => expect(result.current.connectionState).toBe("closed"))
     unmount()
   })
 
@@ -527,15 +497,11 @@ describe("useIngestionStatus (Task 49)", () => {
     const { result, unmount } = renderHook(() => useIngestionStatus(), {
       wrapper: makeWrapper(qc),
     })
-    await waitFor(() =>
-      expect(FakeSocket.instances).toHaveLength(1),
-    )
+    await waitFor(() => expect(FakeSocket.instances).toHaveLength(1))
     act(() => {
       FakeSocket.instances[0]!.dispatch("open", {})
     })
-    await waitFor(() =>
-      expect(result.current.connectionState).toBe("open"),
-    )
+    await waitFor(() => expect(result.current.connectionState).toBe("open"))
     // No polling happened.
     expect(invalidateSpy).not.toHaveBeenCalled()
     // Give the cadence room to run — it must

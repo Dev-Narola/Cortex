@@ -216,7 +216,7 @@ function GraphNodeImpl({ node, state, onSelect, geometry }: GraphNodeProps) {
           readable at any zoom level. */}
       <Html position={[0, 0.7, 0]} center distanceFactor={8} zIndexRange={[0, 0]}>
         <span
-          className="select-none whitespace-nowrap rounded-md bg-void-900/80 px-2 py-0.5 text-xs font-medium text-paper-50 shadow-sm ring-1 ring-void-700"
+          className="select-none whitespace-nowrap rounded-md bg-background/80 px-2 py-0.5 text-xs font-medium text-foreground shadow-sm ring-1 ring-border"
           data-testid={`graph-node-label-${node.id}`}
         >
           {node.label}

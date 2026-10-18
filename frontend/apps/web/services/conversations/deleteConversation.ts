@@ -40,11 +40,7 @@ export interface DeleteConversationParams {
   id: string
 }
 
-export async function deleteConversation(
-  params: DeleteConversationParams,
-): Promise<void> {
+export async function deleteConversation(params: DeleteConversationParams): Promise<void> {
   const client = getApiClient()
-  await client.delete<void>(
-    `/api/v1/conversations/${encodeURIComponent(params.id)}`,
-  )
+  await client.delete<void>(`/api/v1/conversations/${encodeURIComponent(params.id)}`)
 }

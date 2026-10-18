@@ -56,11 +56,8 @@ export async function getTenantUsageEvents(
   const query: Record<string, string | number> = {}
   if (limit !== undefined) query.limit = limit
   if (event_type !== undefined) query.event_type = event_type
-  return client.get<ReadonlyArray<UsageEvent>>(
-    apiConfig.paths.tenantUsageEvents,
-    {
-      ...(Object.keys(query).length > 0 ? { query } : {}),
-      ...(signal ? { signal } : {}),
-    },
-  )
+  return client.get<ReadonlyArray<UsageEvent>>(apiConfig.paths.tenantUsageEvents, {
+    ...(Object.keys(query).length > 0 ? { query } : {}),
+    ...(signal ? { signal } : {}),
+  })
 }

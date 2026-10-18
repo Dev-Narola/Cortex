@@ -53,7 +53,7 @@ export default function SettingsLayout({ children }: { children: ReactNode }) {
         <h1 className="font-display text-[28px] font-semibold leading-[1.25] tracking-tight">
           Settings
         </h1>
-        <p className="text-sm text-paper-200/70">
+        <p className="text-sm text-muted-foreground">
           Manage your workspace, access, and platform configuration.
         </p>
       </header>

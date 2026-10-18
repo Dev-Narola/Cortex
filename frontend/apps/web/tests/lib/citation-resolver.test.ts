@@ -26,14 +26,16 @@ function msg(retrievedChunkIds: string[]): Pick<Message, "id" | "retrievedChunkI
   return { id: "m-1", retrievedChunkIds }
 }
 
-const wire = (overrides: Partial<{
-  documentId: string
-  chunkId: string
-  documentTitle: string
-  chunkIndex: number
-  score: number
-  excerpt?: string
-}> = {}) => ({
+const wire = (
+  overrides: Partial<{
+    documentId: string
+    chunkId: string
+    documentTitle: string
+    chunkIndex: number
+    score: number
+    excerpt?: string
+  }> = {},
+) => ({
   documentId: overrides.documentId ?? "doc-1",
   chunkId: overrides.chunkId ?? "chunk-1",
   documentTitle: overrides.documentTitle ?? "Architecture document",
@@ -130,10 +132,7 @@ describe("resolveCitations (Task 39)", () => {
   it("assigns each citation a stable chunk-derived id", () => {
     const out = resolveCitations({
       message: msg(["chunk-A", "chunk-B"]),
-      streamed: [
-        wire({ chunkId: "chunk-A" }),
-        wire({ chunkId: "chunk-B" }),
-      ],
+      streamed: [wire({ chunkId: "chunk-A" }), wire({ chunkId: "chunk-B" })],
     })
     expect(out[0]?.id).toBe("citation:chunk-A")
     expect(out[1]?.id).toBe("citation:chunk-B")

@@ -32,7 +32,7 @@ const headingVariants = cva("font-display font-semibold tracking-tight text-fore
     tone: {
       default: "text-foreground",
       muted: "text-muted-foreground",
-      inverse: "text-paper-50",
+      inverse: "text-gray-50",
     },
   },
   defaultVariants: {

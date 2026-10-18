@@ -38,8 +38,8 @@ import type { ReactNode } from "react"
 
 import { Button, Icon, Skeleton } from "@cortex/ui"
 
-import { ConversationListItem } from "./ConversationListItem"
 import type { Conversation } from "@/types/conversation"
+import { ConversationListItem } from "./ConversationListItem"
 
 export interface ConversationListItemRowProps {
   isRenaming: boolean
@@ -99,18 +99,16 @@ export function ConversationList({
 }: ConversationListProps): ReactNode {
   if (isLoading) {
     return (
-      <div
-        role="status"
+      <output
         aria-live="polite"
         aria-busy="true"
         aria-label="Loading conversations"
         data-conversation-list="loading"
-        className={
-          "flex flex-col gap-1.5 px-1.5 py-2 " + (className ?? "")
-        }
+        className={`flex flex-col gap-1.5 px-1.5 py-2 ${className ?? ""}`}
       >
         {Array.from({ length: SKELETON_ROWS }).map((_, i) => (
           <div
+            // biome-ignore lint/suspicious/noArrayIndexKey: static, identical skeleton placeholders
             key={i}
             data-skeleton-row
             className="flex flex-col gap-1.5 rounded-md px-2.5 py-2"
@@ -122,7 +120,7 @@ export function ConversationList({
             <Skeleton className="ml-5 h-2.5 w-1/3" />
           </div>
         ))}
-      </div>
+      </output>
     )
   }
 
@@ -131,10 +129,7 @@ export function ConversationList({
       <div
         role="alert"
         data-conversation-list="error"
-        className={
-          "flex flex-col items-center gap-3 px-3 py-6 text-center " +
-          (className ?? "")
-        }
+        className={`flex flex-col items-center gap-3 px-3 py-6 text-center ${className ?? ""}`}
       >
         <div
           aria-hidden
@@ -143,20 +138,12 @@ export function ConversationList({
           <Icon name="TriangleAlert" className="h-4 w-4" />
         </div>
         <div className="space-y-0.5">
-          <p className="text-sm font-medium text-foreground">
-            Couldn't load conversations
-          </p>
+          <p className="text-sm font-medium text-foreground">Couldn't load conversations</p>
           <p className="mx-auto max-w-[28ch] text-xs text-muted-foreground">
             {error.message || "Check your connection and try again."}
           </p>
         </div>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={onRetry}
-          className="h-7"
-        >
+        <Button type="button" variant="outline" size="sm" onClick={onRetry} className="h-7">
           <Icon name="RefreshCw" className="h-3.5 w-3.5" />
           <span>Try again</span>
         </Button>
@@ -166,13 +153,9 @@ export function ConversationList({
 
   if (!conversations || conversations.length === 0) {
     return (
-      <div
-        role="status"
+      <output
         data-conversation-list="empty"
-        className={
-          "flex flex-col items-center gap-3 px-3 py-6 text-center " +
-          (className ?? "")
-        }
+        className={`flex flex-col items-center gap-3 px-3 py-6 text-center ${className ?? ""}`}
       >
         <div
           aria-hidden
@@ -181,9 +164,7 @@ export function ConversationList({
           <Icon name="MessageSquare" className="h-4 w-4" />
         </div>
         <div className="space-y-0.5">
-          <p className="text-sm font-medium text-foreground">
-            No conversations yet
-          </p>
+          <p className="text-sm font-medium text-foreground">No conversations yet</p>
           <p className="mx-auto max-w-[28ch] text-xs text-muted-foreground">
             Start your first conversation to see it here.
           </p>
@@ -198,33 +179,30 @@ export function ConversationList({
           <Icon name="Plus" className="h-3.5 w-3.5" />
           <span>Start a conversation</span>
         </Button>
-      </div>
+      </output>
     )
   }
 
   return (
     <ul
-      role="list"
       data-conversation-list="ready"
-      className={
-        "flex flex-col gap-0.5 px-1.5 py-1 " + (className ?? "")
-      }
+      className={`flex flex-col gap-0.5 px-1.5 py-1 ${className ?? ""}`}
     >
       {conversations.map((c) => {
         const rowProps = itemPropsById?.get(c.id)
         return (
-          <li key={c.id} className="min-w-0">
-            <ConversationListItem
-              conversation={c}
-              activeConversationId={activeConversationId}
-              isRenaming={rowProps?.isRenaming ?? false}
-              isDeleting={rowProps?.isDeleting ?? false}
-              renameError={rowProps?.renameError ?? null}
-              deleteError={rowProps?.deleteError ?? null}
-              onRenameSubmit={rowProps?.onRenameSubmit}
-              onDeleteConfirm={rowProps?.onDeleteConfirm}
-            />
-          </li>
+          // ConversationListItem renders its own <li>.
+          <ConversationListItem
+            key={c.id}
+            conversation={c}
+            activeConversationId={activeConversationId}
+            isRenaming={rowProps?.isRenaming ?? false}
+            isDeleting={rowProps?.isDeleting ?? false}
+            renameError={rowProps?.renameError ?? null}
+            deleteError={rowProps?.deleteError ?? null}
+            onRenameSubmit={rowProps?.onRenameSubmit}
+            onDeleteConfirm={rowProps?.onDeleteConfirm}
+          />
         )
       })}
     </ul>

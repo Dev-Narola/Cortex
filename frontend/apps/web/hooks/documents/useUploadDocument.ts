@@ -29,12 +29,14 @@
 
 "use client"
 
-import { useMutation, type UseMutationResult } from "@tanstack/react-query"
+import { type UseMutationResult, useMutation } from "@tanstack/react-query"
 
 import {
-  uploadDocument,
+  type ImportDocumentUrlParams,
   type UploadDocumentAccepted,
   type UploadDocumentParams,
+  importDocumentFromUrl,
+  uploadDocument,
 } from "@/services/documents"
 
 export type UseUploadDocumentResult = UseMutationResult<
@@ -56,5 +58,12 @@ export function useUploadDocument(): UseUploadDocumentResult {
     // mutation without guessing.
     mutationKey: ["documents", "upload"],
     mutationFn: (params) => uploadDocument(params),
+  })
+}
+
+export function useImportDocumentUrl() {
+  return useMutation<UploadDocumentAccepted, Error, ImportDocumentUrlParams>({
+    mutationKey: ["documents", "import-url"],
+    mutationFn: (params) => importDocumentFromUrl(params),
   })
 }

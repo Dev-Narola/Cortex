@@ -7,3 +7,4 @@ export {
   type UseAgentToolCallsParams,
   type UseAgentToolCallsResult,
 } from "./useAgentRun"
+export { useAgents, useCreateAgent, useDeleteAgent, useExecuteAgent } from "./useAgents"

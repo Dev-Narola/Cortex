@@ -111,9 +111,7 @@ export function useFeedback(input: {
 }): UseFeedbackResult {
   const feedback = useFeedbackStore((s) => {
     const found = s.entries.find(
-      (e) =>
-        e.conversationId === input.conversationId &&
-        e.messageId === input.messageId,
+      (e) => e.conversationId === input.conversationId && e.messageId === input.messageId,
     )
     return found?.feedback ?? null
   })

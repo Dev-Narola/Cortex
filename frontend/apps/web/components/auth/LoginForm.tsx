@@ -27,6 +27,7 @@
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
+import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useState } from "react"
 import { useForm } from "react-hook-form"
@@ -34,17 +35,12 @@ import { useForm } from "react-hook-form"
 import { Button, Input, Label, Spinner } from "@cortex/ui"
 
 import { type LoginInput, loginSchema } from "@/lib/auth/login.schema"
-import { type AuthSession, useAuthStore } from "@/lib/auth/store"
 import { resolvePostAuthDestination } from "@/lib/auth/post-auth-destination"
+import { type AuthSession, useAuthStore } from "@/lib/auth/store"
 import { toFrontendError } from "@/lib/http/errors"
 import { login, toAuthUser } from "@/services/auth"
 
-import {
-  LOGIN_COMPLETED,
-  LOGIN_FAILED,
-  LOGIN_STARTED,
-  track,
-} from "@/lib/analytics"
+import { LOGIN_COMPLETED, LOGIN_FAILED, LOGIN_STARTED, track } from "@/lib/analytics"
 
 export interface LoginFormProps {
   /** Path to navigate to on success. Default `?next=...` or `/app`. */
@@ -147,7 +143,15 @@ export function LoginForm({ nextPath }: LoginFormProps = {}) {
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="password">Password</Label>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="password">Password</Label>
+          <Link
+            href={"/reset-password" as never}
+            className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+          >
+            Forgot password?
+          </Link>
+        </div>
         <Input
           id="password"
           type="password"

@@ -79,20 +79,10 @@ export interface GetAuditLogParams {
   signal?: AbortSignal
 }
 
-export async function getAuditLog(
-  params: GetAuditLogParams = {},
-): Promise<AuditEventListResponse> {
+export async function getAuditLog(params: GetAuditLogParams = {}): Promise<AuditEventListResponse> {
   const client = getApiClient()
-  const {
-    cursor,
-    limit,
-    action,
-    resource_type,
-    actor_user_id,
-    start_date,
-    end_date,
-    signal,
-  } = params
+  const { cursor, limit, action, resource_type, actor_user_id, start_date, end_date, signal } =
+    params
   const query: Record<string, string | number> = {}
   if (cursor !== undefined) query.cursor = cursor
   if (limit !== undefined) query.limit = limit

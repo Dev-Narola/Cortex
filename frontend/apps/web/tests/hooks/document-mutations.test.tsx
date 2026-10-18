@@ -24,9 +24,7 @@ import { getApiClient } from "@/lib/auth/api-client"
 
 vi.mock("@/lib/auth/api-client", async () => {
   const actual =
-    await vi.importActual<typeof import("@/lib/auth/api-client")>(
-      "@/lib/auth/api-client",
-    )
+    await vi.importActual<typeof import("@/lib/auth/api-client")>("@/lib/auth/api-client")
   return {
     ...actual,
     getApiClient: vi.fn(),
@@ -97,18 +95,14 @@ describe("hooks/documents mutations", () => {
   })
 
   it("surfaces errors via the mutation error state", async () => {
-    const post = vi
-      .fn()
-      .mockRejectedValue(new ApiError(500, { message: "boom" }))
+    const post = vi.fn().mockRejectedValue(new ApiError(500, { message: "boom" }))
     getApiClientMock.mockReturnValue({ post } as never)
 
     const { result } = renderHook(() => useUploadDocument(), {
       wrapper: makeWrapper(),
     })
     const file = new File(["x"], "x.txt", { type: "text/plain" })
-    await expect(result.current.mutateAsync({ file })).rejects.toBeInstanceOf(
-      ApiError,
-    )
+    await expect(result.current.mutateAsync({ file })).rejects.toBeInstanceOf(ApiError)
     await waitFor(() => expect(result.current.isError).toBe(true))
   })
 
@@ -120,9 +114,7 @@ describe("hooks/documents mutations", () => {
     vi.spyOn(client, "invalidateQueries").mockImplementation(invalidateQueries)
 
     function Wrapper({ children }: { children: React.ReactNode }) {
-      return (
-        <QueryClientProvider client={client}>{children}</QueryClientProvider>
-      )
+      return <QueryClientProvider client={client}>{children}</QueryClientProvider>
     }
 
     const { result } = renderHook(() => useInvalidateDocuments(), {

@@ -7,9 +7,8 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 
 import { useClipboard } from "@/components/chat/useClipboard"
 
-const savedClipboard = (
-  navigator as Navigator & { _cortexOrigClipboard?: unknown }
-)._cortexOrigClipboard
+const savedClipboard = (navigator as Navigator & { _cortexOrigClipboard?: unknown })
+  ._cortexOrigClipboard
 
 function restoreClipboard(): void {
   if (savedClipboard !== undefined) {

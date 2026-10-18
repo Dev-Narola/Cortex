@@ -23,7 +23,7 @@
 
 "use client"
 
-import { useState, type ReactNode } from "react"
+import { type ReactNode, useState } from "react"
 
 import {
   Button,
@@ -37,10 +37,7 @@ import {
   toast,
 } from "@cortex/ui"
 
-import {
-  useDeleteDocument,
-  useInvalidateDocuments,
-} from "@/hooks/documents"
+import { useDeleteDocument, useInvalidateDocuments } from "@/hooks/documents"
 
 export interface DeleteDocumentDialogProps {
   open: boolean
@@ -104,8 +101,8 @@ export function DeleteDocumentDialog({
         <DialogHeader>
           <DialogTitle>Delete document?</DialogTitle>
           <DialogDescription>
-            <span className="font-medium text-foreground">{documentTitle}</span>{" "}
-            will be removed from your workspace. This action cannot be undone.
+            <span className="font-medium text-foreground">{documentTitle}</span> will be removed
+            from your workspace. This action cannot be undone.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>

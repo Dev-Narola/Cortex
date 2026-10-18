@@ -45,9 +45,26 @@
  */
 "use client"
 
-import { Badge, Card, CardContent, Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@cortex/ui"
+import {
+  Badge,
+  Card,
+  CardContent,
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+} from "@cortex/ui"
 
-import { actionCategory, actionLabel, categoryLabel, resourceTypeLabel, shortResourceId, type AuditEvent } from "@/services/audit"
+import {
+  type AuditEvent,
+  actionCategory,
+  actionLabel,
+  categoryLabel,
+  resourceTypeLabel,
+  shortResourceId,
+} from "@/services/audit"
 
 import { AuditLogActionBadge } from "./audit-log-action-badge"
 
@@ -89,9 +106,7 @@ const METADATA_REDACT_KEYS: ReadonlySet<string> = new Set([
   "document_content",
 ])
 
-function safeMetadata(
-  metadata: Record<string, unknown> | undefined,
-): Array<[string, string]> {
+function safeMetadata(metadata: Record<string, unknown> | undefined): Array<[string, string]> {
   if (!metadata) return []
   const out: Array<[string, string]> = []
   for (const [k, v] of Object.entries(metadata)) {
@@ -136,7 +151,7 @@ export function AuditLogDetail({ event, open, onOpenChange }: AuditLogDetailProp
               {actionLabel(event.action)}
             </DrawerTitle>
             <DrawerClose
-              className="text-xs text-paper-200/60 transition-colors hover:text-paper-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-volt-500"
+              className="text-xs text-faint transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-volt-500"
               data-testid={`audit-log-detail-close-${event.id}`}
             >
               Close
@@ -154,74 +169,74 @@ export function AuditLogDetail({ event, open, onOpenChange }: AuditLogDetailProp
                 {categoryLabel(category)}
               </Badge>
             </div>
-            <p className="mt-2 text-sm text-paper-50">{actionLabel(event.action)}</p>
-            <p className="font-mono text-xs text-paper-200/60" data-testid={`audit-log-detail-action-${event.id}`}>
+            <p className="mt-2 text-sm text-foreground">{actionLabel(event.action)}</p>
+            <p
+              className="font-mono text-xs text-faint"
+              data-testid={`audit-log-detail-action-${event.id}`}
+            >
               {event.action}
             </p>
           </Section>
           <Section title="Time">
             <p
-              className="text-sm text-paper-50"
+              className="text-sm text-foreground"
               data-testid={`audit-log-detail-time-${event.id}`}
             >
               {formatFullTimestamp(event.created_at)}
             </p>
           </Section>
           <Section title="Actor">
-            <p className="text-sm font-medium text-paper-50">
+            <p className="text-sm font-medium text-foreground">
               {kind === "user" ? "User" : kind === "api_key" ? "API key" : "System"}
             </p>
             {event.actor_user_id ? (
               <p
-                className="mt-1 break-all font-mono text-xs text-paper-200/60"
+                className="mt-1 break-all font-mono text-xs text-faint"
                 data-testid={`audit-log-detail-actor-user-${event.id}`}
               >
                 {event.actor_user_id}
               </p>
             ) : event.actor_api_key_id ? (
               <p
-                className="mt-1 break-all font-mono text-xs text-paper-200/60"
+                className="mt-1 break-all font-mono text-xs text-faint"
                 data-testid={`audit-log-detail-actor-key-${event.id}`}
               >
                 {event.actor_api_key_id}
               </p>
             ) : (
-              <p className="mt-1 text-xs text-paper-200/50">
+              <p className="mt-1 text-xs text-faint">
                 No actor — the action was performed by the system.
               </p>
             )}
           </Section>
           <Section title="Resource">
-            <p className="text-sm text-paper-50">{resourceTypeLabel(event.resource_type)}</p>
+            <p className="text-sm text-foreground">{resourceTypeLabel(event.resource_type)}</p>
             {event.resource_id ? (
               <p
-                className="mt-1 break-all font-mono text-xs text-paper-200/60"
+                className="mt-1 break-all font-mono text-xs text-faint"
                 data-testid={`audit-log-detail-resource-${event.id}`}
               >
                 {event.resource_id}
               </p>
             ) : (
-              <p className="mt-1 text-xs text-paper-200/50">No resource id.</p>
+              <p className="mt-1 text-xs text-faint">No resource id.</p>
             )}
           </Section>
           {meta.length > 0 ? (
             <Section title="Details">
-              <dl
-                className="space-y-1"
-                data-testid={`audit-log-detail-metadata-${event.id}`}
-              >
+              <dl className="space-y-1" data-testid={`audit-log-detail-metadata-${event.id}`}>
                 {meta.map(([k, v]) => (
                   <div key={k} className="flex justify-between gap-2 text-xs">
-                    <dt className="font-mono text-paper-200/60">{k}</dt>
-                    <dd className="text-right text-paper-50">{v}</dd>
+                    <dt className="font-mono text-faint">{k}</dt>
+                    <dd className="text-right text-foreground">{v}</dd>
                   </div>
                 ))}
               </dl>
             </Section>
           ) : null}
-          <p className="rounded-md border border-slate-700/40 bg-slate-900/40 p-2 text-[11px] text-paper-200/50">
-            Audit events are immutable. This view is read-only; you cannot edit or delete
-            the underlying record.
+          <p className="rounded-md border border-border bg-muted p-2 text-[11px] text-faint">
+            Audit events are immutable. This view is read-only; you cannot edit or delete the
+            underlying record.
           </p>
         </div>
       </DrawerContent>
@@ -233,9 +248,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   return (
     <Card>
       <CardContent className="space-y-1 p-3">
-        <h3 className="text-xs font-medium uppercase tracking-wider text-paper-200/60">
-          {title}
-        </h3>
+        <h3 className="text-xs font-medium uppercase tracking-wider text-faint">{title}</h3>
         {children}
       </CardContent>
     </Card>

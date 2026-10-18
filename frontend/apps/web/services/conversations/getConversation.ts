@@ -18,6 +18,7 @@
  */
 
 import { getApiClient } from "@/lib/auth/api-client"
+import { type WireConversation, toConversation } from "./mappers"
 
 import type { Conversation } from "@/types/conversation"
 
@@ -31,8 +32,11 @@ export async function getConversation({
   signal,
 }: GetConversationParams): Promise<Conversation> {
   const client = getApiClient()
-  return client.get<Conversation>(
+  const raw = await client.get<WireConversation>(
     `/api/v1/conversations/${encodeURIComponent(id)}`,
-    { signal },
+    {
+      signal,
+    },
   )
+  return toConversation(raw)
 }

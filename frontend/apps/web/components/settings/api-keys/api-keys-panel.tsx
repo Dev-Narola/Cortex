@@ -159,7 +159,7 @@ export function ApiKeysPanel() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="font-display text-base font-semibold tracking-tight">API Keys</h2>
-            <p className="text-sm text-paper-200/70">
+            <p className="text-sm text-muted-foreground">
               Create and revoke API keys for connecting external tools to your Cortex workspace. The
               full key is shown exactly once at creation.
             </p>

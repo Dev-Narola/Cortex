@@ -14,17 +14,15 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { act, renderHook, waitFor } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
-import { useInvalidateOnStreamComplete } from "@/hooks/chat/useSendMessage"
 import { useConversationStreamStore } from "@/hooks/chat/conversationStreamStore"
+import { useInvalidateOnStreamComplete } from "@/hooks/chat/useSendMessage"
 import { getApiClient } from "@/lib/auth/api-client"
-import { ApiError } from "@cortex/api-client"
 import type { Conversation } from "@/types/conversation"
+import { ApiError } from "@cortex/api-client"
 
 vi.mock("@/lib/auth/api-client", async () => {
   const actual =
-    await vi.importActual<typeof import("@/lib/auth/api-client")>(
-      "@/lib/auth/api-client",
-    )
+    await vi.importActual<typeof import("@/lib/auth/api-client")>("@/lib/auth/api-client")
   return { ...actual, getApiClient: vi.fn(), resetApiClient: vi.fn() }
 })
 

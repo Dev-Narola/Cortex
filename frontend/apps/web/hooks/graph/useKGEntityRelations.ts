@@ -23,7 +23,7 @@
 
 "use client"
 
-import { useQuery, type UseQueryResult } from "@tanstack/react-query"
+import { type UseQueryResult, useQuery } from "@tanstack/react-query"
 
 import { ApiError } from "@cortex/api-client"
 
@@ -32,20 +32,12 @@ import type { KGRelationshipListResponse } from "@/types/kg"
 
 import { kgKeys } from "./kgKeys"
 
-export type UseKGEntityRelationsResult = UseQueryResult<
-  KGRelationshipListResponse | null,
-  Error
->
+export type UseKGEntityRelationsResult = UseQueryResult<KGRelationshipListResponse | null, Error>
 
-export function useKGEntityRelations(
-  id: string | null,
-): UseKGEntityRelationsResult {
+export function useKGEntityRelations(id: string | null): UseKGEntityRelationsResult {
   return useQuery<KGRelationshipListResponse | null, Error>({
     queryKey: kgKeys.relations(id ?? ""),
-    queryFn: ({ signal }) =>
-      id
-        ? listEntityRelations({ id, signal })
-        : Promise.resolve(null),
+    queryFn: ({ signal }) => (id ? listEntityRelations({ id, signal }) : Promise.resolve(null)),
     enabled: Boolean(id),
     retry: (failureCount, error) => {
       if (error instanceof ApiError) {

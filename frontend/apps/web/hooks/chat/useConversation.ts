@@ -23,7 +23,7 @@
 
 "use client"
 
-import { useQuery, type UseQueryResult } from "@tanstack/react-query"
+import { type UseQueryResult, useQuery } from "@tanstack/react-query"
 
 import { ApiError } from "@cortex/api-client"
 
@@ -32,9 +32,7 @@ import type { Conversation } from "@/types/conversation"
 
 export type UseConversationResult = UseQueryResult<Conversation, Error>
 
-export function useConversation(
-  id: string | null,
-): UseConversationResult {
+export function useConversation(id: string | null): UseConversationResult {
   return useQuery<Conversation, Error>({
     queryKey: ["conversations", id],
     queryFn: () => (id ? getConversation({ id }) : Promise.reject(new Error("no id"))),

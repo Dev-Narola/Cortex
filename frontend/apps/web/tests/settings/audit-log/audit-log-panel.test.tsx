@@ -153,12 +153,8 @@ describe("AuditLogPanel", () => {
       expect(screen.getByTestId("audit-log-row-e-1")).toBeInTheDocument()
       expect(screen.getByTestId("audit-log-row-e-2")).toBeInTheDocument()
       // The action labels are humanised.
-      expect(screen.getByTestId("audit-log-action-e-1")).toHaveTextContent(
-        "Document accessed",
-      )
-      expect(screen.getByTestId("audit-log-action-e-2")).toHaveTextContent(
-        "API key revoked",
-      )
+      expect(screen.getByTestId("audit-log-action-e-1")).toHaveTextContent("Document accessed")
+      expect(screen.getByTestId("audit-log-action-e-2")).toHaveTextContent("API key revoked")
     })
 
     it("every row has a category badge (Task 33)", async () => {
@@ -266,16 +262,12 @@ describe("AuditLogPanel", () => {
     it("shows the forbidden state on a 403 (member/viewer direct URL)", async () => {
       setRole("owner")
       // A 403-shaped error from the API client.
-      getMock.mockRejectedValueOnce(
-        Object.assign(new Error("forbidden"), { status: 403 }),
-      )
+      getMock.mockRejectedValueOnce(Object.assign(new Error("forbidden"), { status: 403 }))
       render(<AuditLogPanel />, { wrapper: makeWrapper() })
       await waitFor(() => {
         expect(screen.getByTestId("audit-log-forbidden")).toBeInTheDocument()
       })
-      expect(screen.getByTestId("audit-log-forbidden")).toHaveTextContent(
-        /don[’']t have access/i,
-      )
+      expect(screen.getByTestId("audit-log-forbidden")).toHaveTextContent(/don[’']t have access/i)
     })
   })
 
@@ -287,10 +279,7 @@ describe("AuditLogPanel", () => {
       await waitFor(() => {
         expect(getMock).toHaveBeenCalled()
       })
-      expect(getMock).toHaveBeenCalledWith(
-        "/api/v1/audit-log",
-        expect.objectContaining({}),
-      )
+      expect(getMock).toHaveBeenCalledWith("/api/v1/audit-log", expect.objectContaining({}))
       // No tenant_id in any request.
       for (const call of getMock.mock.calls) {
         const opts = call[1] as { query?: Record<string, string | number> } | undefined
@@ -324,9 +313,7 @@ describe("AuditLogPanel", () => {
       // Render the SettingsTabs directly so
       // we can pin the navigation visibility
       // independent of the panel.
-      const { SettingsTabs } = await import(
-        "@/components/settings/settings-tabs"
-      )
+      const { SettingsTabs } = await import("@/components/settings/settings-tabs")
       getMock.mockResolvedValue({ items: [], next_cursor: null })
       render(<SettingsTabs />, { wrapper: makeWrapper() })
       expect(screen.getByTestId("settings-tab-audit-log")).toBeInTheDocument()
@@ -334,9 +321,7 @@ describe("AuditLogPanel", () => {
 
     it("admin → Audit Log tab visible in the SettingsTabs", async () => {
       setRole("admin")
-      const { SettingsTabs } = await import(
-        "@/components/settings/settings-tabs"
-      )
+      const { SettingsTabs } = await import("@/components/settings/settings-tabs")
       getMock.mockResolvedValue({ items: [], next_cursor: null })
       render(<SettingsTabs />, { wrapper: makeWrapper() })
       expect(screen.getByTestId("settings-tab-audit-log")).toBeInTheDocument()
@@ -344,9 +329,7 @@ describe("AuditLogPanel", () => {
 
     it("member → Audit Log tab HIDDEN in the SettingsTabs", async () => {
       setRole("member")
-      const { SettingsTabs } = await import(
-        "@/components/settings/settings-tabs"
-      )
+      const { SettingsTabs } = await import("@/components/settings/settings-tabs")
       getMock.mockResolvedValue({ items: [], next_cursor: null })
       render(<SettingsTabs />, { wrapper: makeWrapper() })
       expect(screen.queryByTestId("settings-tab-audit-log")).not.toBeInTheDocument()
@@ -354,9 +337,7 @@ describe("AuditLogPanel", () => {
 
     it("viewer → Audit Log tab HIDDEN in the SettingsTabs", async () => {
       setRole("viewer")
-      const { SettingsTabs } = await import(
-        "@/components/settings/settings-tabs"
-      )
+      const { SettingsTabs } = await import("@/components/settings/settings-tabs")
       getMock.mockResolvedValue({ items: [], next_cursor: null })
       render(<SettingsTabs />, { wrapper: makeWrapper() })
       expect(screen.queryByTestId("settings-tab-audit-log")).not.toBeInTheDocument()

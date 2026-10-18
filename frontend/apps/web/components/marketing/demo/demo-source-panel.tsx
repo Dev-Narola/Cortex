@@ -49,7 +49,14 @@
  */
 "use client"
 
-import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@cortex/ui"
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+} from "@cortex/ui"
 
 import type { DemoCitation } from "./demo-data"
 
@@ -81,7 +88,7 @@ export function DemoSourcePanel({ citation, open, onOpenChange }: DemoSourcePane
                   {citation.documentTitle}
                 </DrawerTitle>
                 <DrawerClose
-                  className="text-xs text-paper-200/60 transition-colors hover:text-paper-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-volt-500"
+                  className="text-xs text-faint transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-volt-500"
                   data-testid={`demo-source-close-${citation.id}`}
                 >
                   Close

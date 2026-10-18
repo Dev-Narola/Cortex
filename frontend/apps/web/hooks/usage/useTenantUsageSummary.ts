@@ -15,9 +15,9 @@
  */
 "use client"
 
-import { useQuery, type UseQueryResult } from "@tanstack/react-query"
+import { type UseQueryResult, useQuery } from "@tanstack/react-query"
 
-import { getTenantUsageSummary, type UsageSummary } from "@/services/usage"
+import { type UsageSummary, getTenantUsageSummary } from "@/services/usage"
 
 import { usageKeys } from "./usageKeys"
 

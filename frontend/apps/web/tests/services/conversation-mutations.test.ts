@@ -10,16 +10,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 import { getApiClient } from "@/lib/auth/api-client"
-import {
-  deleteConversation,
-  renameConversation,
-} from "@/services/conversations"
+import { deleteConversation, renameConversation } from "@/services/conversations"
 
 vi.mock("@/lib/auth/api-client", async () => {
   const actual =
-    await vi.importActual<typeof import("@/lib/auth/api-client")>(
-      "@/lib/auth/api-client",
-    )
+    await vi.importActual<typeof import("@/lib/auth/api-client")>("@/lib/auth/api-client")
   return { ...actual, getApiClient: vi.fn(), resetApiClient: vi.fn() }
 })
 
@@ -29,6 +24,16 @@ describe("services/renameConversation", () => {
   afterEach(() => vi.clearAllMocks())
 
   it("PATCHes /api/v1/conversations/{id} with the title", async () => {
+    // The backend responds in snake_case; the service maps to the app type.
+    const wire = {
+      id: "c-1",
+      tenant_id: "t-1",
+      user_id: "u-1",
+      title: "New title",
+      summary: null,
+      created_at: "2025-01-01T00:00:00.000Z",
+      updated_at: "2025-01-02T00:00:00.000Z",
+    }
     const updated = {
       id: "c-1",
       tenantId: "t-1",
@@ -38,7 +43,7 @@ describe("services/renameConversation", () => {
       createdAt: "2025-01-01T00:00:00.000Z",
       updatedAt: "2025-01-02T00:00:00.000Z",
     }
-    const patch = vi.fn().mockResolvedValue(updated)
+    const patch = vi.fn().mockResolvedValue(wire)
     getApiClientMock.mockReturnValue({ patch } as never)
 
     const result = await renameConversation({
@@ -67,9 +72,7 @@ describe("services/renameConversation", () => {
     const patch = vi.fn().mockRejectedValue(new Error("title required"))
     getApiClientMock.mockReturnValue({ patch } as never)
 
-    await expect(
-      renameConversation({ id: "c-1", title: "" }),
-    ).rejects.toThrow("title required")
+    await expect(renameConversation({ id: "c-1", title: "" })).rejects.toThrow("title required")
   })
 })
 
@@ -95,13 +98,9 @@ describe("services/deleteConversation", () => {
   })
 
   it("propagates backend errors", async () => {
-    const del = vi
-      .fn()
-      .mockRejectedValue(new Error("conversation not found"))
+    const del = vi.fn().mockRejectedValue(new Error("conversation not found"))
     getApiClientMock.mockReturnValue({ delete: del } as never)
 
-    await expect(
-      deleteConversation({ id: "missing" }),
-    ).rejects.toThrow("conversation not found")
+    await expect(deleteConversation({ id: "missing" })).rejects.toThrow("conversation not found")
   })
 })

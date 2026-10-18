@@ -10,8 +10,8 @@
 
 "use client"
 
-import { useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { useEffect } from "react"
 
 import { Button, Card, CardContent, Icon } from "@cortex/ui"
 
@@ -31,12 +31,8 @@ export default function ConversationError({
   return (
     <div className="space-y-6">
       <header className="space-y-1">
-        <h1 className="font-display text-2xl font-semibold tracking-tight">
-          Conversation
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          We hit a problem loading this conversation.
-        </p>
+        <h1 className="font-display text-2xl font-semibold tracking-tight">Conversation</h1>
+        <p className="text-sm text-muted-foreground">We hit a problem loading this conversation.</p>
       </header>
       <Card>
         <CardContent className="flex flex-col items-center gap-4 py-12 text-center">
@@ -51,7 +47,8 @@ export default function ConversationError({
               We couldn't load this conversation
             </h2>
             <p className="mx-auto max-w-sm text-sm text-muted-foreground">
-              The error has been logged. Try again — if the problem persists, head back to the empty Chat.
+              The error has been logged. Try again — if the problem persists, head back to the empty
+              Chat.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -59,11 +56,7 @@ export default function ConversationError({
               <Icon name="RefreshCw" className="h-3.5 w-3.5" />
               <span>Try again</span>
             </Button>
-            <Button
-              onClick={() => router.push("/chat" as never)}
-              variant="default"
-              size="sm"
-            >
+            <Button onClick={() => router.push("/chat" as never)} variant="default" size="sm">
               <Icon name="MessageSquare" className="h-3.5 w-3.5" />
               <span>Back to Chat</span>
             </Button>

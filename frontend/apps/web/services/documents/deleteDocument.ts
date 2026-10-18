@@ -16,10 +16,7 @@ export interface DeleteDocumentParams {
   signal?: AbortSignal
 }
 
-export async function deleteDocument({
-  id,
-  signal,
-}: DeleteDocumentParams): Promise<void> {
+export async function deleteDocument({ id, signal }: DeleteDocumentParams): Promise<void> {
   const client = getApiClient()
   await client.delete<void>(`/api/v1/documents/${encodeURIComponent(id)}`, {
     signal,

@@ -191,16 +191,16 @@ function nodeFillClass(state: GraphNodeState): string {
     case "selected":
       return "fill-volt-500"
     case "dimmed":
-      return "fill-slate-600"
+      return "fill-muted"
     default:
-      return "fill-slate-400"
+      return "fill-muted"
   }
 }
 
 function edgeStrokeClass(isActive: boolean, hasSelection: boolean): string {
   if (isActive) return "stroke-ember-500"
-  if (hasSelection) return "stroke-slate-700"
-  return "stroke-slate-600"
+  if (hasSelection) return "stroke-muted"
+  return "stroke-muted"
 }
 
 function nodeRadius(state: GraphNodeState): number {
@@ -242,7 +242,7 @@ export function GraphCanvas2D({
       data-testid="graph-canvas-2d"
       data-capability={capability}
       data-node-count={nodes.length}
-      className={`relative h-full w-full overflow-hidden bg-void-950 ${className ?? ""}`}
+      className={`relative h-full w-full overflow-hidden bg-background ${className ?? ""}`}
     >
       <svg
         viewBox={`0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`}
@@ -292,7 +292,7 @@ export function GraphCanvas2D({
           {nodes.map((node) => {
             const r = nodeRadius(node.state)
             return (
-              // biome-ignore lint/a11y/useSemanticElements: SVG
+              // SVG
               // <g> can't be replaced with a real <button>
               // without losing the radial layout's nested
               // <circle> + <text>. `role="button"` +
@@ -341,7 +341,7 @@ export function GraphCanvas2D({
                 <text
                   y={r + 18}
                   textAnchor="middle"
-                  className="fill-paper-200 font-mono text-[12px]"
+                  className="fill-muted-foreground font-mono text-[12px]"
                 >
                   {node.label.length > 18 ? `${node.label.slice(0, 17)}…` : node.label}
                 </text>
@@ -361,7 +361,7 @@ export function GraphCanvas2D({
         data-testid="graph-2d-mode-notice"
         className="pointer-events-none absolute bottom-4 left-1/2 z-10 -translate-x-1/2"
       >
-        <div className="max-w-sm rounded-md border border-slate-700 bg-slate-800/90 px-3 py-1.5 text-center text-xs text-paper-200 shadow-lg backdrop-blur">
+        <div className="max-w-sm rounded-md border border-border bg-card/90 px-3 py-1.5 text-center text-xs text-muted-foreground shadow-lg backdrop-blur">
           2D view — shown because the device or viewport doesn&apos;t meet the 3D capability
           threshold (viewport &lt; {GRAPH_2D_VIEWPORT_THRESHOLD_PX}px, or reduced motion, or low
           CPU).
@@ -376,7 +376,7 @@ export function GraphCanvas2D({
       {rootId ? (
         <div
           data-testid="graph-2d-root-label"
-          className="pointer-events-none absolute left-3 top-3 z-10 rounded-md border border-slate-700 bg-slate-800/80 px-2.5 py-1 font-mono text-[11px] text-paper-200 shadow-sm backdrop-blur"
+          className="pointer-events-none absolute left-3 top-3 z-10 rounded-md border border-border bg-card/80 px-2.5 py-1 font-mono text-[11px] text-muted-foreground shadow-sm backdrop-blur"
         >
           root · {nodeMap.get(rootId)?.label ?? rootId}
         </div>

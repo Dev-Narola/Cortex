@@ -19,14 +19,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import { getApiClient } from "@/lib/auth/api-client"
-import { refresh } from "@/services/auth/refresh"
 import { useAuthStore } from "@/lib/auth/store"
+import { refresh } from "@/services/auth/refresh"
 
 vi.mock("@/lib/auth/api-client", async () => {
   const actual =
-    await vi.importActual<typeof import("@/lib/auth/api-client")>(
-      "@/lib/auth/api-client",
-    )
+    await vi.importActual<typeof import("@/lib/auth/api-client")>("@/lib/auth/api-client")
   return { ...actual, getApiClient: vi.fn(), resetApiClient: vi.fn() }
 })
 
@@ -57,10 +55,9 @@ describe("services/refresh", () => {
     const data = await refresh()
 
     expect(post).toHaveBeenCalledTimes(1)
-    expect(post).toHaveBeenCalledWith(
-      "/api/v1/auth/refresh",
-      { refresh_token: "rt-test-1234567890" },
-    )
+    expect(post).toHaveBeenCalledWith("/api/v1/auth/refresh", {
+      refresh_token: "rt-test-1234567890",
+    })
     expect(data.access_token).toBe("at-new")
   })
 
@@ -71,9 +68,7 @@ describe("services/refresh", () => {
     const post = vi.fn()
     getApiClientMock.mockReturnValue({ post } as never)
 
-    await expect(refresh()).rejects.toThrow(
-      "No refresh token available",
-    )
+    await expect(refresh()).rejects.toThrow("No refresh token available")
     expect(post).not.toHaveBeenCalled()
   })
 

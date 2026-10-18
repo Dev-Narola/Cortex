@@ -75,11 +75,13 @@ function sanitizeSlugLocalPart(email: string): string {
   // Lower-case + replace any non-`[a-z0-9]` run with
   // a single dash + trim leading/trailing dashes. This
   // matches the backend's slug regex.
-  return local
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 32) || "user"
+  return (
+    local
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 32) || "user"
+  )
 }
 
 function generateUuidHex(length: number): string {
@@ -88,7 +90,10 @@ function generateUuidHex(length: number): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
     return crypto.randomUUID().replace(/-/g, "").slice(0, length)
   }
-  return Math.random().toString(16).slice(2, 2 + length).padEnd(length, "0")
+  return Math.random()
+    .toString(16)
+    .slice(2, 2 + length)
+    .padEnd(length, "0")
 }
 
 /**

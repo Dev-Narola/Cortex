@@ -151,10 +151,7 @@ function AuthRequiredGate({
       // loading screen forever. Clear the cookie here
       // so the next navigation to /login passes the
       // edge check.
-      if (
-        typeof document !== "undefined" &&
-        document.cookie.includes(`${AUTH_HINT_COOKIE}=1`)
-      ) {
+      if (typeof document !== "undefined" && document.cookie.includes(`${AUTH_HINT_COOKIE}=1`)) {
         document.cookie = `${AUTH_HINT_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`
       }
       const currentPath = `${window.location.pathname}${window.location.search}`
@@ -209,11 +206,7 @@ export function ProtectedRoute({
   nextPath,
 }: ProtectedRouteProps) {
   if (redirectIfAuthenticatedTo) {
-    return (
-      <PublicAuthGate redirectTo={redirectIfAuthenticatedTo}>
-        {children}
-      </PublicAuthGate>
-    )
+    return <PublicAuthGate redirectTo={redirectIfAuthenticatedTo}>{children}</PublicAuthGate>
   }
 
   return (
@@ -222,4 +215,3 @@ export function ProtectedRoute({
     </AuthRequiredGate>
   )
 }
-

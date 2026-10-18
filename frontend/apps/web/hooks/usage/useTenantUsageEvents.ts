@@ -9,12 +9,9 @@
  */
 "use client"
 
-import { useQuery, type UseQueryResult } from "@tanstack/react-query"
+import { type UseQueryResult, useQuery } from "@tanstack/react-query"
 
-import {
-  getTenantUsageEvents,
-  type UsageEvent,
-} from "@/services/usage"
+import { type UsageEvent, getTenantUsageEvents } from "@/services/usage"
 
 import { usageKeys } from "./usageKeys"
 
@@ -27,10 +24,7 @@ export interface UseTenantUsageEventsParams {
   enabled?: boolean
 }
 
-export type UseTenantUsageEventsResult = UseQueryResult<
-  ReadonlyArray<UsageEvent>,
-  Error
->
+export type UseTenantUsageEventsResult = UseQueryResult<ReadonlyArray<UsageEvent>, Error>
 
 export function useTenantUsageEvents(
   params: UseTenantUsageEventsParams = {},

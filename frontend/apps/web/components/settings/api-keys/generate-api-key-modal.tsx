@@ -150,7 +150,7 @@ export function GenerateApiKeyModal({ open, onOpenChange, onCreated }: GenerateA
                 {errors.name.message}
               </p>
             ) : null}
-            <p className="text-xs text-paper-200/50">
+            <p className="text-xs text-faint">
               A friendly label so you remember what this key is for.
             </p>
           </div>

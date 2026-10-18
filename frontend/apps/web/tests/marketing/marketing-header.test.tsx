@@ -39,12 +39,8 @@ describe("MarketingHeader", () => {
 
   it("renders the public CTAs", () => {
     render(<MarketingHeader />)
-    expect(
-      screen.getByRole("link", { name: /log in/i }),
-    ).toHaveAttribute("href", "/login")
-    expect(
-      screen.getByRole("link", { name: /get started/i }),
-    ).toHaveAttribute("href", "/register")
+    expect(screen.getByRole("link", { name: /log in/i })).toHaveAttribute("href", "/login")
+    expect(screen.getByRole("link", { name: /get started/i })).toHaveAttribute("href", "/register")
   })
 
   it("is a semantic <header> with a <nav> child", () => {
@@ -67,9 +63,7 @@ describe("MarketingHeader", () => {
       "/app/conversations",
       "/app/settings",
     ]) {
-      expect(
-        screen.queryByRole("link", { name: new RegExp(path, "i") }),
-      ).not.toBeInTheDocument()
+      expect(screen.queryByRole("link", { name: new RegExp(path, "i") })).not.toBeInTheDocument()
     }
   })
 

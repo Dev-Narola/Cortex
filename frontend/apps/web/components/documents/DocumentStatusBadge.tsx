@@ -48,10 +48,7 @@ export interface DocumentStatusBadgeProps {
   className?: string
 }
 
-export function DocumentStatusBadge({
-  status,
-  className,
-}: DocumentStatusBadgeProps) {
+export function DocumentStatusBadge({ status, className }: DocumentStatusBadgeProps) {
   return (
     <Badge variant={VARIANT[status]} className={className}>
       {LABEL[status]}

@@ -39,6 +39,7 @@
  */
 
 import { getApiClient } from "@/lib/auth/api-client"
+import { type WireConversation, toConversation } from "./mappers"
 
 import type { Conversation } from "@/types/conversation"
 
@@ -47,12 +48,11 @@ export interface RenameConversationParams {
   title: string
 }
 
-export async function renameConversation(
-  params: RenameConversationParams,
-): Promise<Conversation> {
+export async function renameConversation(params: RenameConversationParams): Promise<Conversation> {
   const client = getApiClient()
-  return client.patch<Conversation>(
+  const raw = await client.patch<WireConversation>(
     `/api/v1/conversations/${encodeURIComponent(params.id)}`,
     { title: params.title } as never,
   )
+  return toConversation(raw)
 }

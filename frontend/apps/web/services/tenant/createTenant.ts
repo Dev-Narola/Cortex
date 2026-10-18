@@ -35,9 +35,7 @@ export interface Tenant extends AuthTenant {
   organization?: string
 }
 
-export async function createTenant(
-  input: CreateTenantRequest,
-): Promise<Tenant> {
+export async function createTenant(input: CreateTenantRequest): Promise<Tenant> {
   const client = getApiClient()
   const data = await client.post<Tenant>("/api/v1/tenants", input)
   return data

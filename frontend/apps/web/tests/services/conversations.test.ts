@@ -18,9 +18,7 @@ import {
 
 vi.mock("@/lib/auth/api-client", async () => {
   const actual =
-    await vi.importActual<typeof import("@/lib/auth/api-client")>(
-      "@/lib/auth/api-client",
-    )
+    await vi.importActual<typeof import("@/lib/auth/api-client")>("@/lib/auth/api-client")
   return {
     ...actual,
     getApiClient: vi.fn(),
@@ -59,19 +57,26 @@ describe("services/conversations", () => {
     })
 
     it("propagates backend errors", async () => {
-      const post = vi
-        .fn()
-        .mockRejectedValue(new Error("title required"))
+      const post = vi.fn().mockRejectedValue(new Error("title required"))
       getApiClientMock.mockReturnValue({ post } as never)
 
-      await expect(
-        createConversation({ title: "" }),
-      ).rejects.toThrow("title required")
+      await expect(createConversation({ title: "" })).rejects.toThrow("title required")
     })
   })
 
   describe("getConversation", () => {
     it("GETs /api/v1/conversations/{id}", async () => {
+      // The backend responds in snake_case; the service maps to the app type.
+      const wire = {
+        id: "c-1",
+        tenant_id: "t-1",
+        user_id: "u-1",
+        title: "Architecture",
+        summary: null,
+        created_at: "2025-01-01T00:00:00.000Z",
+        updated_at: "2025-01-01T00:00:00.000Z",
+        messages: [],
+      }
       const payload = {
         id: "c-1",
         tenantId: "t-1",
@@ -82,7 +87,7 @@ describe("services/conversations", () => {
         updatedAt: "2025-01-01T00:00:00.000Z",
         messages: [],
       }
-      const get = vi.fn().mockResolvedValue(payload)
+      const get = vi.fn().mockResolvedValue(wire)
       getApiClientMock.mockReturnValue({ get } as never)
 
       const result = await getConversation({ id: "c-1" })
@@ -112,10 +117,10 @@ describe("services/conversations", () => {
 
       await getConversationMessages({ id: "c-1" })
 
-      expect(get).toHaveBeenCalledWith(
-        "/api/v1/conversations/c-1/messages",
-        { query: { limit: 200 }, signal: undefined },
-      )
+      expect(get).toHaveBeenCalledWith("/api/v1/conversations/c-1/messages", {
+        query: { limit: 200 },
+        signal: undefined,
+      })
     })
 
     it("accepts a custom limit", async () => {
@@ -124,10 +129,10 @@ describe("services/conversations", () => {
 
       await getConversationMessages({ id: "c-1", limit: 50 })
 
-      expect(get).toHaveBeenCalledWith(
-        "/api/v1/conversations/c-1/messages",
-        { query: { limit: 50 }, signal: undefined },
-      )
+      expect(get).toHaveBeenCalledWith("/api/v1/conversations/c-1/messages", {
+        query: { limit: 50 },
+        signal: undefined,
+      })
     })
   })
 })

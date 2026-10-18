@@ -55,12 +55,15 @@ const fileSchema = z
   .refine((file) => file.size <= MAX_FILE_SIZE_BYTES, {
     message: `File is too large. The limit is ${MAX_FILE_SIZE_LABEL}.`,
   })
-  .refine((file) => {
-    const ext = file.name.split(".").pop()?.toLowerCase()
-    return ext ? (ALLOWED_EXTENSIONS as readonly string[]).includes(ext) : false
-  }, {
-    message: `Unsupported file type. Allowed: ${ALLOWED_EXTENSIONS.map((e) => `.${e}`).join(", ")}.`,
-  })
+  .refine(
+    (file) => {
+      const ext = file.name.split(".").pop()?.toLowerCase()
+      return ext ? (ALLOWED_EXTENSIONS as readonly string[]).includes(ext) : false
+    },
+    {
+      message: `Unsupported file type. Allowed: ${ALLOWED_EXTENSIONS.map((e) => `.${e}`).join(", ")}.`,
+    },
+  )
 
 /** File-tab form. */
 export const fileUploadSchema = z.object({
@@ -90,10 +93,7 @@ export const urlUploadSchema = z.object({
 
 /** Discriminated union — the upload modal picks the
  *  right shape based on the active tab. */
-export const uploadSchema = z.discriminatedUnion("kind", [
-  fileUploadSchema,
-  urlUploadSchema,
-])
+export const uploadSchema = z.discriminatedUnion("kind", [fileUploadSchema, urlUploadSchema])
 
 export type FileUploadForm = z.infer<typeof fileUploadSchema>
 export type UrlUploadForm = z.infer<typeof urlUploadSchema>

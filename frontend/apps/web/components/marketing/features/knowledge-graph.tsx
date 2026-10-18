@@ -38,12 +38,10 @@ export function KnowledgeGraphSection() {
       title="Connect the knowledge behind the answer."
       description={
         <>
-          Cortex extracts entities and relationships from your
-          documents as you upload — people, concepts, projects,
-          technologies. Retrieval can then traverse the graph
-          instead of returning isolated chunks, so the answer
-          reflects the <strong>connected context</strong>, not just
-          the closest paragraph.
+          Cortex extracts entities and relationships from your documents as you upload — people,
+          concepts, projects, technologies. Retrieval can then traverse the graph instead of
+          returning isolated chunks, so the answer reflects the <strong>connected context</strong>,
+          not just the closest paragraph.
         </>
       }
       icon={<Network className="h-5 w-5" aria-hidden />}

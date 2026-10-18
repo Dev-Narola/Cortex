@@ -35,16 +35,12 @@
 
 "use client"
 
-import { type MouseEvent, type ReactNode } from "react"
+import type { MouseEvent, ReactNode } from "react"
 
 import { Button } from "@cortex/ui"
 
-import {
-  citationPanelStore,
-} from "@/hooks/chat/citationPanelStore"
-import {
-  documentSelectionStore,
-} from "@/components/documents/DocumentSelectionStore"
+import { documentSelectionStore } from "@/components/documents/DocumentSelectionStore"
+import { citationPanelStore } from "@/hooks/chat/citationPanelStore"
 
 export interface ViewDocumentButtonProps {
   documentId: string
@@ -87,7 +83,9 @@ export function ViewDocumentButton({
       className={className}
     >
       View full document
-      <span aria-hidden="true" className="ml-1.5">→</span>
+      <span aria-hidden="true" className="ml-1.5">
+        →
+      </span>
     </Button>
   )
 }

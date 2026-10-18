@@ -36,6 +36,12 @@
       }
     }
   },
+  "overrides": [
+    {
+      "include": ["**/tests/**", "**/*.test.ts", "**/*.test.tsx"],
+      "linter": { "rules": { "style": { "noNonNullAssertion": "off" } } }
+    }
+  ],
   "formatter": {
     "enabled": true,
     "indentStyle": "space",

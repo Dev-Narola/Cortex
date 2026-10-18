@@ -65,18 +65,10 @@ describe("HybridSearchSection", () => {
     // phrase (no overlap with the
     // heading or other text on the
     // page).
-    expect(
-      within(section).getByText("keyword search"),
-    ).toBeInTheDocument()
-    expect(
-      within(section).getByText("vector similarity"),
-    ).toBeInTheDocument()
-    expect(
-      within(section).getByText(/fuses the two result lists/i),
-    ).toBeInTheDocument()
-    expect(
-      within(section).getByText(/reranks the candidates/i),
-    ).toBeInTheDocument()
+    expect(within(section).getByText("keyword search")).toBeInTheDocument()
+    expect(within(section).getByText("vector similarity")).toBeInTheDocument()
+    expect(within(section).getByText(/fuses the two result lists/i)).toBeInTheDocument()
+    expect(within(section).getByText(/reranks the candidates/i)).toBeInTheDocument()
   })
 
   it("has a stable id for the marketing nav", () => {

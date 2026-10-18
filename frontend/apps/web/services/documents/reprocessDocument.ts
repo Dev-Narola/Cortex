@@ -17,6 +17,8 @@ import { getApiClient } from "@/lib/auth/api-client"
 
 export interface ReprocessDocumentParams {
   id: string
+  /** A FAILED document is re-queued via `/retry`; `/reprocess` only accepts INDEXED ones. */
+  retry?: boolean
   signal?: AbortSignal
 }
 
@@ -26,11 +28,12 @@ export interface ReprocessDocumentResponse {
 
 export async function reprocessDocument({
   id,
+  retry = false,
   signal,
 }: ReprocessDocumentParams): Promise<ReprocessDocumentResponse> {
   const client = getApiClient()
   return client.post<ReprocessDocumentResponse>(
-    `/api/v1/documents/${encodeURIComponent(id)}/reprocess`,
+    `/api/v1/documents/${encodeURIComponent(id)}/${retry ? "retry" : "reprocess"}`,
     undefined,
     { signal },
   )

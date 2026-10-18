@@ -7,3 +7,4 @@ export {
   type CreateTenantRequest,
   type Tenant,
 } from "./createTenant"
+export { type CurrentTenant, getCurrentTenant } from "./getCurrentTenant"

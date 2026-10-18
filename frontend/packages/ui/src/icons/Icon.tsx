@@ -40,7 +40,7 @@ const ICON_STROKE = 1.75
 const ICON_TONES = {
   default: "text-foreground",
   muted: "text-muted-foreground",
-  inverse: "text-paper-50",
+  inverse: "text-foreground",
   accent: "text-ember-600",
   success: "text-success",
   warning: "text-warning",

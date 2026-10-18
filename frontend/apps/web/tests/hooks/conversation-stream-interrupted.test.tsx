@@ -48,9 +48,7 @@ describe("conversationStreamStore.markInterrupted", () => {
       type: "token",
       content: "pgvector.",
     })
-    expect(useConversationStreamStore.getState().streams.get(CONV)?.status).toBe(
-      "streaming",
-    )
+    expect(useConversationStreamStore.getState().streams.get(CONV)?.status).toBe("streaming")
     conversationStreamStore.markInterrupted(CONV, "lost connection")
     const row = useConversationStreamStore.getState().streams.get(CONV)
     expect(row?.status).toBe("interrupted")
@@ -70,13 +68,9 @@ describe("conversationStreamStore.markInterrupted", () => {
       messageId: "a-1",
     })
     conversationStreamStore.applyEvent(CONV, { type: "message_complete", messageId: "a-1" })
-    expect(useConversationStreamStore.getState().streams.get(CONV)?.status).toBe(
-      "completed",
-    )
+    expect(useConversationStreamStore.getState().streams.get(CONV)?.status).toBe("completed")
     conversationStreamStore.markInterrupted(CONV)
-    expect(useConversationStreamStore.getState().streams.get(CONV)?.status).toBe(
-      "completed",
-    )
+    expect(useConversationStreamStore.getState().streams.get(CONV)?.status).toBe("completed")
   })
 
   it("is a no-op on an idle row", () => {

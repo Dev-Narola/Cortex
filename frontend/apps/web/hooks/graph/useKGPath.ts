@@ -21,7 +21,7 @@
 
 "use client"
 
-import { useQuery, type UseQueryResult } from "@tanstack/react-query"
+import { type UseQueryResult, useQuery } from "@tanstack/react-query"
 
 import { ApiError } from "@cortex/api-client"
 
@@ -38,9 +38,7 @@ export interface UseKGPathParams {
 
 export type UseKGPathResult = UseQueryResult<KGPathResponse | null, Error>
 
-export function useKGPath(
-  params: UseKGPathParams,
-): UseKGPathResult {
+export function useKGPath(params: UseKGPathParams): UseKGPathResult {
   const { source, target, maxDepth } = params
   const enabled = Boolean(source) && Boolean(target) && source !== target
   return useQuery<KGPathResponse | null, Error>({

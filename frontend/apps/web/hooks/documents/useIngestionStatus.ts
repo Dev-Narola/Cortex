@@ -62,18 +62,15 @@
 
 "use client"
 
+import { type QueryClient, useQueryClient } from "@tanstack/react-query"
 import { useEffect, useRef, useState } from "react"
-import { useQueryClient, type QueryClient } from "@tanstack/react-query"
 
 import { useAuthStore } from "@/lib/auth/store"
 import { isInFlight, shouldApplyStatus } from "@/lib/documents/status"
-import {
-  IngestionSocket,
-  type IngestionStateListener,
-} from "@/services/documents/ingestionSocket"
-import type { Document } from "@/services/documents"
-import type { IngestionEvent, IngestionStatusEvent } from "@/types/websocket"
 import type { WebSocketState } from "@/lib/websocket/client"
+import type { Document } from "@/services/documents"
+import { IngestionSocket, type IngestionStateListener } from "@/services/documents/ingestionSocket"
+import type { IngestionEvent, IngestionStatusEvent } from "@/types/websocket"
 
 export interface UseIngestionStatusResult {
   /**
@@ -116,9 +113,7 @@ export const INGESTION_POLL_INTERVAL_MS = 5_000
  */
 function countInFlightDocs(qc: QueryClient): number {
   let count = 0
-  const queries = qc
-    .getQueryCache()
-    .findAll({ queryKey: ["documents"], type: "all" })
+  const queries = qc.getQueryCache().findAll({ queryKey: ["documents"], type: "all" })
   for (const q of queries) {
     const k = q.queryKey
     // Skip detail queries (`["documents", id]`
@@ -126,9 +121,7 @@ function countInFlightDocs(qc: QueryClient): number {
     // list query key shape is `["documents",
     // params]` where params is an object.
     if (k.length === 2 && typeof k[1] === "string") continue
-    const data = q.state.data as
-      | { items?: Document[] }
-      | undefined
+    const data = q.state.data as { items?: Document[] } | undefined
     if (!data || !Array.isArray(data.items)) continue
     for (const doc of data.items) {
       if (isInFlight(doc.status)) count += 1
@@ -162,10 +155,7 @@ function ensureSocket(accessToken: string): IngestionSocket {
 
 const STATUS_EVENT_TYPES = new Set(["ingestion.status", "ingestion.detail"])
 
-function patchDetailCache(
-  qc: QueryClient,
-  event: IngestionStatusEvent,
-): void {
+function patchDetailCache(qc: QueryClient, event: IngestionStatusEvent): void {
   const key = ["documents", event.document_id]
   const current = qc.getQueryData<Document>(key)
   if (!current) return
@@ -176,10 +166,7 @@ function patchDetailCache(
   })
 }
 
-function patchListCache(
-  qc: QueryClient,
-  event: IngestionStatusEvent,
-): void {
+function patchListCache(qc: QueryClient, event: IngestionStatusEvent): void {
   // Match every cached list query. The list
   // query key is `["documents", params]` where
   // params is `{ limit, offset, status? }`. The
@@ -196,9 +183,7 @@ function patchListCache(
   // that has been seeded via `setQueryData` in
   // a test is "inactive" until something subscribes
   // — using `"all"` ensures the patch hits both.
-  const queries = qc
-    .getQueryCache()
-    .findAll({ queryKey: ["documents"], type: "all" })
+  const queries = qc.getQueryCache().findAll({ queryKey: ["documents"], type: "all" })
   for (const q of queries) {
     const k = q.queryKey
     // Skip the detail query (`["documents", id]`
@@ -208,8 +193,8 @@ function patchListCache(
     const data = q.state.data as ListData | undefined
     if (!data || !Array.isArray(data.items)) continue
     const idx = data.items.findIndex((d: Document) => d.id === event.document_id)
-    if (idx === -1) continue
-    const item = data.items[idx]!
+    const item = data.items[idx]
+    if (!item) continue
     if (!shouldApplyStatus(item.status, event.status)) continue
     const nextItems = data.items.slice()
     nextItems[idx] = { ...item, status: event.status }
@@ -332,11 +317,7 @@ export function useIngestionStatus(): UseIngestionStatusResult {
     // the route prefetcher).
     setInFlightCount(countInFlightDocs(qc))
     const unsubscribe = qc.getQueryCache().subscribe((event) => {
-      if (
-        event.type === "updated" ||
-        event.type === "added" ||
-        event.type === "removed"
-      ) {
+      if (event.type === "updated" || event.type === "added" || event.type === "removed") {
         setInFlightCount(countInFlightDocs(qc))
       }
     })
@@ -370,11 +351,7 @@ export function useIngestionStatus(): UseIngestionStatusResult {
       return
     }
     // WS is the primary transport — don't fight it.
-    if (
-      wsState === "open" ||
-      wsState === "connecting" ||
-      wsState === "closing"
-    ) {
+    if (wsState === "open" || wsState === "connecting" || wsState === "closing") {
       clearPolling()
       return
     }
@@ -407,12 +384,9 @@ export function useIngestionStatus(): UseIngestionStatusResult {
   // raw WS state (typically ``closed`` or
   // ``idle``).
   const connectionState: WebSocketState =
-    wsState === "open" ||
-    wsState === "connecting" ||
-    wsState === "closing"
+    wsState === "open" || wsState === "connecting" || wsState === "closing"
       ? wsState
-      : inFlightCount > 0 &&
-          (wsState === "closed" || wsState === "idle")
+      : inFlightCount > 0 && (wsState === "closed" || wsState === "idle")
         ? "polling"
         : wsState
 

@@ -46,14 +46,15 @@
  * row until the server persists it.
  */
 
-import { type ReactNode } from "react"
+import type { ReactNode } from "react"
 
 import { cn } from "@cortex/ui"
 
-import { CitationChip } from "./citations/CitationChip"
-import { MessageBubble } from "./MessageBubble"
 import { useCitationPanelStore } from "@/hooks/chat"
 import { useResolvedCitations } from "@/hooks/chat/useResolvedCitations"
+import { MarkdownMessage } from "./MarkdownMessage"
+import { MessageBubble } from "./MessageBubble"
+import { CitationChip } from "./citations/CitationChip"
 
 import type { Message } from "@/types/conversation"
 
@@ -133,13 +134,8 @@ export function StreamingMessage({
     id: "streaming",
     retrievedChunkIds,
   }
-  const { data: citations } = useResolvedCitations(
-    synthetic,
-    conversationId,
-  )
-  const selectedCitationId = useCitationPanelStore(
-    (s) => s.selectedCitationId,
-  )
+  const { data: citations } = useResolvedCitations(synthetic, conversationId)
+  const selectedCitationId = useCitationPanelStore((s) => s.selectedCitationId)
 
   return (
     <article
@@ -174,15 +170,13 @@ export function StreamingMessage({
           </span>
         ) : null}
       </div>
-      <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">
-        {content}
-        {isActive ? (
-          <span
-            aria-hidden="true"
-            className="ml-0.5 inline-block h-3 w-1.5 translate-y-0.5 animate-pulse bg-volt-500/80"
-          />
-        ) : null}
-      </p>
+      <MarkdownMessage content={content} citations={citations} />
+      {isActive ? (
+        <span
+          aria-hidden="true"
+          className="mt-1 inline-block h-3 w-1.5 animate-pulse rounded-sm bg-brand/80"
+        />
+      ) : null}
       {citations.length > 0 ? (
         <div
           className="mt-2 flex flex-wrap items-center gap-1.5"

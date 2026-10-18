@@ -12,8 +12,8 @@
  *   - Surfaces 409 + 5xx errors.
  */
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { ApiError } from "@cortex/api-client"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { act, renderHook, waitFor } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
@@ -70,9 +70,7 @@ describe("useCreateWorkspace", () => {
   })
 
   it("surfaces 409 (duplicate slug) as an Error on the mutation", async () => {
-    postMock.mockRejectedValueOnce(
-      new ApiError(409, { message: "Slug already in use" }),
-    )
+    postMock.mockRejectedValueOnce(new ApiError(409, { message: "Slug already in use" }))
     const { result } = renderHook(() => useCreateWorkspace(), {
       wrapper: makeWrapper(),
     })
@@ -91,9 +89,7 @@ describe("useCreateWorkspace", () => {
   })
 
   it("surfaces 5xx as an Error on the mutation", async () => {
-    postMock.mockRejectedValueOnce(
-      new ApiError(500, { message: "Internal Server Error" }),
-    )
+    postMock.mockRejectedValueOnce(new ApiError(500, { message: "Internal Server Error" }))
     const { result } = renderHook(() => useCreateWorkspace(), {
       wrapper: makeWrapper(),
     })

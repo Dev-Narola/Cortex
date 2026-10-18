@@ -26,7 +26,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { useState, type ReactNode } from "react"
+import { type ReactNode, useState } from "react"
 
 import { Button, Icon, toast } from "@cortex/ui"
 
@@ -39,9 +39,7 @@ export interface ConversationHeaderProps {
   title?: string | null
 }
 
-export function ConversationHeader({
-  title,
-}: ConversationHeaderProps): ReactNode {
+export function ConversationHeader({ title }: ConversationHeaderProps): ReactNode {
   const router = useRouter()
   const create = useCreateConversation()
   const [navigating, setNavigating] = useState(false)
@@ -60,8 +58,7 @@ export function ConversationHeader({
     } catch (err) {
       toast({
         title: "Couldn't start a new conversation",
-        description:
-          err instanceof Error ? err.message : "Try again in a moment.",
+        description: err instanceof Error ? err.message : "Try again in a moment.",
         variant: "destructive",
       })
       setNavigating(false)

@@ -120,7 +120,7 @@ export function AgentsMcpVisual() {
                 aria-hidden
                 className={`relative z-10 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold uppercase tracking-wider ${
                   stage.accent
-                    ? "bg-spark text-paper-50 shadow-spark"
+                    ? "bg-spark text-foreground shadow-spark"
                     : "border border-border bg-background text-muted-foreground"
                 }`}
               >

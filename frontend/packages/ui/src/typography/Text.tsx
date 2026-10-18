@@ -29,7 +29,7 @@ const textVariants = cva("font-sans text-foreground", {
     tone: {
       default: "text-foreground",
       muted: "text-muted-foreground",
-      inverse: "text-paper-50",
+      inverse: "text-gray-50",
       accent: "text-ember-600",
       success: "text-success",
       warning: "text-warning",

@@ -34,6 +34,7 @@
  */
 
 import { getApiClient } from "@/lib/auth/api-client"
+import { type WireConversation, toConversation } from "./mappers"
 
 import type { ConversationListResponse } from "@/types/conversation"
 
@@ -54,8 +55,11 @@ export async function listConversations(
   const query: Record<string, number> = {}
   if (limit !== undefined) query.limit = limit
   if (offset !== undefined) query.offset = offset
-  return client.get<ConversationListResponse>("/api/v1/conversations", {
+  const raw = await client.get<
+    Omit<ConversationListResponse, "items"> & { items: WireConversation[] }
+  >("/api/v1/conversations", {
     ...(Object.keys(query).length > 0 ? { query } : {}),
     ...(signal ? { signal } : {}),
   })
+  return { ...raw, items: raw.items.map(toConversation) }
 }

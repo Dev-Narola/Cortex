@@ -290,20 +290,12 @@ export function Toaster() {
   const { toasts } = useToast()
   return (
     <>
-      {toasts.map(function renderToast({
-        id,
-        title,
-        description,
-        action,
-        ...rest
-      }) {
+      {toasts.map(function renderToast({ id, title, description, action, ...rest }) {
         return (
           <Toast key={id} {...rest}>
             <div className="grid gap-1">
               {title ? <ToastTitle>{title}</ToastTitle> : null}
-              {description ? (
-                <ToastDescription>{description}</ToastDescription>
-              ) : null}
+              {description ? <ToastDescription>{description}</ToastDescription> : null}
             </div>
             {action}
             <ToastClose />

@@ -43,21 +43,15 @@
 
 import { useId } from "react"
 
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@cortex/ui"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@cortex/ui"
 
 import {
   AUDIT_ACTIONS,
   AUDIT_RESOURCE_TYPES,
+  type ActionCategory,
   actionCategory,
   actionLabel,
   resourceTypeLabel,
-  type ActionCategory,
 } from "@/services/audit"
 
 export interface AuditLogFiltersValue {
@@ -98,8 +92,9 @@ const ACTION_OPTIONS: ReadonlyArray<ActionOption> = (() => {
   const byCategory = new Map<ActionCategory, string[]>()
   for (const a of Object.values(AUDIT_ACTIONS)) {
     const cat = actionCategory(a)
-    if (!byCategory.has(cat)) byCategory.set(cat, [])
-    byCategory.get(cat)!.push(a)
+    const list = byCategory.get(cat) ?? []
+    list.push(a)
+    byCategory.set(cat, list)
   }
   const order: ActionCategory[] = [
     "documents",
@@ -124,10 +119,11 @@ const ACTION_OPTIONS: ReadonlyArray<ActionOption> = (() => {
   return out
 })()
 
-const RESOURCE_OPTIONS: ReadonlyArray<{ value: string; label: string }> =
-  Object.values(AUDIT_RESOURCE_TYPES)
-    .sort()
-    .map((v) => ({ value: v, label: resourceTypeLabel(v) }))
+const RESOURCE_OPTIONS: ReadonlyArray<{ value: string; label: string }> = Object.values(
+  AUDIT_RESOURCE_TYPES,
+)
+  .sort()
+  .map((v) => ({ value: v, label: resourceTypeLabel(v) }))
 
 export function AuditLogFilters({ value, onChange, disabled }: AuditLogFiltersProps) {
   const actionId = useId()
@@ -149,7 +145,7 @@ export function AuditLogFilters({ value, onChange, disabled }: AuditLogFiltersPr
       <div className="flex flex-col gap-1">
         <label
           htmlFor={actionId}
-          className="text-xs font-medium uppercase tracking-wider text-paper-200/60"
+          className="text-xs font-medium uppercase tracking-wider text-faint"
         >
           Action
         </label>
@@ -176,7 +172,7 @@ export function AuditLogFilters({ value, onChange, disabled }: AuditLogFiltersPr
       <div className="flex flex-col gap-1">
         <label
           htmlFor={resourceId}
-          className="text-xs font-medium uppercase tracking-wider text-paper-200/60"
+          className="text-xs font-medium uppercase tracking-wider text-faint"
         >
           Resource
         </label>
@@ -204,10 +200,7 @@ export function AuditLogFilters({ value, onChange, disabled }: AuditLogFiltersPr
         </Select>
       </div>
       <div className="flex flex-col gap-1">
-        <label
-          htmlFor={fromId}
-          className="text-xs font-medium uppercase tracking-wider text-paper-200/60"
-        >
+        <label htmlFor={fromId} className="text-xs font-medium uppercase tracking-wider text-faint">
           From
         </label>
         <input
@@ -222,14 +215,11 @@ export function AuditLogFilters({ value, onChange, disabled }: AuditLogFiltersPr
           }
           disabled={disabled}
           data-testid="audit-log-filter-from"
-          className="h-10 rounded-md border border-slate-700/60 bg-slate-900/60 px-3 text-sm text-paper-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-volt-500"
+          className="h-10 rounded-md border border-border bg-muted px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-volt-500"
         />
       </div>
       <div className="flex flex-col gap-1">
-        <label
-          htmlFor={toId}
-          className="text-xs font-medium uppercase tracking-wider text-paper-200/60"
-        >
+        <label htmlFor={toId} className="text-xs font-medium uppercase tracking-wider text-faint">
           To
         </label>
         <input
@@ -244,7 +234,7 @@ export function AuditLogFilters({ value, onChange, disabled }: AuditLogFiltersPr
           }
           disabled={disabled}
           data-testid="audit-log-filter-to"
-          className="h-10 rounded-md border border-slate-700/60 bg-slate-900/60 px-3 text-sm text-paper-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-volt-500"
+          className="h-10 rounded-md border border-border bg-muted px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-volt-500"
         />
       </div>
       {hasAnyFilter ? (

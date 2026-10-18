@@ -29,6 +29,5 @@ export const kgKeys = {
   relations: (id: string) => [...kgKeys.all, "relations", id] as const,
   neighbors: (id: string) => [...kgKeys.all, "neighbors", id] as const,
   search: (query: string) => [...kgKeys.all, "search", query] as const,
-  path: (source: string, target: string) =>
-    [...kgKeys.all, "path", source, target] as const,
+  path: (source: string, target: string) => [...kgKeys.all, "path", source, target] as const,
 }

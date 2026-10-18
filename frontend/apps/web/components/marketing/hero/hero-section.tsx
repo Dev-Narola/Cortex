@@ -85,16 +85,12 @@ export function HeroSection() {
     // Reduced motion → render the final
     // state immediately. No timeline.
     if (reducedMotion) {
-      ;[headlineRef.current, subheadlineRef.current, ctaRef.current].forEach((el) => {
-        if (!el) return
+      const words = headlineRef.current?.querySelectorAll<HTMLSpanElement>("[data-hero-word]") ?? []
+      for (const el of [headlineRef.current, subheadlineRef.current, ctaRef.current, ...words]) {
+        if (!el) continue
         el.style.opacity = "1"
         el.style.transform = "none"
-      })
-      const words = headlineRef.current?.querySelectorAll<HTMLSpanElement>("[data-hero-word]")
-      words?.forEach((w) => {
-        w.style.opacity = "1"
-        w.style.transform = "none"
-      })
+      }
       return
     }
 
@@ -235,6 +231,7 @@ export function HeroSection() {
             duplicate it.
           */}
           <Button asChild size="lg" variant="outline" className="min-w-[180px]">
+            {/* biome-ignore lint/a11y/useValidAnchor: real in-page link to #demo; onClick only records analytics */}
             <a
               href="#demo"
               data-testid="hero-see-it-work"

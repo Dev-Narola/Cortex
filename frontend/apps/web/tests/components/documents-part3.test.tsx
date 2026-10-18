@@ -19,32 +19,24 @@
  */
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import {
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-  within,
-} from "@testing-library/react"
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import { ApiError } from "@cortex/api-client"
 import { ToastProvider, ToastViewport } from "@cortex/ui"
 
+import {
+  DocumentSelectionProvider,
+  useDocumentSelection,
+} from "@/components/documents/DocumentSelectionProvider"
+import { useDocumentSelectionStore } from "@/components/documents/DocumentSelectionStore"
 import { DeleteDocumentDialog } from "@/components/documents/actions/DeleteDocumentDialog"
 import { ReprocessDocumentDialog } from "@/components/documents/actions/ReprocessDocumentDialog"
 import { DocumentDetailDrawer } from "@/components/documents/detail/DocumentDetailDrawer"
 import { DocumentHeader } from "@/components/documents/detail/DocumentHeader"
 import { DocumentMetadata } from "@/components/documents/detail/DocumentMetadata"
 import { MetadataRow } from "@/components/documents/detail/MetadataRow"
-import {
-  DocumentSelectionProvider,
-  useDocumentSelection,
-} from "@/components/documents/DocumentSelectionProvider"
-import {
-  useDocumentSelectionStore,
-} from "@/components/documents/DocumentSelectionStore"
 import { FileUploadTab } from "@/components/documents/upload/FileUploadTab"
 import { UploadDocumentModal } from "@/components/documents/upload/UploadDocumentModal"
 import { UrlUploadTab } from "@/components/documents/upload/UrlUploadTab"
@@ -53,9 +45,7 @@ import type { Document } from "@/services/documents"
 
 vi.mock("@/lib/auth/api-client", async () => {
   const actual =
-    await vi.importActual<typeof import("@/lib/auth/api-client")>(
-      "@/lib/auth/api-client",
-    )
+    await vi.importActual<typeof import("@/lib/auth/api-client")>("@/lib/auth/api-client")
   return {
     ...actual,
     getApiClient: vi.fn(),
@@ -112,9 +102,7 @@ function makeFile(name: string, size = 10, type = "application/pdf"): File {
  * isn't attached to a real DOM.
  */
 function setFileOnInput(file: File): void {
-  const input = document.querySelector(
-    'input[type="file"]',
-  ) as HTMLInputElement | null
+  const input = document.querySelector('input[type="file"]') as HTMLInputElement | null
   if (!input) throw new Error("file input not found")
   Object.defineProperty(input, "files", {
     value: [file],
@@ -144,18 +132,13 @@ afterEach(() => {
 describe("FileUploadTab", () => {
   it("renders the drop zone with the supported-types copy", () => {
     render(<FileUploadTab file={null} onChange={() => {}} />)
-    expect(
-      screen.getByText(/drag & drop a file, or click to browse/i),
-    ).toBeInTheDocument()
+    expect(screen.getByText(/drag & drop a file, or click to browse/i)).toBeInTheDocument()
     expect(screen.getByText(/\.pdf, \.docx, \.txt, \.md/i)).toBeInTheDocument()
   })
 
   it("shows the chosen file's name + size", () => {
     render(
-      <FileUploadTab
-        file={makeFile("plan.pdf", 2048, "application/pdf")}
-        onChange={() => {}}
-      />,
+      <FileUploadTab file={makeFile("plan.pdf", 2048, "application/pdf")} onChange={() => {}} />,
     )
     // The file name shows in the drop-zone + the
     // chip — assert both are present.
@@ -167,10 +150,7 @@ describe("FileUploadTab", () => {
     const user = userEvent.setup()
     const onChange = vi.fn()
     render(
-      <FileUploadTab
-        file={makeFile("plan.pdf", 1024, "application/pdf")}
-        onChange={onChange}
-      />,
+      <FileUploadTab file={makeFile("plan.pdf", 1024, "application/pdf")} onChange={onChange} />,
     )
     await user.click(screen.getByRole("button", { name: /remove selected file/i }))
     expect(onChange).toHaveBeenCalledWith(null)
@@ -178,9 +158,7 @@ describe("FileUploadTab", () => {
 
   it("forwards a file from the input", async () => {
     const onChange = vi.fn()
-    render(
-      <FileUploadTab file={null} onChange={onChange} />,
-    )
+    render(<FileUploadTab file={null} onChange={onChange} />)
     const file = makeFile("x.pdf", 1024, "application/pdf")
     setFileOnInput(file)
     expect(onChange).toHaveBeenCalledWith(file)
@@ -203,9 +181,7 @@ describe("UrlUploadTab", () => {
   })
 
   it("renders the error message when error is set", () => {
-    render(
-      <UrlUploadTab value="x" onChange={() => {}} error="That's not a URL" />,
-    )
+    render(<UrlUploadTab value="x" onChange={() => {}} error="That's not a URL" />)
     expect(screen.getByRole("alert")).toHaveTextContent(/that's not a url/i)
   })
 })
@@ -276,11 +252,7 @@ describe("UploadDocumentModal", () => {
         }
       >
         <ToastProvider>
-          <UploadDocumentModal
-            open
-            onOpenChange={onOpenChange}
-            onUploaded={onUploaded}
-          />
+          <UploadDocumentModal open onOpenChange={onOpenChange} onUploaded={onUploaded} />
           <ToastViewport />
         </ToastProvider>
       </QueryClientProvider>,
@@ -297,9 +269,7 @@ describe("UploadDocumentModal", () => {
   })
 
   it("surfaces an error toast when the upload fails", async () => {
-    const post = vi
-      .fn()
-      .mockRejectedValue(new ApiError(413, { message: "Too large" }))
+    const post = vi.fn().mockRejectedValue(new ApiError(413, { message: "Too large" }))
     getApiClientMock.mockReturnValue({ post } as never)
     const onOpenChange = vi.fn()
 
@@ -326,8 +296,11 @@ describe("UploadDocumentModal", () => {
     expect(onOpenChange).not.toHaveBeenCalledWith(false)
   })
 
-  it("renders the URL tab with a placeholder notice", async () => {
+  it("imports a URL through POST /documents/url and closes on success", async () => {
     const user = userEvent.setup()
+    const post = vi.fn().mockResolvedValue({ id: "doc-url", status: "pending", message: "queued" })
+    getApiClientMock.mockReturnValue({ post } as never)
+    const onOpenChange = vi.fn()
     render(
       <QueryClientProvider
         client={
@@ -337,20 +310,25 @@ describe("UploadDocumentModal", () => {
         }
       >
         <ToastProvider>
-          <UploadDocumentModal open onOpenChange={() => {}} />
+          <UploadDocumentModal open onOpenChange={onOpenChange} />
           <ToastViewport />
         </ToastProvider>
       </QueryClientProvider>,
     )
     await user.click(screen.getByRole("tab", { name: /^url$/i }))
-    // The URL tab is a placeholder until the backend
-    // exposes a URL-ingestion endpoint. The copy
-    // clarifies the user can paste a https:// URL but
-    // the submit is wired to a "coming soon" toast.
-    const input = await screen.findByPlaceholderText(
-      /https:\/\/example.com/i,
+    await user.type(
+      await screen.findByPlaceholderText(/https:\/\/example.com/i),
+      "https://docs.example.com/guide",
     )
-    expect(input).toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: /^upload$/i }))
+    await waitFor(() =>
+      expect(post).toHaveBeenCalledWith(
+        "/api/v1/documents/url",
+        { url: "https://docs.example.com/guide" },
+        {},
+      ),
+    )
+    await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false))
   })
 })
 
@@ -406,9 +384,7 @@ describe("DocumentDetailDrawer", () => {
     // Trigger the open
     screen.getByRole("button", { name: /open/i }).click()
     // The drawer mounts the status surface while fetching
-    await waitFor(() =>
-      expect(screen.getAllByRole("status").length).toBeGreaterThan(0),
-    )
+    await waitFor(() => expect(screen.getAllByRole("status").length).toBeGreaterThan(0))
   })
 
   it("renders the document metadata when the fetch resolves", async () => {
@@ -425,9 +401,7 @@ describe("DocumentDetailDrawer", () => {
     screen.getByRole("button", { name: /open/i }).click()
     // The title shows in both the header and the
     // metadata row — assert on the header specifically.
-    expect(
-      await screen.findByRole("heading", { name: /plan/i }),
-    ).toBeInTheDocument()
+    expect(await screen.findByRole("heading", { name: /plan/i })).toBeInTheDocument()
     // Status badge shows in both the header and the
     // metadata row; assert it exists.
     expect(screen.getAllByText("Indexed").length).toBeGreaterThanOrEqual(1)
@@ -464,12 +438,8 @@ describe("DocumentDetailDrawer", () => {
       { wrapper: makeWrapper() },
     )
     screen.getByRole("button", { name: /open/i }).click()
-    expect(
-      await screen.findByRole("button", { name: /^delete$/i }),
-    ).toBeInTheDocument()
-    expect(
-      await screen.findByRole("button", { name: /^reprocess$/i }),
-    ).toBeInTheDocument()
+    expect(await screen.findByRole("button", { name: /^delete$/i })).toBeInTheDocument()
+    expect(await screen.findByRole("button", { name: /^reprocess$/i })).toBeInTheDocument()
   })
 
   it("disables the reprocess button while ingestion is in progress", async () => {
@@ -559,9 +529,7 @@ describe("DeleteDocumentDialog", () => {
       />,
       { wrapper: makeWrapper() },
     )
-    expect(
-      screen.getByRole("heading", { name: /delete document\?/i }),
-    ).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: /delete document\?/i })).toBeInTheDocument()
     expect(screen.getByText(/this action cannot be undone/i)).toBeInTheDocument()
     await user.click(screen.getByRole("button", { name: /^delete$/i }))
     await waitFor(() => expect(del).toHaveBeenCalled())
@@ -570,9 +538,7 @@ describe("DeleteDocumentDialog", () => {
   })
 
   it("surfaces an error toast on failure and keeps the dialog open", async () => {
-    const del = vi
-      .fn()
-      .mockRejectedValue(new ApiError(500, { message: "boom" }))
+    const del = vi.fn().mockRejectedValue(new ApiError(500, { message: "boom" }))
     getApiClientMock.mockReturnValue({ delete: del } as never)
     const onOpenChange = vi.fn()
     const user = userEvent.setup()
@@ -609,9 +575,7 @@ describe("ReprocessDocumentDialog", () => {
       />,
       { wrapper: makeWrapper() },
     )
-    expect(
-      screen.getByRole("heading", { name: /reprocess document\?/i }),
-    ).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: /reprocess document\?/i })).toBeInTheDocument()
     await user.click(screen.getByRole("button", { name: /^reprocess$/i }))
     await waitFor(() => expect(post).toHaveBeenCalled())
     expect(onReprocessed).toHaveBeenCalled()
@@ -620,11 +584,12 @@ describe("ReprocessDocumentDialog", () => {
 
   it("disables the buttons while the mutation is in flight", async () => {
     let resolveFn!: (v: { message: string }) => void
-    const post = vi
-      .fn()
-      .mockImplementation(
-        () => new Promise((resolve) => (resolveFn = resolve)),
-      )
+    const post = vi.fn().mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveFn = resolve
+        }),
+    )
     getApiClientMock.mockReturnValue({ post } as never)
     const user = userEvent.setup()
     render(

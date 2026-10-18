@@ -1,3 +1,5 @@
+"use client"
+
 /**
  * MarketingHeader — the public site
  * navigation.

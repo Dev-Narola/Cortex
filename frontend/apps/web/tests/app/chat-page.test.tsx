@@ -23,9 +23,7 @@ import { getApiClient } from "@/lib/auth/api-client"
 
 vi.mock("@/lib/auth/api-client", async () => {
   const actual =
-    await vi.importActual<typeof import("@/lib/auth/api-client")>(
-      "@/lib/auth/api-client",
-    )
+    await vi.importActual<typeof import("@/lib/auth/api-client")>("@/lib/auth/api-client")
   return { ...actual, getApiClient: vi.fn(), resetApiClient: vi.fn() }
 })
 
@@ -65,18 +63,12 @@ describe("ChatView (Test A — Open Chat)", () => {
   it("renders the empty state + a ready input", () => {
     render(<ChatView />, { wrapper: makeWrapper() })
     // The header title (default "New conversation").
-    expect(
-      screen.getByRole("heading", { name: /new conversation/i }),
-    ).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: /new conversation/i })).toBeInTheDocument()
     // The empty state copy.
-    expect(
-      screen.getByText(/ask anything about your knowledge base/i),
-    ).toBeInTheDocument()
+    expect(screen.getByText(/ask anything about your knowledge base/i)).toBeInTheDocument()
     // The input is rendered + disabled (empty).
     expect(screen.getByLabelText(/^message$/i)).toBeInTheDocument()
-    expect(
-      screen.getByRole("button", { name: /send message/i }),
-    ).toBeDisabled()
+    expect(screen.getByRole("button", { name: /send message/i })).toBeDisabled()
   })
 
   it("enables the input + send button once the user types", async () => {
@@ -147,9 +139,7 @@ describe("ConversationView (Test D — Load Conversation)", () => {
       wrapper: makeWrapper(),
     })
 
-    expect(
-      await screen.findByRole("heading", { name: /architecture/i }),
-    ).toBeInTheDocument()
+    expect(await screen.findByRole("heading", { name: /architecture/i })).toBeInTheDocument()
     expect(screen.getByText(/What's Cortex/i)).toBeInTheDocument()
     expect(screen.getByText(/A knowledge platform/i)).toBeInTheDocument()
     expect(get).toHaveBeenCalledWith(
@@ -175,27 +165,19 @@ describe("ConversationView (Test D — Load Conversation)", () => {
       wrapper: makeWrapper(),
     })
 
-    expect(
-      await screen.findByRole("heading", { name: /empty/i }),
-    ).toBeInTheDocument()
-    expect(
-      screen.getByText(/ask anything about your knowledge base/i),
-    ).toBeInTheDocument()
+    expect(await screen.findByRole("heading", { name: /empty/i })).toBeInTheDocument()
+    expect(screen.getByText(/ask anything about your knowledge base/i)).toBeInTheDocument()
   })
 
   it("renders the error state on 404", async () => {
-    const get = vi
-      .fn()
-      .mockRejectedValue(new ApiError(404, { message: "not found" }))
+    const get = vi.fn().mockRejectedValue(new ApiError(404, { message: "not found" }))
     getApiClientMock.mockReturnValue({ get } as never)
 
     render(<ConversationView conversationId="missing" />, {
       wrapper: makeWrapper(),
     })
 
-    expect(
-      await screen.findByText(/we couldn't load this conversation/i),
-    ).toBeInTheDocument()
+    expect(await screen.findByText(/we couldn't load this conversation/i)).toBeInTheDocument()
   })
 
   it("calls refetch when the user clicks Try again", async () => {
@@ -227,8 +209,6 @@ describe("ConversationView (Test D — Load Conversation)", () => {
     await user.click(retry)
     // The manual refetch succeeds — the conversation
     // title appears.
-    expect(
-      await screen.findByRole("heading", { name: /recovered/i }),
-    ).toBeInTheDocument()
+    expect(await screen.findByRole("heading", { name: /recovered/i })).toBeInTheDocument()
   })
 })

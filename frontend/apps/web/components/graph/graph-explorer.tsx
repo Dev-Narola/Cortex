@@ -87,7 +87,7 @@ function GraphCanvasSkeleton() {
       aria-label="Loading knowledge graph"
       className="flex h-full w-full items-center justify-center"
     >
-      <div className="h-12 w-12 animate-spin rounded-full border-2 border-void-700 border-t-volt-400" />
+      <div className="h-12 w-12 animate-spin rounded-full border-2 border-border border-t-volt-400" />
     </output>
   )
 }
@@ -301,7 +301,7 @@ export function GraphExplorer({ initialData, defaultQuery = "" }: GraphExplorerP
       aria-label="Knowledge graph explorer"
       data-testid="graph-explorer"
       data-capability={capability}
-      className="relative isolate -m-6 flex h-[calc(100vh-3.5rem)] w-[calc(100%+3rem)] flex-col bg-void-950"
+      className="relative isolate -m-6 flex h-[calc(100vh-3.5rem)] w-[calc(100%+3rem)] flex-col bg-background"
     >
       <div className="absolute inset-0 z-0">
         {renderedGraph ? (
@@ -337,7 +337,7 @@ export function GraphExplorer({ initialData, defaultQuery = "" }: GraphExplorerP
         ) : null}
         {isRootLoading ? (
           <output aria-live="polite" className="pointer-events-none absolute right-4 top-20 z-10">
-            <div className="rounded-md border border-slate-700 bg-slate-800/90 px-3 py-1.5 text-xs text-paper-200 shadow-lg backdrop-blur">
+            <div className="rounded-md border border-border bg-card/90 px-3 py-1.5 text-xs text-muted-foreground shadow-lg backdrop-blur">
               Loading entity…
             </div>
           </output>
@@ -347,7 +347,7 @@ export function GraphExplorer({ initialData, defaultQuery = "" }: GraphExplorerP
             aria-live="polite"
             className="pointer-events-none absolute bottom-6 left-1/2 z-10 -translate-x-1/2"
           >
-            <div className="max-w-md rounded-md border border-volt-500/30 bg-slate-800/90 px-3 py-1.5 text-center text-xs text-paper-200 shadow-lg backdrop-blur">
+            <div className="max-w-md rounded-md border border-volt-500/30 bg-card/90 px-3 py-1.5 text-center text-xs text-muted-foreground shadow-lg backdrop-blur">
               {truncationMessage}
             </div>
           </output>

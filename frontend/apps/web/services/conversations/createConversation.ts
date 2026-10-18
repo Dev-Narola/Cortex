@@ -20,6 +20,7 @@
  */
 
 import { getApiClient } from "@/lib/auth/api-client"
+import { type WireConversation, toConversation } from "./mappers"
 
 import type { CreateConversationRequest, CreateConversationResponse } from "@/types/conversation"
 
@@ -29,8 +30,6 @@ export async function createConversation(
   params: CreateConversationParams,
 ): Promise<CreateConversationResponse> {
   const client = getApiClient()
-  return client.post<CreateConversationResponse>(
-    "/api/v1/conversations",
-    params as never,
-  )
+  const raw = await client.post<WireConversation>("/api/v1/conversations", params as never)
+  return toConversation(raw)
 }

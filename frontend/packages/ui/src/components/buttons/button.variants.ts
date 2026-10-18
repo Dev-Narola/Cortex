@@ -44,14 +44,14 @@ export const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-ink-900 text-paper-50 hover:bg-ink-800",
-        primary: "bg-ink-900 text-paper-50 hover:bg-ink-800",
+        default: "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90",
+        primary: "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90",
         secondary: "bg-muted text-foreground hover:bg-cloud-200",
         outline: "border border-border bg-background hover:bg-muted hover:text-foreground",
         ghost: "hover:bg-muted hover:text-foreground",
-        destructive: "bg-destructive text-paper-50 hover:opacity-90",
+        destructive: "bg-destructive text-destructive-foreground hover:opacity-90",
         link: "text-ember-600 underline-offset-4 hover:underline",
-        spark: "bg-spark text-paper-50 shadow-spark shadow-lg hover:opacity-95",
+        spark: "bg-spark text-gray-950 shadow-spark hover:opacity-95",
       },
       size: {
         sm: "h-8 rounded-md px-3 text-xs",

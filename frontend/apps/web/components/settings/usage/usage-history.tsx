@@ -38,12 +38,22 @@
  */
 "use client"
 
-import { Card, CardContent, ErrorState, Skeleton, Table, TableBody, TableCell, TableHeader, TableRow } from "@cortex/ui"
+import {
+  Card,
+  CardContent,
+  ErrorState,
+  Skeleton,
+  Table,
+  TableBody,
+  TableCell,
+  TableHeader,
+  TableRow,
+} from "@cortex/ui"
 
 import { useTenantUsageEvents } from "@/hooks/usage"
 import { formatUsd } from "@/lib/utils/format"
 
-import { eventTypeLabel, type UsageEvent } from "@/services/usage"
+import { type UsageEvent, eventTypeLabel } from "@/services/usage"
 
 function formatDate(iso: string): string {
   const d = new Date(iso)
@@ -68,11 +78,7 @@ function formatUnits(value: number, unitType: string): string {
   const formatted = value.toLocaleString("en-US", {
     maximumFractionDigits: 4,
   })
-  if (
-    unitType === "tokens" ||
-    unitType === "candidates" ||
-    unitType === "units"
-  ) {
+  if (unitType === "tokens" || unitType === "candidates" || unitType === "units") {
     return `${formatted} ${unitType}`
   }
   return formatted
@@ -109,8 +115,8 @@ export function UsageHistorySection() {
     return (
       <Card data-testid="usage-history-empty">
         <CardContent className="space-y-2 p-4 sm:p-6 text-center">
-          <p className="text-sm font-medium text-paper-50">No recent events</p>
-          <p className="text-sm text-paper-200/70">
+          <p className="text-sm font-medium text-foreground">No recent events</p>
+          <p className="text-sm text-muted-foreground">
             Once Cortex records a billable event, it will appear here within seconds.
           </p>
         </CardContent>
@@ -121,12 +127,9 @@ export function UsageHistorySection() {
   return (
     <Card data-testid="usage-history">
       <CardContent className="space-y-3 p-4 sm:p-6">
-        <h3 className="font-display text-sm font-semibold tracking-tight">
-          Usage history
-        </h3>
-        <p className="text-xs text-paper-200/60">
-          Newest first. Showing the most recent {events.length} events for the
-          current period.
+        <h3 className="font-display text-sm font-semibold tracking-tight">Usage history</h3>
+        <p className="text-xs text-faint">
+          Newest first. Showing the most recent {events.length} events for the current period.
         </p>
         <Table data-testid="usage-history-table">
           <TableHeader>
@@ -157,33 +160,29 @@ function UsageEventRow({ event }: { event: UsageEvent }) {
   // when present, so the user can spot a
   // billing spike from a specific
   // provider/model at a glance.
-  const providerModel = [event.provider, event.model]
-    .filter(Boolean)
-    .join(" · ")
+  const providerModel = [event.provider, event.model].filter(Boolean).join(" · ")
 
   return (
     <TableRow data-testid={`usage-history-row-${event.id}`}>
-      <TableCell className="text-xs text-paper-200/70">
+      <TableCell className="text-xs text-muted-foreground">
         {formatDate(event.created_at)}
       </TableCell>
       <TableCell>
         <div className="flex flex-col">
-          <span className="text-sm font-medium text-paper-50">
+          <span className="text-sm font-medium text-foreground">
             {eventTypeLabel(event.event_type)}
           </span>
           {providerModel ? (
-            <span className="text-[10px] uppercase tracking-wider text-paper-200/50">
-              {providerModel}
-            </span>
+            <span className="text-[10px] uppercase tracking-wider text-faint">{providerModel}</span>
           ) : null}
         </div>
       </TableCell>
-      <TableCell className="font-mono text-xs text-paper-200/70">
+      <TableCell className="font-mono text-xs text-muted-foreground">
         {formatUnits(event.units, event.unit_type)}
       </TableCell>
       <TableCell
         align="right"
-        className="font-mono text-xs text-paper-50"
+        className="font-mono text-xs text-foreground"
         data-testid={`usage-history-cost-${event.id}`}
       >
         {formatUsd(event.cost_usd)}

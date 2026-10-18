@@ -13,18 +13,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import { ApiError } from "@cortex/api-client"
 
-import {
-  useConversation,
-  useCreateConversation,
-  useInvalidateConversations,
-} from "@/hooks/chat"
+import { useConversation, useCreateConversation, useInvalidateConversations } from "@/hooks/chat"
 import { getApiClient } from "@/lib/auth/api-client"
 
 vi.mock("@/lib/auth/api-client", async () => {
   const actual =
-    await vi.importActual<typeof import("@/lib/auth/api-client")>(
-      "@/lib/auth/api-client",
-    )
+    await vi.importActual<typeof import("@/lib/auth/api-client")>("@/lib/auth/api-client")
   return {
     ...actual,
     getApiClient: vi.fn(),
@@ -94,9 +88,7 @@ describe("hooks/chat", () => {
       vi.spyOn(qc, "invalidateQueries").mockImplementation(invalidateQueries)
 
       function Wrapper({ children }: { children: React.ReactNode }) {
-        return (
-          <QueryClientProvider client={qc}>{children}</QueryClientProvider>
-        )
+        return <QueryClientProvider client={qc}>{children}</QueryClientProvider>
       }
 
       const { result } = renderHook(() => useCreateConversation(), {
@@ -115,9 +107,7 @@ describe("hooks/chat", () => {
       const { result } = renderHook(() => useCreateConversation(), {
         wrapper: makeWrapper(),
       })
-      await expect(
-        result.current.mutateAsync({ title: "x" }),
-      ).rejects.toBeInstanceOf(ApiError)
+      await expect(result.current.mutateAsync({ title: "x" })).rejects.toBeInstanceOf(ApiError)
     })
   })
 
@@ -160,9 +150,7 @@ describe("hooks/chat", () => {
     })
 
     it("does not retry on 404", async () => {
-      const get = vi
-        .fn()
-        .mockRejectedValue(new ApiError(404, { message: "not found" }))
+      const get = vi.fn().mockRejectedValue(new ApiError(404, { message: "not found" }))
       getApiClientMock.mockReturnValue({ get } as never)
 
       const { result } = renderHook(() => useConversation("missing"), {
@@ -183,9 +171,7 @@ describe("hooks/chat", () => {
       vi.spyOn(qc, "invalidateQueries").mockImplementation(invalidateQueries)
 
       function Wrapper({ children }: { children: React.ReactNode }) {
-        return (
-          <QueryClientProvider client={qc}>{children}</QueryClientProvider>
-        )
+        return <QueryClientProvider client={qc}>{children}</QueryClientProvider>
       }
 
       const { result } = renderHook(() => useInvalidateConversations(), {

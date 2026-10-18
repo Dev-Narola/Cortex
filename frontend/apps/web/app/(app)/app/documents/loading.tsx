@@ -20,12 +20,10 @@ export default function DocumentsLoading() {
         <div className="h-4 w-80 animate-pulse rounded-md bg-muted" />
       </header>
       <Card>
-        <CardContent
-          className="flex min-h-[320px] items-center justify-center p-8"
-          role="status"
-          aria-live="polite"
-        >
-          <Spinner size="lg" />
+        <CardContent className="flex min-h-[320px] items-center justify-center p-8">
+          <output aria-live="polite">
+            <Spinner size="lg" />
+          </output>
         </CardContent>
       </Card>
     </div>

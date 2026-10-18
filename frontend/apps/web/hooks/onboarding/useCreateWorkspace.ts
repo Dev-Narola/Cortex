@@ -21,15 +21,11 @@
 
 "use client"
 
-import { useMutation, type UseMutationResult } from "@tanstack/react-query"
+import { type UseMutationResult, useMutation } from "@tanstack/react-query"
 
-import { createTenant, type CreateTenantRequest, type Tenant } from "@/services/tenant"
+import { type CreateTenantRequest, type Tenant, createTenant } from "@/services/tenant"
 
-export type UseCreateWorkspaceResult = UseMutationResult<
-  Tenant,
-  Error,
-  CreateTenantRequest
->
+export type UseCreateWorkspaceResult = UseMutationResult<Tenant, Error, CreateTenantRequest>
 
 export function useCreateWorkspace(): UseCreateWorkspaceResult {
   return useMutation<Tenant, Error, CreateTenantRequest>({

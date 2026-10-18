@@ -38,11 +38,22 @@ describe("ApiClient", () => {
   it("encodes query params, skipping nulls", async () => {
     fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({}), { status: 200 }))
     const client = new ApiClient({ baseUrl: "http://api" })
-    await client.get("/x", { a: 1, b: null, c: undefined })
+    await client.get("/x", { query: { a: 1, b: null, c: undefined } })
     const [url] = fetchMock.mock.calls[0] as [string]
     expect(url).toContain("a=1")
     expect(url).not.toContain("b=")
     expect(url).not.toContain("c=")
+  })
+
+  it("get() takes request options like post(): signal goes to fetch, not the URL", async () => {
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({}), { status: 200 }))
+    const client = new ApiClient({ baseUrl: "http://api" })
+    const controller = new AbortController()
+    await client.get("/x", { query: { limit: 5 }, signal: controller.signal })
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit]
+    expect(url).toBe("http://api/x?limit=5")
+    expect(init.signal).toBe(controller.signal)
+    expect(init.credentials).toBe("omit")
   })
 
   it("maps non-2xx to ApiError with status and body", async () => {

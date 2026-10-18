@@ -170,7 +170,7 @@ describe("Icon categories", () => {
   it("iconCategory resolves a known icon to its category", () => {
     expect(iconCategory("Plus")).toBe("actions")
     expect(iconCategory("ChevronRight")).toBe("navigation")
-    expect(iconCategory("AlertCircle")).toBe("status")
+    expect(iconCategory("CircleAlert")).toBe("status")
     expect(iconCategory("FileText")).toBe("documents")
     expect(iconCategory("Bot")).toBe("agents")
     expect(iconCategory("SlidersHorizontal")).toBe("settings")

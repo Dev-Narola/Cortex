@@ -28,9 +28,7 @@ export interface DocumentsEmptyStateProps {
   onUpload: () => void
 }
 
-export function DocumentsEmptyState({
-  onUpload,
-}: DocumentsEmptyStateProps): ReactNode {
+export function DocumentsEmptyState({ onUpload }: DocumentsEmptyStateProps): ReactNode {
   return (
     <EmptyState
       icon="FileText"

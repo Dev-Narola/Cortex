@@ -37,12 +37,10 @@ export function HybridSearchSection() {
       title="Find what matches the words — and what matches the meaning."
       description={
         <>
-          Cortex combines <strong>keyword search</strong> (Postgres
-          full-text) with <strong>vector similarity</strong>{" "}
-          (pgvector), fuses the two result lists with reciprocal
-          rank fusion, then reranks the candidates with a
-          cross-encoder — so the answer is grounded in the right
-          source, every time.
+          Cortex combines <strong>keyword search</strong> (Postgres full-text) with{" "}
+          <strong>vector similarity</strong> (pgvector), fuses the two result lists with reciprocal
+          rank fusion, then reranks the candidates with a cross-encoder — so the answer is grounded
+          in the right source, every time.
         </>
       }
       visual={<HybridSearchVisual />}

@@ -1,110 +1,384 @@
 /**
- * DashboardView — the empty-state dashboard surface.
+ * DashboardView — workspace overview as a bento grid.
  *
- * **F3 Part 1 (Task 7).** The first screen a new
- * workspace owner sees after onboarding.
- *
- * **Content (per spec).**
- *   - Hero: "Welcome to Cortex" + workspace name +
- *     "your workspace is ready" subtitle.
- *   - "Upload your first document" CTA (primary).
- *   - Quick actions row (Task 8): Upload Document (live)
- *     + Search Knowledge + Create Agent (both "Soon").
- *
- * **No dashboard metrics yet.** Per the spec, F3 Part 1
- * is the empty dashboard — document count, search hits,
- * etc. land in F3 Part 2.
- *
- * **No tenant guard here.** The tenant check lives in
- * the (app) layout (which redirects to /workspace-setup
- * if the store has no tenant). This page assumes
- * `tenant` is populated and reads it for the welcome
- * line + the workspace name.
- *
- * **Client component.** The auth store is client-only;
- * the page reads `useAuthStore` for the tenant. Kept
- * separate from `page.tsx` (a server entry) so the
- * build doesn't try to pre-render the auth store at
- * build time.
+ * Every number is read from the backend:
+ *   documents      GET /documents (total, and per-status totals via ?status=)
+ *   conversations  GET /conversations (total + latest five)
+ *   usage          GET /tenants/me/usage/summary (month to date, backend default)
+ *   activity       GET /audit-log (owner/admin only; hidden for other roles)
+ *   health         GET /health/ready (measured round-trip, not a claim)
+ * Loading shows skeletons; a failed request says "Unavailable" for that card
+ * only. A workspace with no documents gets the upload call-to-action first.
  */
 
 "use client"
 
-import { useRouter } from "next/navigation"
+import { useQuery } from "@tanstack/react-query"
+import Link from "next/link"
+import type { ReactNode } from "react"
 
-import { Button, Card, CardContent, Heading, Text, toast } from "@cortex/ui"
+import { Button, Card, Icon, Skeleton } from "@cortex/ui"
 
-import { QuickActions } from "@/components/dashboard/QuickActions"
+import { MetricCard } from "@/components/dashboard/MetricCard"
+import { DocumentStatusBadge } from "@/components/documents/DocumentStatusBadge"
+import { useAuditLog } from "@/hooks/audit"
+import { useConversations } from "@/hooks/chat"
+import { useDocuments } from "@/hooks/documents"
+import { useTenantUsageSummary } from "@/hooks/usage"
+import { checkHealth } from "@/lib/api/health"
 import { useAuthStore } from "@/lib/auth/store"
+import { formatRelative } from "@/lib/utils/date"
+
+const compact = new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 })
+const usd = new Intl.NumberFormat("en", {
+  style: "currency",
+  currency: "USD",
+  maximumFractionDigits: 2,
+})
+
+function Panel({
+  title,
+  action,
+  className = "",
+  children,
+}: {
+  title: string
+  action?: ReactNode
+  className?: string
+  children: ReactNode
+}) {
+  return (
+    <Card variant="glass" radius="xl" padding="none" className={`flex flex-col ${className}`}>
+      <div className="flex items-center justify-between gap-3 px-5 pt-4 pb-3">
+        <h2 className="font-display text-base font-semibold text-foreground">{title}</h2>
+        {action}
+      </div>
+      <div className="flex-1 px-2 pb-2">{children}</div>
+    </Card>
+  )
+}
+
+function RowsSkeleton() {
+  return (
+    <output className="space-y-2 px-3 py-2" aria-label="Loading">
+      {[0, 1, 2].map((i) => (
+        <Skeleton key={i} size="h-9 w-full" />
+      ))}
+    </output>
+  )
+}
+
+function Unavailable({ what }: { what: string }) {
+  return (
+    <p className="px-3 py-6 text-sm text-muted-foreground">
+      Couldn't load {what}. Refresh to try again.
+    </p>
+  )
+}
 
 export function DashboardView() {
-  const router = useRouter()
-  const tenant = useAuthStore((s) => s.tenant)
   const user = useAuthStore((s) => s.user)
+  const tenant = useAuthStore((s) => s.tenant)
+  const isAdmin = user?.role === "owner" || user?.role === "admin"
   const workspaceName = tenant?.workspace ?? tenant?.slug ?? "your workspace"
 
-  function onUpload() {
-    toast({
-      title: "Document upload",
-      description: "Uploads open in F3 Part 2. Heading to Documents for now.",
-    })
-    router.push("/app/documents" as never)
-  }
+  // Exact counts: `?status=` narrows `total`, so limit=1 is enough.
+  const docs = useDocuments({ limit: 5 })
+  const indexedQ = useDocuments({ limit: 1, status: "indexed" })
+  const failedQ = useDocuments({ limit: 1, status: "failed" })
+  const conversations = useConversations({ limit: 5 })
+  const usage = useTenantUsageSummary()
+  const audit = useAuditLog({ limit: 6, enabled: isAdmin })
+  const health = useQuery({
+    queryKey: ["health", "ready"],
+    queryFn: ({ signal }) => checkHealth({ signal }),
+    refetchInterval: 60_000,
+  })
+
+  const total = docs.data?.total
+  const indexed = indexedQ.data?.total
+  const failed = failedQ.data?.total
+  const counts = total !== undefined && indexed !== undefined && failed !== undefined
+  const countsLoading = docs.isLoading || indexedQ.isLoading || failedQ.isLoading
+  const countsError = docs.isError || indexedQ.isError || failedQ.isError
+  const empty = total === 0
+  const tokens = usage.data
+    ? usage.data.embedding_tokens +
+      usage.data.completion_input_tokens +
+      usage.data.completion_output_tokens
+    : 0
 
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-8">
-      {/* Hero. */}
-      <header className="space-y-2">
-        <Heading level="h1">Welcome to Cortex</Heading>
-        <Text tone="muted" size="lg">
-          {user?.email ? <>Signed in as {user.email}. </> : null}
-          Your workspace is ready.
-        </Text>
+    <div className="mx-auto flex max-w-7xl flex-col gap-6">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="space-y-1">
+          <p className="text-sm text-muted-foreground">{workspaceName}</p>
+          <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground">
+            Overview
+          </h1>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" asChild>
+            <Link href={"/app/documents?upload=1" as never}>
+              <Icon name="Upload" className="h-4 w-4" aria-hidden />
+              Upload
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link href="/chat">
+              <Icon name="Sparkles" className="h-4 w-4" aria-hidden />
+              Ask Cortex
+            </Link>
+          </Button>
+        </div>
       </header>
 
-      {/* Empty state card — the primary CTA. */}
-      <Card>
-        <CardContent className="flex flex-col items-center gap-4 py-12 text-center">
+      {empty ? (
+        <Card variant="glass" radius="2xl" className="relative overflow-hidden p-8 sm:p-10">
           <div
             aria-hidden
-            className="flex h-14 w-14 items-center justify-center rounded-full bg-ember-500/10 text-ember-600"
-          >
-            <svg
-              className="h-7 w-7"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-              <polyline points="14 2 14 8 20 8" />
-              <line x1="12" y1="18" x2="12" y2="12" />
-              <line x1="9" y1="15" x2="15" y2="15" />
-            </svg>
+            className="pointer-events-none absolute -top-24 -right-24 h-64 w-64 rounded-full bg-brand/15 blur-3xl"
+          />
+          <div className="relative max-w-xl space-y-3">
+            <h2 className="font-display text-2xl font-semibold text-foreground">
+              Add your first document
+            </h2>
+            <p className="text-muted-foreground">
+              Upload a PDF, Markdown or text file, or import a web page. Cortex parses, chunks and
+              embeds it, and answers questions with citations back to the source.
+            </p>
+            <Button asChild size="lg" className="mt-2">
+              <Link href={"/app/documents?upload=1" as never}>Upload a document</Link>
+            </Button>
           </div>
-          <div className="space-y-1">
-            <Heading level="h2" size="lg">
-              {workspaceName} is ready
-            </Heading>
-            <Text tone="muted" className="max-w-md">
-              Upload your first document to begin building your knowledge base.
-            </Text>
-          </div>
-          <Button size="lg" onClick={onUpload} className="min-w-[200px]">
-            Upload your first document
-          </Button>
-        </CardContent>
-      </Card>
+        </Card>
+      ) : null}
 
-      {/* Quick actions. */}
-      <section aria-labelledby="quick-actions-heading" className="space-y-3">
-        <Heading id="quick-actions-heading" level="h2" size="md">
-          Quick actions
-        </Heading>
-        <QuickActions />
+      <section
+        aria-label="Key metrics"
+        className="stagger-rise grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+      >
+        <MetricCard
+          label="Documents"
+          icon="FileText"
+          href="/app/documents"
+          loading={docs.isLoading}
+          error={docs.isError}
+          value={total !== undefined ? compact.format(total) : null}
+          hint={
+            indexed !== undefined ? `${compact.format(indexed)} indexed and searchable` : undefined
+          }
+        />
+        <MetricCard
+          label="Processing"
+          icon="LoaderCircle"
+          tone={failed ? "warning" : "info"}
+          loading={countsLoading}
+          error={countsError}
+          value={counts ? compact.format(total - indexed - failed) : null}
+          hint={
+            failed !== undefined
+              ? failed > 0
+                ? `${failed} failed, retry from Documents`
+                : "No failures"
+              : undefined
+          }
+        />
+        <MetricCard
+          label="Conversations"
+          icon="MessageSquare"
+          tone="ai"
+          href="/chat"
+          loading={conversations.isLoading}
+          error={conversations.isError}
+          value={conversations.data ? compact.format(conversations.data.total) : null}
+        />
+        <MetricCard
+          label="Requests, month to date"
+          icon="Activity"
+          tone="info"
+          href="/app/settings/usage"
+          loading={usage.isLoading}
+          error={usage.isError}
+          value={usage.data ? compact.format(usage.data.requests) : null}
+          hint={
+            usage.data
+              ? `${compact.format(tokens)} tokens · ${usd.format(usage.data.estimated_cost_usd)} estimated`
+              : undefined
+          }
+        />
       </section>
+
+      <div className="stagger-rise grid gap-4 lg:grid-cols-12">
+        <Panel
+          title="Recent documents"
+          className="lg:col-span-7"
+          action={
+            <Link href="/app/documents" className="text-sm text-brand hover:underline">
+              View all
+            </Link>
+          }
+        >
+          {docs.isLoading ? (
+            <RowsSkeleton />
+          ) : docs.isError ? (
+            <Unavailable what="documents" />
+          ) : docs.data && docs.data.items.length > 0 ? (
+            <ul className="divide-y divide-divider">
+              {docs.data.items.map((d) => (
+                <li key={d.id} className="flex items-center gap-3 rounded-lg px-3 py-2.5">
+                  <Icon name="FileText" className="h-4 w-4 shrink-0 text-faint" aria-hidden />
+                  <span className="min-w-0 flex-1 truncate text-sm text-foreground" title={d.title}>
+                    {d.title}
+                  </span>
+                  <DocumentStatusBadge status={d.status} />
+                  <span className="hidden w-24 shrink-0 text-right text-xs text-faint sm:block">
+                    {formatRelative(d.created_at)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="px-3 py-6 text-sm text-muted-foreground">No documents yet.</p>
+          )}
+        </Panel>
+
+        <Panel title="System" className="lg:col-span-5">
+          <dl className="space-y-1 px-3 py-1">
+            <div className="flex items-center justify-between py-2">
+              <dt className="text-sm text-muted-foreground">API</dt>
+              <dd className="flex items-center gap-2 text-sm">
+                {health.isLoading ? (
+                  <Skeleton size="h-4 w-24" />
+                ) : health.data?.kind === "healthy" ? (
+                  <>
+                    <span className="h-2 w-2 rounded-full bg-success" aria-hidden />
+                    <span className="text-foreground">Ready</span>
+                    <span className="tabular text-faint">{health.data.latencyMs} ms</span>
+                  </>
+                ) : health.data?.kind === "degraded" ? (
+                  <>
+                    <span className="h-2 w-2 rounded-full bg-warning" aria-hidden />
+                    <span className="text-foreground">Degraded</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="h-2 w-2 rounded-full bg-error" aria-hidden />
+                    <span className="text-foreground">Unreachable</span>
+                  </>
+                )}
+              </dd>
+            </div>
+            <div className="flex items-center justify-between border-t border-divider py-2">
+              <dt className="text-sm text-muted-foreground">Indexed documents</dt>
+              <dd className="tabular text-sm text-foreground">
+                {indexed !== undefined ? (
+                  indexed
+                ) : indexedQ.isError ? (
+                  "—"
+                ) : (
+                  <Skeleton size="h-4 w-8" />
+                )}
+              </dd>
+            </div>
+            <div className="flex items-center justify-between border-t border-divider py-2">
+              <dt className="text-sm text-muted-foreground">Rerank units, month to date</dt>
+              <dd className="tabular text-sm text-foreground">
+                {usage.data ? (
+                  compact.format(usage.data.rerank_units)
+                ) : usage.isError ? (
+                  "—"
+                ) : (
+                  <Skeleton size="h-4 w-8" />
+                )}
+              </dd>
+            </div>
+          </dl>
+          <p className="px-3 pt-1 pb-2 text-xs text-faint">
+            Checked every minute from your browser.
+          </p>
+        </Panel>
+
+        <Panel
+          title="Recent conversations"
+          className={isAdmin ? "lg:col-span-6" : "lg:col-span-12"}
+          action={
+            <Link href="/chat" className="text-sm text-brand hover:underline">
+              Open chat
+            </Link>
+          }
+        >
+          {conversations.isLoading ? (
+            <RowsSkeleton />
+          ) : conversations.isError ? (
+            <Unavailable what="conversations" />
+          ) : conversations.data && conversations.data.items.length > 0 ? (
+            <ul className="divide-y divide-divider">
+              {conversations.data.items.map((c) => (
+                <li key={c.id}>
+                  <Link
+                    href={`/chat/${c.id}` as never}
+                    className="flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <Icon
+                      name="MessageSquare"
+                      className="h-4 w-4 shrink-0 text-faint"
+                      aria-hidden
+                    />
+                    <span className="min-w-0 flex-1 truncate text-sm text-foreground">
+                      {c.title || "Untitled"}
+                    </span>
+                    <span className="shrink-0 text-xs text-faint">
+                      {formatRelative(c.updatedAt)}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="px-3 py-6 text-sm text-muted-foreground">
+              No conversations yet.{" "}
+              <Link href="/chat" className="text-brand hover:underline">
+                Ask your first question
+              </Link>
+            </p>
+          )}
+        </Panel>
+
+        {isAdmin ? (
+          <Panel
+            title="Recent activity"
+            className="lg:col-span-6"
+            action={
+              <Link href="/app/settings/audit-log" className="text-sm text-brand hover:underline">
+                Audit log
+              </Link>
+            }
+          >
+            {audit.isLoading ? (
+              <RowsSkeleton />
+            ) : audit.isError ? (
+              <Unavailable what="activity" />
+            ) : audit.data && audit.data.items.length > 0 ? (
+              <ul className="divide-y divide-divider">
+                {audit.data.items.map((e) => (
+                  <li key={e.id} className="flex items-center gap-3 px-3 py-2.5">
+                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-brand-2" aria-hidden />
+                    <span className="min-w-0 flex-1 truncate font-mono text-xs text-foreground">
+                      {e.action}
+                    </span>
+                    <span className="shrink-0 text-xs text-faint">
+                      {formatRelative(e.created_at)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="px-3 py-6 text-sm text-muted-foreground">No activity recorded yet.</p>
+            )}
+          </Panel>
+        ) : null}
+      </div>
     </div>
   )
 }

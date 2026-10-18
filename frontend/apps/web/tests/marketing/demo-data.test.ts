@@ -23,11 +23,7 @@
 
 import { describe, expect, it } from "vitest"
 
-import {
-  DEMO_ENTRIES,
-  getSeededDemo,
-  parseAnswer,
-} from "@/components/marketing/demo/demo-data"
+import { DEMO_ENTRIES, getSeededDemo, parseAnswer } from "@/components/marketing/demo/demo-data"
 
 describe("DEMO_ENTRIES", () => {
   it("has 3 seeded entries (one per feature beat)", () => {
@@ -58,9 +54,7 @@ describe("DEMO_ENTRIES", () => {
 
   it("every `{{citation:N}}` placeholder references a real citation index", () => {
     for (const entry of DEMO_ENTRIES) {
-      const placeholders = [
-        ...entry.answer.matchAll(/\{\{citation:(\d+)\}\}/g),
-      ]
+      const placeholders = [...entry.answer.matchAll(/\{\{citation:(\d+)\}\}/g)]
       for (const m of placeholders) {
         const index = Number.parseInt(m[1] ?? "0", 10)
         const found = entry.citations.find((c) => c.index === index)

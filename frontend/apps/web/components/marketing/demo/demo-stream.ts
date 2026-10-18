@@ -57,7 +57,7 @@ import { useCallback, useEffect, useRef, useState } from "react"
 
 import { usePrefersReducedMotion } from "@/lib/marketing/animations"
 
-import { parseAnswer, type AnswerSegment } from "./demo-data"
+import { type AnswerSegment, parseAnswer } from "./demo-data"
 
 /** The reveal cadence (milliseconds per
  *  chunk). The F8 spec suggests
@@ -191,10 +191,7 @@ export function useDemoStream({
     // Reveal the first chunk immediately,
     // then schedule the rest.
     setRevealed(chunks.slice(0, 1))
-    let timer: ReturnType<typeof setTimeout> | null = setTimeout(
-      next,
-      CHUNK_INTERVAL_MS,
-    )
+    let timer: ReturnType<typeof setTimeout> | null = setTimeout(next, CHUNK_INTERVAL_MS)
 
     return () => {
       if (timer) clearTimeout(timer)
@@ -210,9 +207,7 @@ export function useDemoStream({
  * (text segments split by word boundary;
  * citation segments unsplit).
  */
-export function _splitIntoChunksForTest(
-  segments: ReadonlyArray<AnswerSegment>,
-): AnswerSegment[] {
+export function _splitIntoChunksForTest(segments: ReadonlyArray<AnswerSegment>): AnswerSegment[] {
   return splitIntoChunks(segments)
 }
 

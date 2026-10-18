@@ -34,11 +34,11 @@ import { getApiClient } from "@/lib/auth/api-client"
 
 import type {
   AgentRun,
+  AgentRunStatus,
   AgentStep,
   AgentToolCall,
   AgentToolCallStatus,
   AgentToolCallsResponse,
-  AgentRunStatus,
 } from "@/types/agent"
 
 // ---------------------------------------------------------------------------
@@ -164,9 +164,7 @@ export interface GetAgentRunParams {
  * tool-calls; the hook layer can call the cheaper
  * ``getAgentToolCalls`` instead.
  */
-export async function getAgentRun(
-  params: GetAgentRunParams,
-): Promise<AgentRun> {
+export async function getAgentRun(params: GetAgentRunParams): Promise<AgentRun> {
   const client = getApiClient()
   const raw = await client.get<BackendRun>(
     `/api/v1/agents/runs/${encodeURIComponent(params.runId)}`,

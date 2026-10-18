@@ -27,15 +27,15 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { act, renderHook, waitFor } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
-import { useAuthStore } from "@/lib/auth/store"
-import {
-  useConversationStream,
-  _resetConversationSockets,
-} from "@/hooks/chat/useConversationStream"
 import {
   conversationStreamStore,
   useConversationStreamStore,
 } from "@/hooks/chat/conversationStreamStore"
+import {
+  _resetConversationSockets,
+  useConversationStream,
+} from "@/hooks/chat/useConversationStream"
+import { useAuthStore } from "@/lib/auth/store"
 
 class FakeSocket {
   static instances: FakeSocket[] = []
@@ -100,10 +100,9 @@ function makeWrapper(qc: QueryClient) {
 describe("useConversationStream (Task 19)", () => {
   it("opens one socket with the correct URL when a turn starts", async () => {
     const qc = new QueryClient()
-    const { result, unmount } = renderHook(
-      () => useConversationStream("c-1"),
-      { wrapper: makeWrapper(qc) },
-    )
+    const { result, unmount } = renderHook(() => useConversationStream("c-1"), {
+      wrapper: makeWrapper(qc),
+    })
     // The socket is opened lazily — only
     // when a turn starts. Verify the
     // pre-flight state, then begin a turn
@@ -194,9 +193,7 @@ describe("useConversationStream (Task 19)", () => {
     })
     // And the connection state is now `open`.
     await waitFor(() => {
-      const conn = useConversationStreamStore
-        .getState()
-        .connections.get("c-1")
+      const conn = useConversationStreamStore.getState().connections.get("c-1")
       expect(conn).toBe("open")
     })
     unmount()
@@ -234,9 +231,7 @@ describe("useConversationStream (Task 19)", () => {
       })
     })
     await waitFor(() => {
-      const stream = useConversationStreamStore
-        .getState()
-        .streams.get("c-1")
+      const stream = useConversationStreamStore.getState().streams.get("c-1")
       expect(stream?.content).toBe("Cortex uses Postgres")
       expect(stream?.assistantMessageId).toBe("a-1")
       expect(stream?.status).toBe("streaming")
@@ -247,9 +242,7 @@ describe("useConversationStream (Task 19)", () => {
       })
     })
     await waitFor(() => {
-      const stream = useConversationStreamStore
-        .getState()
-        .streams.get("c-1")
+      const stream = useConversationStreamStore.getState().streams.get("c-1")
       expect(stream?.status).toBe("completed")
     })
     unmount()
@@ -281,9 +274,7 @@ describe("useConversationStream (Task 19)", () => {
       })
     })
     await waitFor(() => {
-      const stream = useConversationStreamStore
-        .getState()
-        .streams.get("c-1")
+      const stream = useConversationStreamStore.getState().streams.get("c-1")
       expect(stream?.status).toBe("error")
       expect(stream?.error?.code).toBe("GENERATION_FAILED")
     })
@@ -306,9 +297,7 @@ describe("useConversationStream (Task 19)", () => {
     act(() => {
       FakeSocket.instances[0]!.dispatch("open", {})
     })
-    await waitFor(() =>
-      expect(FakeSocket.instances[0]!.sent).toHaveLength(1),
-    )
+    await waitFor(() => expect(FakeSocket.instances[0]!.sent).toHaveLength(1))
     act(() => {
       conversationStreamStore.beginTurn({
         conversationId: "c-1",

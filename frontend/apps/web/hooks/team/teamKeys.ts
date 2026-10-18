@@ -17,6 +17,5 @@
  */
 export const teamKeys = {
   all: ["team"] as const,
-  members: (params?: { limit?: number; offset?: number }) =>
-    [...teamKeys.all, "members", params ?? {}] as const,
+  members: () => [...teamKeys.all, "members"] as const,
 }

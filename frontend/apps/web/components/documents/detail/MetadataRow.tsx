@@ -27,12 +27,7 @@ export interface MetadataRowProps {
   className?: string
 }
 
-export function MetadataRow({
-  label,
-  value,
-  monospace,
-  className,
-}: MetadataRowProps): ReactNode {
+export function MetadataRow({ label, value, monospace, className }: MetadataRowProps): ReactNode {
   return (
     <div
       className={cn(
@@ -40,15 +35,8 @@ export function MetadataRow({
         className,
       )}
     >
-      <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-        {label}
-      </dt>
-      <dd
-        className={cn(
-          "text-right text-sm text-foreground",
-          monospace && "font-mono text-xs",
-        )}
-      >
+      <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</dt>
+      <dd className={cn("text-right text-sm text-foreground", monospace && "font-mono text-xs")}>
         {value ?? "—"}
       </dd>
     </div>

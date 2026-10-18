@@ -74,12 +74,11 @@ export function SolutionSection() {
             <span className="text-muted-foreground/70 line-through decoration-ember-500/60">
               scattered
             </span>{" "}
-            knowledge into{" "}
-            <span className="text-spark">connected</span> knowledge.
+            knowledge into <span className="text-spark">connected</span> knowledge.
           </h2>
           <Text tone="muted" className="mx-auto max-w-2xl text-base sm:text-lg">
-            A single tenant-scoped surface that retrieves, reasons, and
-            cites — so the answer comes with the source, every time.
+            A single tenant-scoped surface that retrieves, reasons, and cites — so the answer comes
+            with the source, every time.
           </Text>
         </div>
       </Container>

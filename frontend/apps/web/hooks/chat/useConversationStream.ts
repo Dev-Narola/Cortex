@@ -58,10 +58,7 @@ import {
 } from "@/lib/websocket/conversation-client"
 import type { ConversationEvent } from "@/types/websocket"
 
-import {
-  useConversationStreamStore,
-  type ActiveStream,
-} from "./conversationStreamStore"
+import { type ActiveStream, useConversationStreamStore } from "./conversationStreamStore"
 
 const EMPTY_STREAM: ActiveStream = {
   conversationId: "",
@@ -159,9 +156,7 @@ export function _resetConversationSockets(): void {
 // Hook
 // -------------------------------------------------------------------
 
-export function useConversationStream(
-  conversationId: string | null,
-): UseConversationStreamResult {
+export function useConversationStream(conversationId: string | null): UseConversationStreamResult {
   const accessToken = useAuthStore((s) => s.accessToken)
   const stream = useConversationStreamStore((s) =>
     conversationId ? s.streams.get(conversationId) : undefined,
@@ -187,14 +182,10 @@ export function useConversationStream(
     if (!entry.wired) {
       entry.wired = true
       const onEvent = (event: ConversationEvent) => {
-        useConversationStreamStore
-          .getState()
-          .applyEvent(conversationId, event)
+        useConversationStreamStore.getState().applyEvent(conversationId, event)
       }
       const onState: ConversationStateListener = (state) => {
-        useConversationStreamStore
-          .getState()
-          .setConnectionState(conversationId, state)
+        useConversationStreamStore.getState().setConnectionState(conversationId, state)
       }
       // F4 Part 4 (Task 94): the socket
       // died before `message_complete`.
@@ -209,10 +200,7 @@ export function useConversationStream(
         if (socket.wasClosedByUser()) return
         useConversationStreamStore
           .getState()
-          .markInterrupted(
-            conversationId,
-            "Lost the connection before the response finished.",
-          )
+          .markInterrupted(conversationId, "Lost the connection before the response finished.")
       }
       socket.subscribe(onEvent)
       socket.subscribeState(onState)
@@ -220,9 +208,7 @@ export function useConversationStream(
       // Sync the initial connection state in
       // case the socket is already open from
       // a previous mount.
-      useConversationStreamStore
-        .getState()
-        .setConnectionState(conversationId, socket.getState())
+      useConversationStreamStore.getState().setConnectionState(conversationId, socket.getState())
     }
 
     return () => {
@@ -262,20 +248,16 @@ export function useConversationStream(
     // The content is no longer needed in the
     // store once the socket has accepted the
     // send.
-    useConversationStreamStore
-      .getState()
-      .clearPendingContent(conversationId)
+    useConversationStreamStore.getState().clearPendingContent(conversationId)
   }, [stream, conversationId])
 
-  const active: ActiveStream =
-    stream ?? { ...EMPTY_STREAM, conversationId: conversationId ?? "" }
+  const active: ActiveStream = stream ?? { ...EMPTY_STREAM, conversationId: conversationId ?? "" }
   return {
     stream: active,
     connectionState,
     isSending: active.status === "sending",
     isStreaming: active.status === "streaming",
-    isBusy:
-      active.status === "sending" || active.status === "streaming",
+    isBusy: active.status === "sending" || active.status === "streaming",
     isCompleted: active.status === "completed",
     error: active.error,
   }

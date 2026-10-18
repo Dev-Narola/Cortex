@@ -17,11 +17,11 @@
 
 "use client"
 
-import { useQuery, type UseQueryResult } from "@tanstack/react-query"
+import { type UseQueryResult, useQuery } from "@tanstack/react-query"
 
 import { ApiError } from "@cortex/api-client"
 
-import { getDocument, type Document } from "@/services/documents"
+import { type Document, getDocument } from "@/services/documents"
 
 export type UseDocumentResult = UseQueryResult<Document | null, Error>
 

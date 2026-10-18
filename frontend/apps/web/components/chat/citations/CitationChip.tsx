@@ -39,7 +39,7 @@
 
 "use client"
 
-import { type KeyboardEvent, type MouseEvent, type ReactNode } from "react"
+import type { KeyboardEvent, MouseEvent, ReactNode } from "react"
 
 import { cn } from "@cortex/ui"
 
@@ -80,9 +80,7 @@ export function CitationChip({
   // prop-drilling from the bubble. The
   // prop is an explicit override; the
   // store-derived value is the default.
-  const selectedCitationId = useCitationPanelStore(
-    (s) => s.selectedCitationId,
-  )
+  const selectedCitationId = useCitationPanelStore((s) => s.selectedCitationId)
   const isActive = isActiveProp ?? selectedCitationId === id
   const label = documentTitle
     ? `View source citation ${index}, ${documentTitle}`

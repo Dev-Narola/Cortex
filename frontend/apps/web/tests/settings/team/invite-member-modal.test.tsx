@@ -9,7 +9,7 @@
  *     with the expected payload (Task 42).
  *   - Success: toast + modal close (Task 43).
  *   - 409: inline error on the email field (Task 29).
- *   - Submitting: button reads "Inviting…" and is
+ *   - Submitting: button reads "Creating…" and is
  *     disabled (Tasks 14, 35).
  *
  * The api-client is mocked at the seam (Task 42).
@@ -92,13 +92,10 @@ describe("InviteMemberModal", () => {
   it("calls POST /users/invite with the email + role (Task 42)", async () => {
     const user = userEvent.setup()
     postMock.mockResolvedValueOnce({
-      member: {
-        id: "u-new",
-        email: "teammate@example.com",
-        full_name: null,
-        role: "member",
-        created_at: "2026-08-19T00:00:00Z",
-      },
+      email: "teammate@example.com",
+      role: "member",
+      invite_token: "tok_abc123456789",
+      expires_in: 172800,
     })
     render(<Harness />, { wrapper: makeWrapper() })
     await user.type(screen.getByTestId("invite-email-input"), "teammate@example.com")
@@ -114,30 +111,24 @@ describe("InviteMemberModal", () => {
     })
   })
 
-  it("closes the modal + invalidates the list on success (Task 43)", async () => {
+  it("shows a shareable accept link with the real expiry, then closes on Done", async () => {
     const onClose = vi.fn()
     const user = userEvent.setup()
     postMock.mockResolvedValueOnce({
-      member: {
-        id: "u-new",
-        email: "teammate@example.com",
-        full_name: null,
-        role: "member",
-        created_at: "2026-08-19T00:00:00Z",
-      },
+      email: "teammate@example.com",
+      role: "member",
+      invite_token: "tok_abc123456789",
+      expires_in: 172800,
     })
     render(<Harness onClose={onClose} />, { wrapper: makeWrapper() })
     await user.type(screen.getByTestId("invite-email-input"), "teammate@example.com")
     fireEvent.click(screen.getByTestId("invite-submit"))
-    await waitFor(() => {
-      expect(postMock).toHaveBeenCalled()
-    })
-    // The mutation's onSuccess fires the toast +
-    // closes the dialog. The parent receives the
-    // onClose callback (used to clear temp state).
-    await waitFor(() => {
-      expect(onClose).toHaveBeenCalled()
-    })
+    const link = (await screen.findByLabelText("Invitation link")) as HTMLInputElement
+    expect(link.value).toBe(`${window.location.origin}/accept-invite?token=tok_abc123456789`)
+    expect(screen.getByTestId("invite-link")).toHaveTextContent(/expires in 48 hours/i)
+    expect(onClose).not.toHaveBeenCalled()
+    await user.click(screen.getByRole("button", { name: "Done" }))
+    expect(onClose).toHaveBeenCalled()
   })
 
   it("binds 409 to the email field as an inline error (Task 29)", async () => {
@@ -151,7 +142,7 @@ describe("InviteMemberModal", () => {
     ).toHaveTextContent(/already a member/i)
   })
 
-  it("shows 'Inviting…' + disables the submit while in flight (Tasks 14, 35)", async () => {
+  it("shows 'Creating…' + disables the submit while in flight (Tasks 14, 35)", async () => {
     const user = userEvent.setup()
     // A promise we never resolve on this test —
     // the modal stays in the "submitting" state.
@@ -159,10 +150,8 @@ describe("InviteMemberModal", () => {
     render(<Harness />, { wrapper: makeWrapper() })
     await user.type(screen.getByTestId("invite-email-input"), "teammate@example.com")
     fireEvent.click(screen.getByTestId("invite-submit"))
-    // Wait for the "Inviting…" label to appear
-    // (the button swaps label while pending).
     await waitFor(() => {
-      expect(screen.getByTestId("invite-submit")).toHaveTextContent(/Inviting/i)
+      expect(screen.getByTestId("invite-submit")).toHaveTextContent(/Creating/i)
     })
     expect(screen.getByTestId("invite-submit")).toBeDisabled()
   })

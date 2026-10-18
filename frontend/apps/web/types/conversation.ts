@@ -32,6 +32,8 @@
  * read it without a model migration.
  */
 
+import type { Citation } from "./citation"
+
 export type MessageRole = "user" | "assistant" | "tool"
 
 export interface Message {
@@ -66,6 +68,8 @@ export interface Message {
    * it when the chat dispatches agent runs.
    */
   agentRunId: string | null
+  /** Sources the server resolved for a saved answer, numbered as in the text. */
+  citations?: Citation[]
   createdAt: string
 }
 

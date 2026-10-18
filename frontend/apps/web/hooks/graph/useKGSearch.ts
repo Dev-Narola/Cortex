@@ -27,7 +27,7 @@
 
 "use client"
 
-import { useQuery, type UseQueryResult } from "@tanstack/react-query"
+import { type UseQueryResult, useQuery } from "@tanstack/react-query"
 
 import { ApiError } from "@cortex/api-client"
 
@@ -52,16 +52,13 @@ export interface UseKGSearchParams {
 
 export type UseKGSearchResult = UseQueryResult<KGSearchResponse | null, Error>
 
-export function useKGSearch(
-  params: UseKGSearchParams,
-): UseKGSearchResult {
+export function useKGSearch(params: UseKGSearchParams): UseKGSearchResult {
   const { query, type, enabled = true } = params
   const trimmed = query.trim()
   const isLongEnough = trimmed.length >= 2
   return useQuery<KGSearchResponse | null, Error>({
     queryKey: kgKeys.search(`${trimmed}::${type ?? ""}`),
-    queryFn: ({ signal }) =>
-      searchGraph({ query: trimmed, ...(type ? { type } : {}), signal }),
+    queryFn: ({ signal }) => searchGraph({ query: trimmed, ...(type ? { type } : {}), signal }),
     enabled: enabled && isLongEnough,
     retry: (failureCount, error) => {
       if (error instanceof ApiError) {

@@ -159,8 +159,7 @@ export function nextReconnectDelay(
 ): number {
   const base = Math.min(
     opts.maxReconnectDelayMs,
-    opts.initialReconnectDelayMs *
-      Math.pow(opts.reconnectBackoffFactor, attempt),
+    opts.initialReconnectDelayMs * opts.reconnectBackoffFactor ** attempt,
   )
   // Jitter: +/- jitter% of the base.
   const jitterRange = base * opts.reconnectJitter
@@ -213,10 +212,7 @@ export class WebSocketClient {
     // explicitly resets via ``reset()`` (a future
     // "Try again" button, for example).
     if (this.permanentlyDisabled) return
-    if (
-      this.state === "open" ||
-      this.state === "connecting"
-    ) {
+    if (this.state === "open" || this.state === "connecting") {
       return
     }
     this.closedByUser = false
@@ -306,10 +302,7 @@ export class WebSocketClient {
     if (this.permanentlyDisabled) return
     this.setState("connecting")
     try {
-      this.socket = new WebSocket(
-        this.opts.url,
-        this.opts.protocols,
-      )
+      this.socket = new WebSocket(this.opts.url, this.opts.protocols)
     } catch (err) {
       // The constructor can throw if the URL is
       // malformed. Treat as a fatal close so we

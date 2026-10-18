@@ -38,7 +38,7 @@
 
 "use client"
 
-import { useEffect, type ReactNode } from "react"
+import { type ReactNode, useEffect } from "react"
 
 import { Button, Icon, cn } from "@cortex/ui"
 
@@ -65,7 +65,7 @@ export function CopyMessageButton({
   useEffect(() => () => reset(), [reset])
 
   return (
-    <div className={"flex flex-col " + (className ?? "")}>
+    <div className={`flex flex-col ${className ?? ""}`}>
       <Button
         type="button"
         variant="ghost"
@@ -76,9 +76,7 @@ export function CopyMessageButton({
         disabled={disabled}
         aria-label="Copy answer"
         data-state={state}
-        className={cn(
-          "h-7 gap-1.5 px-2 text-xs text-muted-foreground hover:text-foreground",
-        )}
+        className={cn("h-7 gap-1.5 px-2 text-xs text-muted-foreground hover:text-foreground")}
       >
         {state === "success" ? (
           <>
@@ -93,13 +91,9 @@ export function CopyMessageButton({
         )}
       </Button>
       {state === "error" ? (
-        <p
-          role="status"
-          aria-live="polite"
-          className="ml-2 text-[10px] text-destructive"
-        >
+        <output aria-live="polite" className="block ml-2 text-[10px] text-destructive">
           {error?.message ?? "Couldn't copy to clipboard."}
-        </p>
+        </output>
       ) : null}
     </div>
   )

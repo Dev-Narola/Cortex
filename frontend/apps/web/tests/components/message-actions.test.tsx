@@ -24,8 +24,8 @@ import { ToastProvider, ToastViewport } from "@cortex/ui"
 import { CopyMessageButton } from "@/components/chat/CopyMessageButton"
 import { FeedbackButtons } from "@/components/chat/FeedbackButtons"
 import { MessageActions } from "@/components/chat/MessageActions"
-import { feedbackStore } from "@/hooks/chat/useFeedback"
 import { useConversationStreamStore } from "@/hooks/chat/conversationStreamStore"
+import { feedbackStore } from "@/hooks/chat/useFeedback"
 
 function makeWrapper() {
   const client = new QueryClient({
@@ -51,12 +51,10 @@ beforeEach(() => {
   // override it per-case.
   if (
     typeof navigator !== "undefined" &&
-    !(navigator as Navigator & { _cortexOrigClipboard?: unknown })
-      ._cortexOrigClipboard
+    !(navigator as Navigator & { _cortexOrigClipboard?: unknown })._cortexOrigClipboard
   ) {
-    ;(
-      navigator as Navigator & { _cortexOrigClipboard?: unknown }
-    )._cortexOrigClipboard = navigator.clipboard
+    ;(navigator as Navigator & { _cortexOrigClipboard?: unknown })._cortexOrigClipboard =
+      navigator.clipboard
   }
 })
 
@@ -65,9 +63,7 @@ afterEach(() => {
   // Restore the original clipboard (happy-dom's
   // default) so tests don't leak their stub into
   // each other.
-  const orig = (
-    navigator as Navigator & { _cortexOrigClipboard?: unknown }
-  )._cortexOrigClipboard
+  const orig = (navigator as Navigator & { _cortexOrigClipboard?: unknown })._cortexOrigClipboard
   if (orig !== undefined) {
     Object.defineProperty(navigator, "clipboard", {
       configurable: true,
@@ -83,9 +79,7 @@ afterEach(() => {
 describe("CopyMessageButton", () => {
   it("renders the Copy label + icon", () => {
     render(<CopyMessageButton content="hello" />, { wrapper: makeWrapper() })
-    expect(
-      screen.getByRole("button", { name: /copy answer/i }),
-    ).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /copy answer/i })).toBeInTheDocument()
   })
 
   it("writes the message content to the clipboard on click", async () => {
@@ -115,9 +109,7 @@ describe("CopyMessageButton", () => {
     render(<CopyMessageButton content="x" disabled />, {
       wrapper: makeWrapper(),
     })
-    expect(
-      screen.getByRole("button", { name: /copy answer/i }),
-    ).toBeDisabled()
+    expect(screen.getByRole("button", { name: /copy answer/i })).toBeDisabled()
   })
 
   it("surfaces clipboard errors inline (no silent failure)", async () => {
@@ -153,27 +145,14 @@ describe("CopyMessageButton", () => {
 
 describe("FeedbackButtons", () => {
   it("renders both buttons with accessible labels", () => {
-    render(
-      <FeedbackButtons
-        conversationId="c-1"
-        messageId="m-1"
-      />,
-      { wrapper: makeWrapper() },
-    )
-    expect(
-      screen.getByRole("button", { name: /thumbs up/i }),
-    ).toBeInTheDocument()
-    expect(
-      screen.getByRole("button", { name: /thumbs down/i }),
-    ).toBeInTheDocument()
+    render(<FeedbackButtons conversationId="c-1" messageId="m-1" />, { wrapper: makeWrapper() })
+    expect(screen.getByRole("button", { name: /thumbs up/i })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /thumbs down/i })).toBeInTheDocument()
   })
 
   it("toggles on click (mutual exclusion)", async () => {
     const user = userEvent.setup()
-    render(
-      <FeedbackButtons conversationId="c-1" messageId="m-1" />,
-      { wrapper: makeWrapper() },
-    )
+    render(<FeedbackButtons conversationId="c-1" messageId="m-1" />, { wrapper: makeWrapper() })
     const up = screen.getByRole("button", { name: /thumbs up/i })
     const down = screen.getByRole("button", { name: /thumbs down/i })
     await user.click(up)
@@ -187,20 +166,11 @@ describe("FeedbackButtons", () => {
   })
 
   it("disables both buttons while busy", () => {
-    render(
-      <FeedbackButtons
-        conversationId="c-1"
-        messageId="m-1"
-        disabled
-      />,
-      { wrapper: makeWrapper() },
-    )
-    expect(
-      screen.getByRole("button", { name: /thumbs up/i }),
-    ).toBeDisabled()
-    expect(
-      screen.getByRole("button", { name: /thumbs down/i }),
-    ).toBeDisabled()
+    render(<FeedbackButtons conversationId="c-1" messageId="m-1" disabled />, {
+      wrapper: makeWrapper(),
+    })
+    expect(screen.getByRole("button", { name: /thumbs up/i })).toBeDisabled()
+    expect(screen.getByRole("button", { name: /thumbs down/i })).toBeDisabled()
   })
 })
 
@@ -223,18 +193,10 @@ describe("MessageActions", () => {
       />,
       { wrapper: makeWrapper() },
     )
-    expect(
-      screen.getByRole("button", { name: /copy answer/i }),
-    ).toBeInTheDocument()
-    expect(
-      screen.getByRole("button", { name: /regenerate answer/i }),
-    ).toBeInTheDocument()
-    expect(
-      screen.getByRole("button", { name: /thumbs up/i }),
-    ).toBeInTheDocument()
-    expect(
-      screen.getByRole("button", { name: /thumbs down/i }),
-    ).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /copy answer/i })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /regenerate answer/i })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /thumbs up/i })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /thumbs down/i })).toBeInTheDocument()
   })
 
   it("hides Regenerate when no preceding user message is known", () => {
@@ -248,9 +210,7 @@ describe("MessageActions", () => {
       />,
       { wrapper: makeWrapper() },
     )
-    expect(
-      screen.queryByRole("button", { name: /regenerate answer/i }),
-    ).toBeNull()
+    expect(screen.queryByRole("button", { name: /regenerate answer/i })).toBeNull()
   })
 
   it("disables all actions when isBusy is true", () => {
@@ -264,17 +224,9 @@ describe("MessageActions", () => {
       />,
       { wrapper: makeWrapper() },
     )
-    expect(
-      screen.getByRole("button", { name: /copy answer/i }),
-    ).toBeDisabled()
-    expect(
-      screen.getByRole("button", { name: /regenerate answer/i }),
-    ).toBeDisabled()
-    expect(
-      screen.getByRole("button", { name: /thumbs up/i }),
-    ).toBeDisabled()
-    expect(
-      screen.getByRole("button", { name: /thumbs down/i }),
-    ).toBeDisabled()
+    expect(screen.getByRole("button", { name: /copy answer/i })).toBeDisabled()
+    expect(screen.getByRole("button", { name: /regenerate answer/i })).toBeDisabled()
+    expect(screen.getByRole("button", { name: /thumbs up/i })).toBeDisabled()
+    expect(screen.getByRole("button", { name: /thumbs down/i })).toBeDisabled()
   })
 })

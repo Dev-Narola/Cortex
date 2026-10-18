@@ -18,10 +18,7 @@ import { Icon } from "@cortex/ui"
 
 export function ChatEmptyState(): ReactNode {
   return (
-    <div
-      role="status"
-      className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-12 text-center"
-    >
+    <output className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-12 text-center">
       <div
         aria-hidden
         className="flex h-14 w-14 items-center justify-center rounded-full bg-ember-500/10 text-ember-600"
@@ -33,10 +30,10 @@ export function ChatEmptyState(): ReactNode {
           Ask anything about your knowledge base
         </h2>
         <p className="mx-auto max-w-md text-sm text-muted-foreground">
-          Cortex can answer questions using your indexed
-          documents and provide source-grounded answers.
+          Cortex can answer questions using your indexed documents and provide source-grounded
+          answers.
         </p>
       </div>
-    </div>
+    </output>
   )
 }

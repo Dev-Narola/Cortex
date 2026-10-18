@@ -25,7 +25,7 @@
  * index uniquely identify the source.
  */
 
-import { type ReactNode } from "react"
+import type { ReactNode } from "react"
 
 import { Icon } from "@cortex/ui"
 
@@ -49,15 +49,9 @@ export function CitationSourceHeader({
   const title = citation.documentTitle?.trim() || "Source document"
 
   return (
-    <header
-      data-citation-source-header
-      className={"flex flex-col gap-1.5 " + (className ?? "")}
-    >
+    <header data-citation-source-header className={`flex flex-col gap-1.5 ${className ?? ""}`}>
       <div className="flex items-start gap-2">
-        <Icon
-          name="FileText"
-          className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground"
-        />
+        <Icon name="FileText" className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
         <h3 className="line-clamp-2 text-sm font-semibold tracking-tight text-foreground">
           {title}
         </h3>

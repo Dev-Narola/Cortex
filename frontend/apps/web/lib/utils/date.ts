@@ -92,7 +92,7 @@ export function formatRelative(
   ]
   for (const { unit, seconds } of units) {
     if (absSec >= seconds) {
-      return relFormatter.format(Math.round(-diffMs / 1000 / seconds), unit)
+      return relFormatter.format(Math.round(diffMs / 1000 / seconds), unit)
     }
   }
   return "just now"

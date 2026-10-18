@@ -28,7 +28,7 @@
  * single-purpose mount point.
  */
 
-import { type ReactNode } from "react"
+import type { ReactNode } from "react"
 
 import { DocumentDetailDrawer } from "./detail/DocumentDetailDrawer"
 

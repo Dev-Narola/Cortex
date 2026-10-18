@@ -99,10 +99,7 @@ export function statusProgress(s: DocumentStatus): number {
  * is in the happy path AND the current status is
  * later in the happy path, ignore.
  */
-export function shouldApplyStatus(
-  current: DocumentStatus,
-  next: DocumentStatus,
-): boolean {
+export function shouldApplyStatus(current: DocumentStatus, next: DocumentStatus): boolean {
   // Always apply `failed` — it's terminal, the
   // user needs to know.
   if (next === "failed") return true
@@ -159,8 +156,5 @@ export function isInFlight(s: DocumentStatus): boolean {
  * against the canonical enum.
  */
 export function isDocumentStatus(value: unknown): value is DocumentStatus {
-  return (
-    typeof value === "string" &&
-    (DOCUMENT_STATUSES as readonly string[]).includes(value)
-  )
+  return typeof value === "string" && (DOCUMENT_STATUSES as readonly string[]).includes(value)
 }

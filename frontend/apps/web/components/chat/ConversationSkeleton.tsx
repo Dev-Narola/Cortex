@@ -49,19 +49,16 @@ export function ConversationSkeleton({
   className,
 }: ConversationSkeletonProps): ReactNode {
   return (
-    <div
-      role="status"
+    <output
       aria-live="polite"
       aria-busy="true"
       aria-label="Loading conversation"
       data-conversation-skeleton
-      className={
-        "flex flex-1 flex-col gap-4 overflow-hidden px-4 py-6 sm:px-6 " +
-        (className ?? "")
-      }
+      className={`flex flex-1 flex-col gap-4 overflow-hidden px-4 py-6 sm:px-6 ${className ?? ""}`}
     >
       {Array.from({ length: pairCount }).map((_, i) => (
         <div
+          // biome-ignore lint/suspicious/noArrayIndexKey: static, identical skeleton placeholders
           key={i}
           className="flex w-full flex-col gap-3"
           data-skeleton-pair
@@ -85,6 +82,6 @@ export function ConversationSkeleton({
           </div>
         </div>
       ))}
-    </div>
+    </output>
   )
 }

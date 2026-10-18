@@ -40,11 +40,11 @@
 
 "use client"
 
-import { useCallback, type ReactNode } from "react"
 import { useRouter } from "next/navigation"
+import { type ReactNode, useCallback } from "react"
 
-import { useQueryClient } from "@tanstack/react-query"
 import { toast } from "@cortex/ui"
+import { useQueryClient } from "@tanstack/react-query"
 
 import { ChatLayout } from "@/components/chat/ChatLayout"
 import { useCreateConversation, useSendMessage } from "@/hooks/chat"
@@ -52,10 +52,7 @@ import { sendMessage as sendMessageService } from "@/services/conversations"
 import type { Conversation, Message } from "@/types/conversation"
 import { ApiError } from "@cortex/api-client"
 
-function makeOptimisticUserMessage(
-  conversationId: string,
-  content: string,
-): Message {
+function makeOptimisticUserMessage(conversationId: string, content: string): Message {
   const id =
     typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
       ? crypto.randomUUID()
@@ -98,36 +95,30 @@ export function ChatView(): ReactNode {
         // conversation's cache so it's
         // visible the moment the new view
         // mounts.
-        const optimistic = makeOptimisticUserMessage(
-          conversation.id,
-          value,
-        )
-        qc.setQueryData<Conversation>(
-          ["conversations", conversation.id],
-          (prev) => {
-            if (prev) {
-              return {
-                ...prev,
-                messages: [...(prev.messages ?? []), optimistic],
-              }
-            }
-            // No prior cache (expected — fresh
-            // conversation). Synthesize a
-            // minimal Conversation row so the
-            // list cache + the empty-state
-            // path work consistently.
+        const optimistic = makeOptimisticUserMessage(conversation.id, value)
+        qc.setQueryData<Conversation>(["conversations", conversation.id], (prev) => {
+          if (prev) {
             return {
-              id: conversation.id,
-              tenantId: conversation.tenantId,
-              userId: conversation.userId,
-              title: conversation.title,
-              summary: conversation.summary,
-              createdAt: conversation.createdAt,
-              updatedAt: conversation.updatedAt,
-              messages: [optimistic],
+              ...prev,
+              messages: [...(prev.messages ?? []), optimistic],
             }
-          },
-        )
+          }
+          // No prior cache (expected — fresh
+          // conversation). Synthesize a
+          // minimal Conversation row so the
+          // list cache + the empty-state
+          // path work consistently.
+          return {
+            id: conversation.id,
+            tenantId: conversation.tenantId,
+            userId: conversation.userId,
+            title: conversation.title,
+            summary: conversation.summary,
+            createdAt: conversation.createdAt,
+            updatedAt: conversation.updatedAt,
+            messages: [optimistic],
+          }
+        })
         // Step 3: fire the WS send. This
         // initializes the stream store; the
         // stream hook in the new view picks
@@ -144,8 +135,8 @@ export function ChatView(): ReactNode {
       } catch (err) {
         const message =
           err instanceof ApiError
-            ? (err.body as { message?: string } | undefined)?.message ??
-              "Couldn't start the conversation."
+            ? ((err.body as { message?: string } | undefined)?.message ??
+              "Couldn't start the conversation.")
             : err instanceof Error
               ? err.message
               : "Couldn't start the conversation."

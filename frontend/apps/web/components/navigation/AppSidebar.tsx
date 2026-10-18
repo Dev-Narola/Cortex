@@ -33,11 +33,10 @@
 
 "use client"
 
-import { useEffect, useState, type ReactNode } from "react"
+import { type ReactNode, useEffect, useState } from "react"
 
 import { Icon, Sidebar, TooltipRoot } from "@cortex/ui"
 
-import { SidebarFooter } from "./SidebarFooter"
 import { SidebarNav } from "./SidebarNav"
 import { SidebarWorkspace } from "./SidebarWorkspace"
 
@@ -94,16 +93,13 @@ export function AppSidebar({ state, onClose }: AppSidebarProps): ReactNode {
       <SidebarWorkspace collapsed={resolvedState !== "expanded"} onClose={onClose} />
 
       {/* The nav list. */}
-      <div className="flex-1 overflow-y-auto py-2">
+      <div className="flex-1 overflow-y-auto py-4">
         <SidebarNav collapsed={resolvedState === "collapsed"} />
       </div>
 
-      {/* Footer — user menu + theme toggle. */}
-      <SidebarFooter collapsed={resolvedState === "collapsed"} />
-
       {/* Collapse toggle (only in desktop states). */}
       {state !== "mobile" ? (
-        <div className="border-t border-border p-2">
+        <div className="border-t border-divider p-2">
           <TooltipRoot content={collapsed ? "Expand sidebar" : "Collapse sidebar"} side="right">
             <button
               type="button"
@@ -112,10 +108,7 @@ export function AppSidebar({ state, onClose }: AppSidebarProps): ReactNode {
               aria-pressed={collapsed}
               className="flex h-8 w-full items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
-              <Icon
-                name={collapsed ? "ChevronsRight" : "ChevronsLeft"}
-                className="h-4 w-4"
-              />
+              <Icon name={collapsed ? "ChevronsRight" : "ChevronsLeft"} className="h-4 w-4" />
             </button>
           </TooltipRoot>
         </div>

@@ -72,11 +72,12 @@ import type { ReactNode } from "react"
 
 import { cn } from "@cortex/ui"
 
-import { AgentTrace } from "./agents/AgentTrace"
-import { CitationChip } from "./citations/CitationChip"
-import { MessageActions } from "./MessageActions"
 import { useCitationPanelStore } from "@/hooks/chat"
 import { useResolvedCitations } from "@/hooks/chat/useResolvedCitations"
+import { MarkdownMessage } from "./MarkdownMessage"
+import { MessageActions } from "./MessageActions"
+import { AgentTrace } from "./agents/AgentTrace"
+import { CitationChip } from "./citations/CitationChip"
 
 import type { Message, MessageRole } from "@/types/conversation"
 
@@ -138,18 +139,12 @@ export function MessageBubble({
 }: MessageBubbleProps): ReactNode {
   const style = ROLE_STYLES[message.role]
   const label = ROLE_LABEL[message.role]
-  const { data: citations } = useResolvedCitations(
-    message,
-    conversationId,
-  )
-  const selectedCitationId = useCitationPanelStore(
-    (s) => s.selectedCitationId,
-  )
+  const { data: citations } = useResolvedCitations(message, conversationId)
+  const selectedCitationId = useCitationPanelStore((s) => s.selectedCitationId)
   // Only assistant messages show
   // citations. The resolver still runs
   // for user / tool but returns [].
-  const showChips =
-    message.role === "assistant" && citations.length > 0
+  const showChips = message.role === "assistant" && citations.length > 0
   // Action row only for completed assistant
   // messages. "Completed" = not currently
   // being streamed (the streaming bubble has
@@ -188,9 +183,11 @@ export function MessageBubble({
       >
         {label}
       </div>
-      <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">
-        {message.content}
-      </p>
+      {message.role === "assistant" ? (
+        <MarkdownMessage content={message.content} citations={citations} />
+      ) : (
+        <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">{message.content}</p>
+      )}
       {showChips ? (
         <div
           className="mt-2 flex flex-wrap items-center gap-1.5"
@@ -215,9 +212,7 @@ export function MessageBubble({
           content={message.content}
           isBusy={isBusy}
           regenerateFor={
-            precedingUserMessage
-              ? { conversationId, content: precedingUserMessage }
-              : null
+            precedingUserMessage ? { conversationId, content: precedingUserMessage } : null
           }
         />
       ) : null}

@@ -45,12 +45,11 @@ export function AgentsMcpSection() {
       title="From knowledge to action."
       description={
         <>
-          Agents can plan a multi-step task, retrieve the right
-          knowledge, and call external tools through the{" "}
-          <strong>Model Context Protocol (MCP)</strong>. The same
-          protocol connects Cortex to its own tool registry, so the
-          product gets a <strong>standardized, auditable</strong>{" "}
-          integration surface — not a one-off per-tool adapter.
+          Agents can plan a multi-step task, retrieve the right knowledge, and call external tools
+          through the <strong>Model Context Protocol (MCP)</strong>. The same protocol connects
+          Cortex to its own tool registry, so the product gets a{" "}
+          <strong>standardized, auditable</strong> integration surface — not a one-off per-tool
+          adapter.
         </>
       }
       icon={<Workflow className="h-5 w-5" aria-hidden />}

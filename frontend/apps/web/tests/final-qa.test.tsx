@@ -66,31 +66,63 @@ async function walk(
 }
 
 describe("Final QA — F9 Part 5 (design token discipline + Spark rationing + typography)", () => {
-  it("the design token table is the single source of truth (Cloud / Paper / Ink / Mist / Ember / Volt / Void / Slate)", async () => {
-    // The token table is the entry point
-    // for every theme colour. A future
-    // contributor who adds a new colour
-    // to a component without going
-    // through the token table is
-    // violating the design system
-    // contract.
-    //
-    // process.cwd() is `apps/web/` from
-    // vitest, so we go up TWO levels to
-    // reach the monorepo root before
-    // descending into `packages/`.
+  it("the design token table is the single source of truth (emerald / teal / signal / violet / gray + semantic)", async () => {
+    // Every theme colour enters through tokens.css. process.cwd() is
+    // `apps/web/` under vitest, so go up two levels to `packages/`.
     const tokensPath = path.resolve(process.cwd(), "..", "..", "packages/ui/src/styles/tokens.css")
-    const tokens = await fs.readFile(tokensPath, "utf8")
+    const tokens = (await fs.readFile(tokensPath, "utf8")).toLowerCase()
+    // Brand + neutral scales, plus the legacy aliases older classes rely on.
     for (const token of [
-      "cloud-50",
-      "paper-50",
+      "emerald-400",
+      "teal-400",
+      "signal-400",
+      "violet-400",
+      "gray-950",
       "ink-900",
       "mist-500",
-      "mist-700",
       "ember-500",
       "volt-500",
-      "void-950",
-      "slate-800",
+      "cloud-50",
+    ]) {
+      expect(tokens).toContain(`--${token}:`)
+    }
+    // The brief's exact identity values.
+    for (const hex of [
+      "#080b12",
+      "#0d1220",
+      "#111827",
+      "#34d399",
+      "#059669",
+      "#2dd4bf",
+      "#60a5fa",
+      "#a78bfa",
+      "#c4b5fd",
+      "#fbbf24",
+      "#fb7185",
+      "#f3f6fc",
+      "#a1aec3",
+      "#738198",
+      "#f7f9fc",
+      "#eef2f8",
+      "#101828",
+      "#475467",
+      "#667085",
+      "#047857",
+      "#0f766e",
+    ]) {
+      expect(tokens).toContain(hex)
+    }
+    // Semantic + glass tokens components consume.
+    for (const token of [
+      "background",
+      "foreground",
+      "muted-foreground",
+      "faint",
+      "border",
+      "glass",
+      "glass-border",
+      "brand",
+      "ai",
     ]) {
       expect(tokens).toContain(`--${token}:`)
     }

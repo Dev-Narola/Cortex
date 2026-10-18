@@ -23,9 +23,11 @@ import { TeamPanel } from "@/components/settings/team/team-panel"
 import { useAuthStore } from "@/lib/auth/store"
 
 const getMock = vi.fn()
+const patchMock = vi.fn()
+const postMock = vi.fn()
 
 vi.mock("@/lib/auth/api-client", () => ({
-  getApiClient: () => ({ get: getMock, post: vi.fn() }),
+  getApiClient: () => ({ get: getMock, post: postMock, patch: patchMock }),
 }))
 
 function makeWrapper() {
@@ -55,6 +57,8 @@ function setRole(role: "owner" | "admin" | "member" | "viewer") {
 
 beforeEach(() => {
   getMock.mockReset()
+  patchMock.mockReset()
+  postMock.mockReset()
   useAuthStore.setState({
     accessToken: null,
     refreshToken: null,
@@ -76,7 +80,7 @@ describe("TeamPanel", () => {
   describe("permission gate (F7-Part 1 Task 32)", () => {
     it("owner → Invite button visible", async () => {
       setRole("owner")
-      getMock.mockResolvedValueOnce({ items: [], total: 0, limit: 50, offset: 0 })
+      getMock.mockResolvedValueOnce([])
       render(<TeamPanel />, { wrapper: makeWrapper() })
       await waitFor(() => {
         expect(screen.getByTestId("team-invite-button")).toBeInTheDocument()
@@ -85,7 +89,7 @@ describe("TeamPanel", () => {
 
     it("admin → Invite button visible", async () => {
       setRole("admin")
-      getMock.mockResolvedValueOnce({ items: [], total: 0, limit: 50, offset: 0 })
+      getMock.mockResolvedValueOnce([])
       render(<TeamPanel />, { wrapper: makeWrapper() })
       await waitFor(() => {
         expect(screen.getByTestId("team-invite-button")).toBeInTheDocument()
@@ -94,22 +98,20 @@ describe("TeamPanel", () => {
 
     it("member → Invite button hidden", async () => {
       setRole("member")
-      getMock.mockResolvedValueOnce({ items: [], total: 0, limit: 50, offset: 0 })
       render(<TeamPanel />, { wrapper: makeWrapper() })
-      await waitFor(() => {
-        expect(screen.getByTestId("team-panel-empty")).toBeInTheDocument()
-      })
+      expect(screen.getByTestId("team-panel-restricted")).toBeInTheDocument()
       expect(screen.queryByTestId("team-invite-button")).not.toBeInTheDocument()
+      // The roster endpoint is owner/admin-only: never called for this role.
+      expect(getMock).not.toHaveBeenCalled()
     })
 
     it("viewer → Invite button hidden", async () => {
       setRole("viewer")
-      getMock.mockResolvedValueOnce({ items: [], total: 0, limit: 50, offset: 0 })
       render(<TeamPanel />, { wrapper: makeWrapper() })
-      await waitFor(() => {
-        expect(screen.getByTestId("team-panel-empty")).toBeInTheDocument()
-      })
+      expect(screen.getByTestId("team-panel-restricted")).toBeInTheDocument()
       expect(screen.queryByTestId("team-invite-button")).not.toBeInTheDocument()
+      // The roster endpoint is owner/admin-only: never called for this role.
+      expect(getMock).not.toHaveBeenCalled()
     })
   })
 
@@ -134,7 +136,7 @@ describe("TeamPanel", () => {
 
     it("renders the empty state with the action button when the roster is empty", async () => {
       setRole("owner")
-      getMock.mockResolvedValueOnce({ items: [], total: 0, limit: 50, offset: 0 })
+      getMock.mockResolvedValueOnce([])
       render(<TeamPanel />, { wrapper: makeWrapper() })
       await waitFor(() => {
         expect(screen.getByTestId("team-panel-empty")).toBeInTheDocument()
@@ -146,27 +148,22 @@ describe("TeamPanel", () => {
 
     it("renders the member table when the roster is non-empty (Tasks 38-39)", async () => {
       setRole("owner")
-      getMock.mockResolvedValueOnce({
-        items: [
-          {
-            id: "u-1",
-            email: "ada@cortex.dev",
-            full_name: "Ada Lovelace",
-            role: "owner",
-            created_at: "2026-01-01T00:00:00Z",
-          },
-          {
-            id: "u-2",
-            email: "bob@cortex.dev",
-            full_name: null,
-            role: "member",
-            created_at: "2026-02-15T00:00:00Z",
-          },
-        ],
-        total: 2,
-        limit: 50,
-        offset: 0,
-      })
+      getMock.mockResolvedValueOnce([
+        {
+          id: "u-1",
+          email: "ada@cortex.dev",
+          full_name: "Ada Lovelace",
+          role: "owner",
+          created_at: "2026-01-01T00:00:00Z",
+        },
+        {
+          id: "u-2",
+          email: "bob@cortex.dev",
+          full_name: null,
+          role: "member",
+          created_at: "2026-02-15T00:00:00Z",
+        },
+      ])
       render(<TeamPanel />, { wrapper: makeWrapper() })
       await waitFor(() => {
         expect(screen.getByTestId("team-member-table")).toBeInTheDocument()
@@ -182,11 +179,82 @@ describe("TeamPanel", () => {
 
     it("calls the api-client with the expected URL (Task 42 — endpoint pinning)", async () => {
       setRole("owner")
-      getMock.mockResolvedValueOnce({ items: [], total: 0, limit: 50, offset: 0 })
+      getMock.mockResolvedValueOnce([])
       render(<TeamPanel />, { wrapper: makeWrapper() })
       await waitFor(() => {
         expect(getMock).toHaveBeenCalledWith("/api/v1/users", expect.objectContaining({}))
       })
+    })
+  })
+
+  describe("member management", () => {
+    const roster = [
+      {
+        id: "u-1",
+        email: "ada@cortex.dev",
+        full_name: "Ada",
+        role: "owner",
+        is_active: true,
+        created_at: "2026-01-01T00:00:00Z",
+      },
+      {
+        id: "u-2",
+        email: "bob@cortex.dev",
+        full_name: null,
+        role: "member",
+        is_active: true,
+        created_at: "2026-02-15T00:00:00Z",
+      },
+      {
+        id: "u-3",
+        email: "cy@cortex.dev",
+        full_name: null,
+        role: "admin",
+        is_active: true,
+        created_at: "2026-03-01T00:00:00Z",
+      },
+    ]
+
+    it("owner can deactivate another member (PATCH is_active=false)", async () => {
+      setRole("owner")
+      getMock.mockResolvedValue(roster)
+      patchMock.mockResolvedValueOnce({ ...roster[1], is_active: false })
+      render(<TeamPanel />, { wrapper: makeWrapper() })
+      const toggle = await screen.findByTestId("team-toggle-u-2")
+      toggle.click()
+      await waitFor(() =>
+        expect(patchMock).toHaveBeenCalledWith("/api/v1/users/u-2", { is_active: false }),
+      )
+    })
+
+    it("owner can issue a one-time password reset link for a member", async () => {
+      setRole("owner")
+      getMock.mockResolvedValue(roster)
+      postMock.mockResolvedValueOnce({ reset_token: "rst_abc123456789", expires_in: 3600 })
+      render(<TeamPanel />, { wrapper: makeWrapper() })
+      ;(await screen.findByTestId("team-reset-u-2")).click()
+      await waitFor(() => expect(postMock).toHaveBeenCalledWith("/api/v1/users/u-2/password-reset"))
+      const link = (await screen.findByLabelText("Reset link URL")) as HTMLInputElement
+      expect(link.value).toBe(`${window.location.origin}/reset-password?token=rst_abc123456789`)
+    })
+
+    it("nobody gets actions on their own row", async () => {
+      setRole("owner")
+      getMock.mockResolvedValue(roster)
+      render(<TeamPanel />, { wrapper: makeWrapper() })
+      await screen.findByTestId("team-row-u-1")
+      expect(screen.queryByTestId("team-toggle-u-1")).not.toBeInTheDocument()
+    })
+
+    it("an admin can manage members but not other admins", async () => {
+      useAuthStore.setState({
+        user: { id: "u-9", email: "admin@cortex.dev", role: "admin", tenantId: "t-1" },
+      })
+      getMock.mockResolvedValue(roster)
+      render(<TeamPanel />, { wrapper: makeWrapper() })
+      expect(await screen.findByTestId("team-toggle-u-2")).toBeInTheDocument()
+      expect(screen.queryByTestId("team-toggle-u-3")).not.toBeInTheDocument()
+      expect(screen.queryByTestId("team-toggle-u-1")).not.toBeInTheDocument()
     })
   })
 })

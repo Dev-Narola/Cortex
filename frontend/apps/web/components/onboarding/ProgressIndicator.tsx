@@ -24,19 +24,11 @@ export interface ProgressIndicatorProps {
   className?: string
 }
 
-export function ProgressIndicator({
-  currentStep,
-  totalSteps,
-  className,
-}: ProgressIndicatorProps) {
+export function ProgressIndicator({ currentStep, totalSteps, className }: ProgressIndicatorProps) {
   const steps = Array.from({ length: totalSteps }, (_, i) => i + 1)
   return (
-    <div
-      className={cn(
-        "flex items-center gap-3 text-xs font-medium text-muted-foreground",
-        className,
-      )}
-      role="group"
+    <fieldset
+      className={cn("flex items-center gap-3 text-xs font-medium text-muted-foreground", className)}
       aria-label={`Step ${currentStep} of ${totalSteps}`}
     >
       <div className="flex items-center gap-1.5" aria-hidden="true">
@@ -53,6 +45,6 @@ export function ProgressIndicator({
       <span>
         Step {currentStep} of {totalSteps}
       </span>
-    </div>
+    </fieldset>
   )
 }

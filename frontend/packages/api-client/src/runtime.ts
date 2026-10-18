@@ -101,7 +101,8 @@ export class ApiClient {
           : JSON.stringify(init.body)
         : undefined,
       signal: init?.signal,
-      credentials: "include",
+      // Bearer auth, no cookies: "include" would make browsers reject the API's `*` CORS origin.
+      credentials: "omit",
     })
 
     // Silent refresh + retry on 401 — mirrors the auth/refresh
@@ -120,7 +121,7 @@ export class ApiClient {
               : JSON.stringify(init.body)
             : undefined,
           signal: init?.signal,
-          credentials: "include",
+          credentials: "omit",
         })
       }
     }
@@ -133,12 +134,8 @@ export class ApiClient {
       // + the per-call handler decide what to do.
       if (res.status === 429 && this.onRateLimited) {
         const retryHeader = res.headers.get("Retry-After")
-        const retrySeconds = retryHeader
-          ? Number.parseInt(retryHeader, 10)
-          : Number.NaN
-        const retryAfterMs = Number.isFinite(retrySeconds)
-          ? retrySeconds * 1000
-          : null
+        const retrySeconds = retryHeader ? Number.parseInt(retryHeader, 10) : Number.NaN
+        const retryAfterMs = Number.isFinite(retrySeconds) ? retrySeconds * 1000 : null
         const bodyMessage =
           body && typeof body === "object" && "message" in body
             ? String((body as { message?: unknown }).message ?? "")
@@ -153,8 +150,15 @@ export class ApiClient {
     return (await res.json()) as T
   }
 
-  get<T = unknown>(path: string, query?: Record<string, unknown>) {
-    return this.request<T>("GET", path, { query })
+  get<T = unknown>(
+    path: string,
+    init?: {
+      query?: Record<string, unknown>
+      headers?: Record<string, string>
+      signal?: AbortSignal
+    },
+  ) {
+    return this.request<T>("GET", path, { ...init })
   }
   post<T = unknown>(
     path: string,

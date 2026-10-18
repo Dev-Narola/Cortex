@@ -23,8 +23,8 @@
 
 export const agentKeys = {
   all: ["agents"] as const,
+  list: () => [...agentKeys.all, "list"] as const,
   runs: () => [...agentKeys.all, "runs"] as const,
   run: (id: string) => [...agentKeys.runs(), id] as const,
-  toolCalls: (id: string) =>
-    [...agentKeys.runs(), id, "tool-calls"] as const,
+  toolCalls: (id: string) => [...agentKeys.runs(), id, "tool-calls"] as const,
 } as const

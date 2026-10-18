@@ -36,7 +36,7 @@
 
 import type { ReactNode } from "react"
 
-import { statusLabel, statusProgress, type DocumentStatus } from "@/lib/documents/status"
+import { type DocumentStatus, statusLabel, statusProgress } from "@/lib/documents/status"
 
 export interface DocumentIngestionProgressProps {
   status: DocumentStatus
@@ -54,19 +54,15 @@ export function DocumentIngestionProgress({
   // than pretending progress completed."
   if (status === "failed") {
     return (
-      <div
-        className={"flex items-center gap-1.5 " + (className ?? "")}
-        role="status"
+      <output
+        className={`flex items-center gap-1.5 ${className ?? ""}`}
         aria-label={statusLabel(status)}
       >
-        <span
-          aria-hidden
-          className="h-1.5 w-1.5 rounded-full bg-destructive"
-        />
+        <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-destructive" />
         <span className="text-[10px] font-medium uppercase tracking-wide text-destructive">
           Failed
         </span>
-      </div>
+      </output>
     )
   }
 
@@ -74,18 +70,16 @@ export function DocumentIngestionProgress({
   const label = statusLabel(status)
 
   return (
+    // biome-ignore lint/a11y/useFocusableInteractive: a progressbar is read-only status, not an interactive widget
     <div
-      className={"flex items-center gap-2 " + (className ?? "")}
+      className={`flex items-center gap-2 ${className ?? ""}`}
       role="progressbar"
       aria-valuenow={value}
       aria-valuemin={0}
       aria-valuemax={100}
       aria-label={label}
     >
-      <div
-        className="relative h-1 flex-1 overflow-hidden rounded-full bg-muted/60"
-        aria-hidden
-      >
+      <div className="relative h-1 flex-1 overflow-hidden rounded-full bg-muted/60" aria-hidden>
         <div
           className="h-full rounded-full bg-ember-500 transition-[width] duration-300 ease-out"
           style={{ width: `${value}%` }}
