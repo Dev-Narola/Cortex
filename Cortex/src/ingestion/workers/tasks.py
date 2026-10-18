@@ -380,8 +380,12 @@ async def embed_chunks_task(
         )
         session.commit()
 
+        from src.observability.application.billable import recorder_for_session
+
         provider = get_embedding_provider()
-        service = EmbedDocumentChunksService(provider, chunk_repo)
+        service = EmbedDocumentChunksService(
+            provider, chunk_repo, billable=recorder_for_session(session)
+        )
         
         try:
             embedded_count = await service.embed_document(doc_id, tenant_id=ten_id)

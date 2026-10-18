@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 
 from .api import api_router, ws_router
 from .observability.interface.rest.routes import router as health_router
-from .core.config import settings
+from .core.config import settings, validate_runtime_settings
 from .core.logging import configure_logging
 from .core.middleware import (
     LoggingMiddleware,
@@ -45,6 +45,7 @@ async def lifespan(app: FastAPI):
     # stdlib handler above; the function will replace the
     # root handler list.
     configure_logging()
+    validate_runtime_settings()
     # Install the OpenTelemetry tracer provider + the
     # standard auto-instrumentors (SQLAlchemy, Redis,
     # HTTPX). ``component="api"`` is the value that ends

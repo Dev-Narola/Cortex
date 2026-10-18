@@ -38,7 +38,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import AsyncIterator
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 from src.core.config import settings
@@ -174,6 +174,7 @@ class OpenAILLMProvider(LLMProvider):
         self._client = AsyncOpenAI(
             api_key=api_key or settings.OPENAI_API_KEY,
         )
+        self.default_model = settings.LLM_MODEL
 
     async def generate(
         self,
@@ -186,7 +187,7 @@ class OpenAILLMProvider(LLMProvider):
         max_tokens: int = 1024,
     ) -> LLMResult:
         payload: dict[str, Any] = {
-            "model": model,
+            "model": model or self.default_model,
             "temperature": float(temperature),
             "max_tokens": int(max_tokens),
             "messages": [{"role": "system", "content": system}, *messages],
@@ -282,6 +283,7 @@ class NvidiaLLMProvider(LLMProvider):
             api_key=api_key or settings.NVIDIA_API_KEY,
             base_url=base_url or settings.NVIDIA_BASE_URL,
         )
+        self.default_model = settings.NVIDIA_MODEL
 
     async def generate(
         self,
@@ -294,7 +296,7 @@ class NvidiaLLMProvider(LLMProvider):
         max_tokens: int = 1024,
     ) -> LLMResult:
         payload: dict[str, Any] = {
-            "model": model,
+            "model": model or self.default_model,
             "temperature": float(temperature),
             "max_tokens": int(max_tokens),
             "messages": [{"role": "system", "content": system}, *messages],

@@ -55,8 +55,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
-from src.agents.infrastructure.llm_provider import LLMProvider, LLMResult
-from src.core.config import settings
+from src.agents.infrastructure.llm_provider import LLMProvider
 from src.knowledge_graph.domain.entities import GraphEntity, GraphRelationship
 from src.knowledge_graph.domain.exceptions import GraphExtractionFailed
 from src.knowledge_graph.domain.value_objects import EntityType, RelationshipType
@@ -259,7 +258,7 @@ class OpenAIExtractionProvider(ExtractionProvider):
     ) -> list[EntityCandidate]:
         llm = self._llm or _default_llm()
         result = await llm.generate(
-            model=settings.OPENAI_MODEL,
+            model=getattr(llm, "default_model", None),
             system=self.SYSTEM_ENTITY,
             messages=[{"role": "user", "content": text}],
             temperature=0.0,
@@ -283,7 +282,7 @@ class OpenAIExtractionProvider(ExtractionProvider):
             "that the text asserts."
         )
         result = await llm.generate(
-            model=settings.OPENAI_MODEL,
+            model=getattr(llm, "default_model", None),
             system=self.SYSTEM_RELATION,
             messages=[{"role": "user", "content": user}],
             temperature=0.0,

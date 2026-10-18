@@ -10,6 +10,7 @@ import logging
 from arq.connections import RedisSettings
 
 from src.ingestion.workers.tasks import ingest_document_task, embed_chunks_task
+from src.knowledge_graph.infrastructure.workers import graph_extraction_task
 from src.core.config import settings
 from src.core.logging import configure_logging
 from src.observability.infrastructure.otel import (
@@ -34,7 +35,9 @@ class WorkerSettings:
     possible without Redis bloat.
     """
 
-    functions = [ingest_document_task, embed_chunks_task]
+    # The KG task runs in this worker: both enqueue on the default arq queue,
+    # and a separate KG process doesn't fit the 1 GB host.
+    functions = [ingest_document_task, embed_chunks_task, graph_extraction_task]
 
     redis_settings = RedisSettings.from_dsn(settings.REDIS_URL)
 
@@ -53,6 +56,10 @@ class WorkerSettings:
     # How long (seconds) job results are kept in Redis for inspection
     keep_result: int = 3600
 
+    # Health record TTL; the container healthcheck (arq --check) reads it,
+    # so a dead worker shows unhealthy within ~1 minute, not 1 hour.
+    health_check_interval: int = 60
+
     @staticmethod
     async def on_startup(ctx: dict) -> None:
         # --- V4: boot-time observability setup ---
@@ -61,6 +68,9 @@ class WorkerSettings:
         # applies to every subsequent log call (including
         # the stdlib ``logger.info`` calls below).
         configure_logging()
+        from src.core.config import validate_runtime_settings
+
+        validate_runtime_settings()
         # The worker's tracer provider is distinct from
         # the API's — same SDK, different ``service.name``
         # resource attribute (``cortex-worker``) so the
@@ -72,6 +82,13 @@ class WorkerSettings:
 
         from src.core.redis_client import init_redis
         await init_redis()
+
+        # Collaborators graph_extraction_task reads from ctx.
+        from src.core.dependencies import get_llm_provider
+        from src.knowledge_graph.infrastructure.worker import _build_graph_session_manager
+
+        ctx["graph_session_manager"] = _build_graph_session_manager()
+        ctx["llm_provider"] = get_llm_provider()
 
     @staticmethod
     async def on_shutdown(ctx: dict) -> None:

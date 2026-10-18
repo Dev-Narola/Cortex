@@ -37,29 +37,15 @@ the container layer or Git.
 
 from __future__ import annotations
 
-import logging
-from collections.abc import AsyncGenerator
-
-from openai import AsyncOpenAI
-
-from src.conversation.domain.entities import Message
-from src.conversation.domain.ports import LLMProvider
+from src.conversation.infrastructure.llm.openai import OpenAIProvider
 from src.core.config import settings
 
-logger = logging.getLogger(__name__)
 
-
-class NVIDIAProvider(LLMProvider):
+class NVIDIAProvider(OpenAIProvider):
     """
-    NVIDIA NIM ``AsyncOpenAI`` adapter for Cortex.
-
-    Behaves exactly like :class:`OpenAIProvider` from the
-    application's point of view; the only differences are the
-    ``base_url`` (NVIDIA's NIM endpoint), the api key
-    (``NVIDIA_API_KEY``), and the model default
-    (``openai/gpt-oss-20b``). The constructor signature mirrors
-    :class:`OpenAIProvider` so unit tests can parametrise the
-    same behavioural contract over both adapters.
+    NVIDIA NIM adapter: the OpenAI adapter pointed at NIM's base URL,
+    ``NVIDIA_API_KEY`` and ``NVIDIA_MODEL``. Completion, streaming and
+    usage capture are inherited unchanged.
     """
 
     def __init__(
@@ -72,86 +58,16 @@ class NVIDIAProvider(LLMProvider):
         timeout: float | None = None,
         max_tokens: int | None = None,
     ) -> None:
-        self._client = AsyncOpenAI(
-            # The NIM endpoint requires an api key. We
-            # fall back to ``"dummy"`` only so unit
-            # tests that never actually call the network
-            # can construct the adapter without a real
-            # secret; the production path requires a
-            # real ``NVIDIA_API_KEY``.
-            api_key=api_key
-            or settings.NVIDIA_API_KEY
-            or "dummy-key-for-tests",
+        super().__init__(
+            # "dummy" only lets unit tests construct it offline; prod needs the real key.
+            api_key=api_key or settings.NVIDIA_API_KEY or "dummy-key-for-tests",
+            model=model or settings.NVIDIA_MODEL,
             base_url=base_url or settings.NVIDIA_BASE_URL,
-            timeout=timeout if timeout is not None else settings.LLM_TIMEOUT,
+            temperature=temperature,
+            timeout=timeout,
+            max_tokens=max_tokens,
         )
-        self.model = model or settings.NVIDIA_MODEL
-        self.temperature = (
-            temperature if temperature is not None else settings.LLM_TEMPERATURE
-        )
-        self.max_tokens = (
-            max_tokens if max_tokens is not None else settings.LLM_MAX_TOKENS
-        )
-
-    # ------------------------------------------------------------------
-    # LLMProvider
-    # ------------------------------------------------------------------
-
-    async def complete(
-        self,
-        messages: list[Message],
-        model: str | None = None,
-        temperature: float | None = None,
-    ) -> str:
-        """Run a non-streaming chat completion via NIM."""
-        response = await self._client.chat.completions.create(
-            model=model or self.model,
-            messages=self._format(messages),
-            temperature=temperature if temperature is not None else self.temperature,
-            max_tokens=self.max_tokens,
-        )
-        choice = response.choices[0]
-        return (choice.message.content or "").strip()
-
-    async def stream(
-        self,
-        messages: list[Message],
-        model: str | None = None,
-        temperature: float | None = None,
-    ) -> AsyncGenerator[str, None]:
-        """Stream token deltas from a NIM chat completion."""
-        stream = await self._client.chat.completions.create(
-            model=model or self.model,
-            messages=self._format(messages),
-            temperature=temperature if temperature is not None else self.temperature,
-            max_tokens=self.max_tokens,
-            stream=True,
-        )
-        async for chunk in stream:
-            if not chunk.choices:
-                continue
-            delta = chunk.choices[0].delta
-            token = delta.content if delta and delta.content else None
-            if token:
-                yield token
-
-    # ------------------------------------------------------------------
-    # Internals
-    # ------------------------------------------------------------------
-
-    @staticmethod
-    def _format(messages: list[Message]) -> list[dict]:
-        """
-        Convert :class:`Message` dataclasses into the dict shape
-        NIM (and OpenAI) expect. Same rules as
-        :meth:`OpenAIProvider._format` — the dataclass ``role``
-        is normalised to a string, ``content`` is taken verbatim.
-        """
-        out: list[dict] = []
-        for m in messages:
-            role = m.role.value if hasattr(m.role, "value") else str(m.role)
-            out.append({"role": role, "content": m.content})
-        return out
+        self.provider = "nvidia"
 
 
 __all__ = ["NVIDIAProvider"]

@@ -75,6 +75,7 @@ class HybridSearchService:
         rerank_top_k: int | None = None,
         final_top_k: int | None = None,
         use_cache: bool = True,
+        billable=None,
     ) -> None:
         self._query_embed_service = query_embed_service
         self._vector_repo = vector_repo
@@ -91,6 +92,7 @@ class HybridSearchService:
         self._rerank_top_k = rerank_top_k or settings.RERANK_TOP_K
         self._final_top_k = final_top_k or settings.FINAL_TOP_K
         self._use_cache = use_cache
+        self._billable = billable
 
     # ------------------------------------------------------------------
     # Public API
@@ -128,6 +130,7 @@ class HybridSearchService:
         # 2) Embed the query (so the same model is used for queries
         #    and documents — see ADR-0014).
         query_vector = await self._query_embed_service.embed_query(query)
+        self._record_query_embedding(tenant_id)
 
         # 3) Run vector and keyword retrieval concurrently-shaped
         #    sequential calls. (The repos are async; using
@@ -204,6 +207,20 @@ class HybridSearchService:
             )
 
         return final
+
+    def _record_query_embedding(self, tenant_id: uuid.UUID) -> None:
+        provider = getattr(self._query_embed_service, "_provider", None)
+        usage = getattr(provider, "last_usage", None)
+        if self._billable is None or usage is None:  # cache hit: no API call, no usage
+            return
+        self._billable.record_embedding(
+            tenant_id=tenant_id,
+            model=getattr(provider, "model", "unknown"),
+            input_tokens=int(getattr(usage, "prompt_tokens", 0) or 0),
+            vectors_produced=1,
+            provider=getattr(provider, "provider", "unknown"),
+            resource_id="query",
+        )
 
     # ------------------------------------------------------------------
     # Cache helpers

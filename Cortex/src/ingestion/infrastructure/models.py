@@ -43,7 +43,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import TypeDecorator
 from sqlalchemy.dialects.postgresql import TSVECTOR
-from pgvector.sqlalchemy import Vector
+from pgvector.sqlalchemy import HALFVEC
 
 from src.identity.infrastructure.models import TenantModel, UserModel
 from src.core.database import Base
@@ -150,6 +150,12 @@ class DocumentModel(Base):
 # ---------------------------------------------------------------------------
 
 
+# Width of ``document_chunks.embedding`` (halfvec: HNSW supports up to 4000
+# dims). Must equal ``settings.EMBEDDING_DIMENSIONS``; checked at startup.
+# Changing it needs a migration + re-embedding (see ADR-0032).
+EMBEDDING_DIM = 2048
+
+
 class TSVector(TypeDecorator):
     """
     Custom type that maps to TSVECTOR on PostgreSQL and String on SQLite.
@@ -192,7 +198,7 @@ class DocumentChunkModel(Base):
 
     embedding_model: Mapped[str | None] = mapped_column(String(64), nullable=True)
     embedding_version: Mapped[str | None] = mapped_column(String(16), nullable=True)
-    embedding: Mapped[list[float] | None] = mapped_column(Vector(1024), nullable=True)
+    embedding: Mapped[list[float] | None] = mapped_column(HALFVEC(EMBEDDING_DIM), nullable=True)
     tsv = mapped_column(TSVector, nullable=True)
 
     __table_args__ = (

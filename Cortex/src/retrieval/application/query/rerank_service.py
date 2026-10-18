@@ -76,16 +76,24 @@ class RerankerService:
             # in V5 can change this without breaking the
             # contract.
             if self._billable is not None:
-                model_name = getattr(self._provider, "model", "identity")
-                self._billable.record_rerank(
-                    tenant_id=tenant_id,
-                    model=str(model_name),
-                    candidate_count=len(documents),
-                    selected_count=len(result),
-                    provider=str(
-                        getattr(self._provider, "provider", "identity")
-                    ),
-                )
+                usage = getattr(self._provider, "last_usage", None)
+                if usage:
+                    self._billable.record_completion(
+                        tenant_id=tenant_id,
+                        model=str(getattr(self._provider, "model", "unknown")),
+                        input_tokens=usage.get("prompt_tokens", 0),
+                        output_tokens=usage.get("completion_tokens", 0),
+                        operation="rerank",
+                        provider=str(getattr(self._provider, "provider", "llm")),
+                    )
+                else:
+                    self._billable.record_rerank(
+                        tenant_id=tenant_id,
+                        model=str(getattr(self._provider, "model", "identity")),
+                        candidate_count=len(documents),
+                        selected_count=len(result),
+                        provider=str(getattr(self._provider, "provider", "identity")),
+                    )
             return result
         except Exception as exc:  # noqa: BLE001 - reranker is best-effort
             logger.warning(
