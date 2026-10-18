@@ -61,6 +61,8 @@ class LLMReranker(RerankerPort):
     def __init__(self, llm, *, model: str | None = None, max_chars: int = 700) -> None:
         self._llm = llm
         self.model = model or getattr(llm, "model", "unknown")
+        # Usage is billed to the provider that actually served the call.
+        self.provider = getattr(llm, "provider", "llm")
         self._max_chars = max_chars
         self.last_usage = None
 

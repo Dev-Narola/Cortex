@@ -33,11 +33,11 @@ Gate: unit suite green locally; CI integration job green (migrations + live pgve
 - [x] B4 Ops exposure (C8, M3–M6): ops routes off `/api/v1`, GraphiQL off in prod, prod config validation,
       worker healthcheck, S3 label, quiet third-party HTTP loggers (M6).
 - [x] B5 CI (H12): fix steps, pgvector integration job, coverage gate.
-- [ ] B6 CD + backups + TLS (C7, H14): see DEPLOYMENT_PLAN.md (needs approval).
+- [x] B6 Backups + TLS live; CD workflow ready (needs repo secrets).
 
 ## Phase v1.0 — differentiated capabilities
 
-- [x] V1 KG extraction registered in worker (H9). ⏳ live extraction/traversal check after deploy.
+- [x] V1 KG extraction registered in worker (H9); worker deadlock + reasoning-budget fixes; verified live.
 - [x] V2 Agent run hard wall-clock bound (unit-tested). ⏳ live agent run after deploy.
 - [x] V3 MCP tenant isolation tests (API key + JWT), user re-resolved (M7).
 
@@ -62,5 +62,9 @@ Gate: unit suite green locally; CI integration job green (migrations + live pgve
 | 2026-10-18 | 1976c1a | B5/B6 (code): CI, CD, backups, compose env | full suite 949 passed, 77.2 % |
 | 2026-10-18 | 76aff6f | V2: agent wall-clock bound, re-embed script, ADRs | agent bound |
 
-**Remaining (needs approval / access):** push branch + CI run, production deploy (D1-D8),
-TLS hostname, GitHub deploy secrets, backup cron, load test (v1.x), OWASP pass write-up (v1.x).
+| 2026-10-18 | aa25f5c | First production deploy; migrations w1-w4; re-embed | smoke: core passes, KG stalled |
+| 2026-10-18 | 5c632b2 | KG worker deadlock fix (no txn across awaits, lock_timeout) | CI green; worker verified live |
+| 2026-10-18 | 76e354c | NIM reasoning_effort=low (KG JSON was truncated) | prod smoke 16/16 (HTTP, HTTPS) |
+
+**Remaining:** merge `fix/production-recovery` → `main` (PR), CD repo secrets, a live agent run,
+load test + restore drill + OWASP write-up (v1.x), mypy debt (116), architecture baseline (55).

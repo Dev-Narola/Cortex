@@ -30,6 +30,10 @@ DOC = (
     "LLM reranker reorders the candidates. The smoke-test codeword is "
     "PERIWINKLE-42."
 )
+# Unique per run: identical text would be served from the embedding cache
+# (no API call, so correctly no usage event).
+NONCE = uuid.uuid4().hex[:10]
+DOC = f"{DOC} Run reference {NONCE}."
 failures: list[str] = []
 
 
@@ -99,9 +103,9 @@ def main() -> int:
         time.sleep(4)
     check("ingestion reaches indexed", status == "indexed", status)
 
-    r = c.post(f"{API}/search/debug", headers=h, json={"query": "which extension stores embeddings"})
+    r = c.post(f"{API}/search/debug", headers=h, json={"query": f"which extension stores embeddings {NONCE}"})
     if r.status_code == 404:
-        r = c.post(f"{API}/search", headers=h, json={"query": "which extension stores embeddings"})
+        r = c.post(f"{API}/search", headers=h, json={"query": f"which extension stores embeddings {NONCE}"})
     body = r.json()
     results = body.get("results", body if isinstance(body, list) else [])
     check("hybrid search finds the chunk", r.status_code == 200 and any(

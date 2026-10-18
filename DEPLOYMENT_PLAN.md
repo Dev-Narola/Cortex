@@ -1,6 +1,12 @@
 # Cortex — Deployment Plan
 
-## Current production (observed 2026-10-18)
+## Production after the 2026-10-18 deploy
+
+https://13-60-95-116.sslip.io · commit on `.last-good-tag` · API 1 worker · arq worker (KG in-process) ·
+nightly backup 02:15 UTC (local + S3) · TLS renewal Mondays 03:40 UTC · smoke: `scripts/smoke_e2e.py`.
+D1–D8 done; D7 (CD) needs the repo secrets listed in `.github/workflows/deploy.yml`.
+
+## Production before (observed 2026-10-18)
 
 | Item | State |
 |---|---|
