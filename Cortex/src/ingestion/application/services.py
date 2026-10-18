@@ -44,6 +44,9 @@ class CreateDocumentService:
         filename: str,
         mime_type: str,
         file_obj: BinaryIO,
+        *,
+        source_type: str = "upload",
+        title: str | None = None,
     ) -> Document:
         # 1. Buffer the file bytes immediately before any I/O so the
         #    stream is always available regardless of what happens next.
@@ -71,8 +74,8 @@ class CreateDocumentService:
         # 3. Build domain entity and persist immediately with PENDING status
         document = Document.create(
             tenant_id=tenant_id,
-            source_type="upload",
-            title=filename,
+            source_type=source_type,
+            title=title or filename,
             mime_type=mime_type,
             created_by=created_by,
         )

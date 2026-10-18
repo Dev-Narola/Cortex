@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from src.ingestion.domain.entities import DocumentStatus
 
@@ -16,6 +16,13 @@ class DocumentResponse(BaseModel):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class UrlDocumentRequest(BaseModel):
+    """Body for ``POST /documents/url``."""
+
+    url: str = Field(..., min_length=8, max_length=2048)
+    title: str | None = Field(default=None, max_length=255)
 
 
 class DocumentAcceptedResponse(BaseModel):

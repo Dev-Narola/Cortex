@@ -122,3 +122,22 @@ def test_owner_can_delete_own_document(api):
     doc_id = _upload(api, _jwt(token)).json()["id"]
     assert api.delete(f"/api/v1/documents/{doc_id}", headers=_jwt(token)).status_code == 204
     assert api.get(f"/api/v1/documents/{doc_id}", headers=_jwt(token)).status_code == 404
+
+
+def test_url_ingestion_queues_a_url_document(api, monkeypatch):
+    from src.ingestion.infrastructure import url_fetcher
+
+    async def _fake_fetch(url):
+        return url_fetcher.FetchedDocument(
+            b"Fetched page text.", "text/plain", "A Page", "example.com.txt", url
+        )
+
+    monkeypatch.setattr(url_fetcher, "fetch_url", _fake_fetch)
+    token = _register_and_get_token(api)
+    raw, _ = _issue_key(api, token, ["documents:write"])
+    r = api.post("/api/v1/documents/url", json={"url": "https://example.com/p"},
+                 headers={"X-API-Key": raw})
+    assert r.status_code == 202, r.text
+    db = next(app.dependency_overrides[get_db]())
+    row = db.get(DocumentModel, uuid.UUID(r.json()["id"]))
+    assert (row.source_type, row.title, row.mime_type) == ("url", "A Page", "text/plain")

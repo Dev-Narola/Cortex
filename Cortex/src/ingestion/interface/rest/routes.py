@@ -32,6 +32,7 @@ from src.ingestion.interface.rest.auth import (
 )
 from src.ingestion.interface.rest.queue import arq_queue
 from src.ingestion.interface.rest.schemas import (
+    UrlDocumentRequest,
     DocumentAcceptedResponse,
     DocumentResponse,
     DocumentStatusProgress,
@@ -221,6 +222,54 @@ async def create_document(
         id=document.id,
         status=document.status,
         message="Document queued for processing"
+    )
+
+
+@router.post(
+    "/url", response_model=DocumentAcceptedResponse, status_code=status.HTTP_202_ACCEPTED
+)
+async def create_document_from_url(
+    request: Request,
+    body: UrlDocumentRequest,
+    auth: Annotated[DocumentWriteAuth, Depends(require_document_write)],
+    db: Session = Depends(get_db),
+    service: CreateDocumentService = Depends(get_create_document_service),
+):
+    """
+    Ingest a web page or remote file (HTML, PDF, DOCX, TXT, MD).
+
+    The fetch happens here, bounded (10 s, size cap) and SSRF-guarded; the
+    bytes then follow the exact upload path (S3 -> async worker).
+    """
+    import io
+
+    from src.ingestion.infrastructure.url_fetcher import fetch_url
+
+    fetched = await fetch_url(body.url)
+    document = await service.execute(
+        tenant_id=auth.tenant_id,
+        created_by=auth.created_by,
+        filename=fetched.filename,
+        mime_type=fetched.mime_type,
+        file_obj=io.BytesIO(fetched.content),
+        source_type="url",
+        title=body.title or fetched.title,
+    )
+    db.commit()
+    _safe_audit(
+        db,
+        tenant_id=auth.tenant_id,
+        action=AuditAction.DOCUMENT_CREATED,
+        actor_user_id=auth.actor_user_id,
+        actor_api_key_id=auth.api_key_id,
+        resource_type="document",
+        resource_id=document.id,
+        metadata={"source_url": fetched.final_url[:512], "mime_type": fetched.mime_type},
+        ip_address=_client_ip(request),
+    )
+    db.commit()
+    return DocumentAcceptedResponse(
+        id=document.id, status=document.status, message="Document queued for processing"
     )
 
 
