@@ -134,6 +134,9 @@ def _resolve_jwt_user(token: str, db: Session):
             message="Account is inactive.",
             code=401,
         )
+    from src.limits.application.request_limits import enforce_tenant
+
+    enforce_tenant(db, tenant.id)
     return user, tenant
 
 
@@ -304,6 +307,9 @@ def require_api_key(
         raise UnauthorizedException(
             message="Invalid API key.", code=401, data={"field": "api_key"}
         )
+    from src.limits.application.request_limits import enforce_api_key
+
+    enforce_api_key(db, key, tenant.id)
     now = datetime.now(UTC)
     # Throttle the last_used_at write: one UPDATE per key per minute, not per request.
     if key.last_used_at is None or now - key.last_used_at > timedelta(minutes=1):

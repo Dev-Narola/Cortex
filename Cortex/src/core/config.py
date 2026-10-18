@@ -76,6 +76,15 @@ class Settings(BaseSettings):
     S3_SECRET_KEY: str | None = None
 
     # ------------------------------------------------------------------
+    # Request rate limits (per minute). A ``tenant_limits`` row overrides
+    # the tenant default; an API key's ``rate_limit_per_min`` overrides
+    # the key default. 0 disables a limit.
+    # ------------------------------------------------------------------
+    TENANT_REQUESTS_PER_MINUTE: int = 600
+    API_KEY_REQUESTS_PER_MINUTE: int = 120
+    LOGIN_ATTEMPTS_PER_MINUTE: int = 10
+
+    # ------------------------------------------------------------------
     # Ingestion
     # ------------------------------------------------------------------
     MAX_DOCUMENT_SIZE_BYTES: int = 10 * 1024 * 1024  # 10MB default

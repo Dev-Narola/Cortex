@@ -80,3 +80,14 @@ async def client(db_mock, redis_mock):
 
     # Clean up
     app.dependency_overrides.clear()
+
+
+@pytest.fixture(autouse=True)
+def _no_request_rate_limits(monkeypatch):
+    """Request limits are off by default in tests (0 = disabled); the
+    limiter has its own tests with an in-memory counter."""
+    from src.core.config import settings as app_settings
+
+    for name in ("TENANT_REQUESTS_PER_MINUTE", "API_KEY_REQUESTS_PER_MINUTE",
+                 "LOGIN_ATTEMPTS_PER_MINUTE"):
+        monkeypatch.setattr(app_settings, name, 0)
