@@ -59,9 +59,12 @@ def _build_graph_session_manager() -> "object":
     from sqlalchemy import create_engine
     from sqlalchemy.orm import sessionmaker
 
+    from src.core.database import _CONNECT_ARGS
+
     engine = create_engine(
         settings.DATABASE_URL,
         pool_pre_ping=True,
+        connect_args=_CONNECT_ARGS,
     )
     factory = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     return Neo4jSessionManager(

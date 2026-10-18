@@ -924,72 +924,85 @@ class GraphExtractionPipeline:
         entity_repo = GraphEntityRepository(self._db)
         rel_repo = GraphRelationshipRepository(self._db)
 
-        for chunk in chunks:
+        # No transaction may stay open across an ``await``: KG jobs share
+        # the worker's event loop and these repository calls are sync. A
+        # sync INSERT waiting on a row lock held by another coroutine's open
+        # transaction blocks the loop, so that coroutine can never commit:
+        # a permanent deadlock (prod, 2026-10-18). Every write therefore
+        # commits immediately, before the next LLM call. Chunks are copied
+        # to plain values first: touching an expired ORM row after commit
+        # would silently reopen a transaction.
+        chunk_rows = [(c.id, c.content) for c in chunks]
+        self._db.commit()
+
+        def _persist(entity: GraphEntity) -> tuple[GraphEntity, bool]:
+            """Return (row, created). Existing rows are reused."""
+            existing = entity_repo.get_by_name(
+                tenant_id=tenant_id, name=entity.name, entity_type=entity.entity_type
+            )
+            if existing is not None:
+                self._db.commit()
+                return existing, False
+            try:
+                persisted = entity_repo.create(entity)
+                self._db.commit()
+                return persisted, True
+            except Exception:  # noqa: BLE001 - lost a race; the repo rolled back this insert only
+                self._db.rollback()
+                existing = entity_repo.get_by_name(
+                    tenant_id=tenant_id, name=entity.name, entity_type=entity.entity_type
+                )
+                self._db.commit()
+                if existing is None:
+                    raise
+                return existing, False
+
+        for chunk_id, chunk_content in chunk_rows:
             result.metrics.chunks_processed += 1
             chunk_entities: list[GraphEntity] = []
             try:
                 chunk_entities = await self._entity_service.extract_entities(
-                    chunk.content, tenant_id=tenant_id
+                    chunk_content, tenant_id=tenant_id
                 )
             except GraphExtractionFailed as exc:
                 logger.warning(
                     "graph_extraction.entity_failed",
                     extra={
                         "document_id": str(document_id),
-                        "chunk_id": str(chunk.id),
+                        "chunk_id": str(chunk_id),
                         "error": exc.message,
                     },
                 )
                 result.metrics.failed_chunks += 1
                 _record_failed_extraction()
-                # Continue with the rest of the document;
-                # a failed chunk does not abort extraction.
+                # A failed chunk does not abort the document.
                 continue
 
-            # Persist (or reuse) each entity.
+            # Persist (or reuse) each entity; relationships must reference
+            # the *persisted* rows (a reused entity has the stored row's id,
+            # not the id the extractor just generated).
+            persisted_for_chunk: list[GraphEntity] = []
             for entity in chunk_entities:
                 key = (entity.name.lower(), entity.entity_type.value)
                 if key in by_name:
                     result.metrics.entities_deduped += 1
-                    continue
-                existing = entity_repo.get_by_name(
-                    tenant_id=tenant_id,
-                    name=entity.name,
-                    entity_type=entity.entity_type,
-                )
-                if existing is not None:
-                    by_name[key] = existing
-                    result.metrics.entities_deduped += 1
-                    continue
-                try:
-                    persisted = entity_repo.create(entity)
-                except Exception:  # noqa: BLE001 - 409 path: race vs another extract
-                    # A concurrent extraction for the
-                    # same document may have inserted
-                    # the row. Re-fetch and reuse.
-                    self._db.rollback()
-                    existing = entity_repo.get_by_name(
-                        tenant_id=tenant_id,
-                        name=entity.name,
-                        entity_type=entity.entity_type,
-                    )
-                    if existing is None:
-                        # Genuine failure — re-raise.
-                        raise
-                    by_name[key] = existing
-                    result.metrics.entities_deduped += 1
-                    continue
-                by_name[key] = persisted
-                result.entities.append(persisted)
-                result.metrics.entities_extracted += 1
-                _record_entity_extracted()
+                else:
+                    row, created = _persist(entity)
+                    by_name[key] = row
+                    if created:
+                        result.entities.append(row)
+                        result.metrics.entities_extracted += 1
+                        _record_entity_extracted()
+                    else:
+                        result.metrics.entities_deduped += 1
+                if by_name[key] not in persisted_for_chunk:
+                    persisted_for_chunk.append(by_name[key])
 
-            # Relationships: ask the LLM about this
-            # chunk's entities only.
+            # Relationships: ask the LLM about this chunk's entities only.
             try:
                 chunk_rels = (
                     await self._relationship_service.extract_relationships(
-                        chunk.content, chunk_entities
+                        chunk_content, persisted_for_chunk
                     )
                 )
             except GraphExtractionFailed as exc:
@@ -997,7 +1010,7 @@ class GraphExtractionPipeline:
                     "graph_extraction.relationship_failed",
                     extra={
                         "document_id": str(document_id),
-                        "chunk_id": str(chunk.id),
+                        "chunk_id": str(chunk_id),
                         "error": exc.message,
                     },
                 )
@@ -1011,7 +1024,8 @@ class GraphExtractionPipeline:
                     continue
                 try:
                     persisted = rel_repo.create(rel)
-                except Exception:  # noqa: BLE001 - 409 dup is the expected case
+                    self._db.commit()
+                except Exception:  # noqa: BLE001 - duplicate relationship is the expected case
                     self._db.rollback()
                     result.metrics.relationships_deduped += 1
                     continue

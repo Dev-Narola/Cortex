@@ -28,7 +28,9 @@ from src.core.config import settings
 
 
 def make_session_factory() -> sessionmaker:
-    engine = create_engine(settings.DATABASE_URL, pool_pre_ping=True)
+    from src.core.database import _CONNECT_ARGS
+
+    engine = create_engine(settings.DATABASE_URL, pool_pre_ping=True, connect_args=_CONNECT_ARGS)
     return sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
