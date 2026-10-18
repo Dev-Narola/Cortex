@@ -27,7 +27,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+    # ``extra="ignore"``: stale keys in a .env (e.g. retired settings) must
+    # not stop the app from booting.
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     # ------------------------------------------------------------------
     # Core runtime
@@ -74,6 +76,15 @@ class Settings(BaseSettings):
     S3_SECRET_KEY: str | None = None
 
     # ------------------------------------------------------------------
+    # Request rate limits (per minute). A ``tenant_limits`` row overrides
+    # the tenant default; an API key's ``rate_limit_per_min`` overrides
+    # the key default. 0 disables a limit.
+    # ------------------------------------------------------------------
+    TENANT_REQUESTS_PER_MINUTE: int = 600
+    API_KEY_REQUESTS_PER_MINUTE: int = 120
+    LOGIN_ATTEMPTS_PER_MINUTE: int = 10
+
+    # ------------------------------------------------------------------
     # Ingestion
     # ------------------------------------------------------------------
     MAX_DOCUMENT_SIZE_BYTES: int = 10 * 1024 * 1024  # 10MB default
@@ -86,10 +97,11 @@ class Settings(BaseSettings):
     # local is a new adapter + a new branch in
     # ``ingestion/workers/dependencies.get_embedding_provider``.
     EMBEDDING_PROVIDER: str = "openai"
-    EMBEDDING_MODEL: str = "text-embedding-3-small"
-    # MUST match the model's actual output dimension. A mismatch will
-    # be caught at embed time and rejected as a permanent error.
-    EMBEDDING_DIMENSIONS: int = 1024
+    # text-embedding-3-large accepts ``dimensions=2048`` (Matryoshka).
+    EMBEDDING_MODEL: str = "text-embedding-3-large"
+    # MUST equal the ``document_chunks.embedding`` column width
+    # (``ingestion.infrastructure.models.EMBEDDING_DIM``); checked at startup.
+    EMBEDDING_DIMENSIONS: int = 2048
     EMBEDDING_BATCH_SIZE: int = 100
     EMBEDDING_TIMEOUT: float = 30.0
     EMBEDDING_MAX_RETRIES: int = 3
@@ -129,29 +141,24 @@ class Settings(BaseSettings):
     NVIDIA_API_KEY: str | None = None
     NVIDIA_BASE_URL: str = "https://integrate.api.nvidia.com/v1"
     NVIDIA_MODEL: str = "openai/gpt-oss-20b"
-    # NVIDIA NIM embedding model (OpenAI-compatible surface).
-    # ``nvidia/nv-embed-v1`` is the recommended free-tier generalist
-    # embedding model on NVIDIA Build (build.nvidia.com). It has a native
-    # output size that may differ from OpenAI's 1536; set
-    # ``NVIDIA_EMBEDDING_DIMENSIONS`` to match the model's actual output
-    # so the pgvector column size check passes.
-    #
-    # WARNING — the database column is currently Vector(1536). If you
-    # switch to NVIDIA and your model emits a different size, you MUST
-    # run an Alembic migration to change the column size and then
-    # re-ingest all documents. The worker will error loudly on a
-    # dimension mismatch rather than silently write bad vectors.
-    NVIDIA_EMBEDDING_MODEL: str = "baai/bge-m3"
-    NVIDIA_EMBEDDING_DIMENSIONS: int = 1024  # BAAI/bge-m3 outputs 1024 dimensions
+    # gpt-oss is a reasoning model: hidden reasoning tokens count against
+    # max_tokens. Measured on a KG extraction prompt: default effort used
+    # 480-875 completion tokens (truncating at a 1024 cap -> empty JSON),
+    # "low" used ~178 with valid output. Sent on every NIM chat call;
+    # "" disables (for NIM models that reject the parameter).
+    NVIDIA_REASONING_EFFORT: str = "low"
+    # NVIDIA NIM embedding model. Its output width must equal
+    # ``EMBEDDING_DIMENSIONS`` (nemotron-3-embed-1b: fixed 2048). NIM has
+    # retired models with little notice (nv-embedqa-e5-v5 on 2026-08-25);
+    # switching models means re-embedding every chunk (ADR-0032).
+    NVIDIA_EMBEDDING_MODEL: str = "nvidia/nemotron-3-embed-1b"
 
     # ------------------------------------------------------------------
     # Reranker
     # ------------------------------------------------------------------
-    # V3 ships an ``IdentityReranker`` (a no-op that just preserves
-    # the fused order) — real cross-encoder support lands in V4+ once
-    # we have a concrete hosted provider to integrate. The config
-    # surface is in place so a swap is a one-line change.
-    RERANKER_PROVIDER: str = "identity"
+    # ``llm``: second-pass relevance scoring by the chat LLM (one call per
+    # search). ``identity``: keep the fused order (no reranking).
+    RERANKER_PROVIDER: str = "llm"
     RERANKER_TIMEOUT: float = 15.0
     RERANKER_MAX_RETRIES: int = 2
 
@@ -410,4 +417,20 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+
+def validate_runtime_settings(s: Settings = settings) -> None:
+    """Fail fast on configuration that would corrupt data or weaken auth."""
+    from src.ingestion.infrastructure.models import EMBEDDING_DIM
+
+    if s.EMBEDDING_DIMENSIONS != EMBEDDING_DIM:
+        raise RuntimeError(
+            f"EMBEDDING_DIMENSIONS={s.EMBEDDING_DIMENSIONS} but the embedding column is "
+            f"halfvec({EMBEDDING_DIM}); vectors would be rejected. Fix the env or migrate."
+        )
+    if s.ENVIRONMENT.lower() == "production":
+        if s.SECRET_KEY == "change-me-in-development" or len(s.SECRET_KEY) < 32:
+            raise RuntimeError("SECRET_KEY must be set to >= 32 random characters in production.")
+        if s.DEBUG:
+            raise RuntimeError("DEBUG must be false in production.")
 

@@ -44,6 +44,9 @@ class CreateDocumentService:
         filename: str,
         mime_type: str,
         file_obj: BinaryIO,
+        *,
+        source_type: str = "upload",
+        title: str | None = None,
     ) -> Document:
         # 1. Buffer the file bytes immediately before any I/O so the
         #    stream is always available regardless of what happens next.
@@ -51,6 +54,15 @@ class CreateDocumentService:
         #    upload() consumes it, seeking back raises
         #    "I/O operation on closed file".
         import io
+        import os
+        import re
+
+        from src.core.config import settings
+
+        # Size first: never pull an oversized body into memory.
+        file_obj.seek(0, os.SEEK_END)
+        if file_obj.tell() > settings.MAX_DOCUMENT_SIZE_BYTES:
+            FileValidator.validate_file(filename=filename, mime_type=mime_type, file_obj=file_obj)
         file_obj.seek(0)
         file_bytes = file_obj.read()
         buffered = io.BytesIO(file_bytes)
@@ -62,15 +74,17 @@ class CreateDocumentService:
         # 3. Build domain entity and persist immediately with PENDING status
         document = Document.create(
             tenant_id=tenant_id,
-            source_type="upload",
-            title=filename,
+            source_type=source_type,
+            title=title or filename,
             mime_type=mime_type,
             created_by=created_by,
         )
         persisted = self.repository.create(document)
 
         # tenants/{tenant_id}/documents/{document_id}/original/{filename}
-        object_key = f"tenants/{tenant_id}/documents/{persisted.id}/original/{filename}"
+        # The original name stays the title; the key gets a sanitised copy.
+        safe_name = re.sub(r"[^A-Za-z0-9._-]", "_", os.path.basename(filename))[:200] or "file"
+        object_key = f"tenants/{tenant_id}/documents/{persisted.id}/original/{safe_name}"
 
         # 4. Upload file; on failure mark the DB record as failed and re-raise
         try:
@@ -148,7 +162,6 @@ class GetDocumentStatusService:
 
     async def execute(self, tenant_id: uuid.UUID, document_id: uuid.UUID) -> Document:
         from src.core.cache import get_cache, set_cache
-        from src.ingestion.domain.entities import DocumentStatus, SourceType
         import datetime
 
         cache_key = f"doc_status:{document_id}"

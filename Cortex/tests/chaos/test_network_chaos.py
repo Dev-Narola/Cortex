@@ -63,10 +63,14 @@ class TestHighLatency:
 class TestPacketLoss:
     """Retry must recover from packet loss."""
 
-    async def test_retry_recovers_from_packet_loss(self) -> None:
+    async def test_retry_recovers_from_packet_loss(self, monkeypatch) -> None:
         async def ok() -> str:
             return "ok"
 
+        # Deterministic loss pattern: two dropped calls, then delivery.
+        # (Random 50 % loss failed all 5 attempts in ~1 of 32 runs.)
+        rolls = iter([0.1, 0.2, 0.9])
+        monkeypatch.setattr("tests.chaos.faults.random.random", lambda: next(rolls))
         target = flaky("net", ok, failure_rate=0.5)
         policy = RetryPolicy(max_attempts=5, base_delay=0.001, jitter=0.0)
         result = await policy.execute(

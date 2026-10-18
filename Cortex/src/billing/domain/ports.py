@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Protocol
+from typing import Any, Protocol
 
 from src.billing.domain.entities import EventType, UsageEvent
 

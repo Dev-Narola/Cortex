@@ -687,6 +687,13 @@ class ApiKey:
     last_used_at: datetime | None = None
     revoked_at: datetime | None = None
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    # SHA-256 of the raw key: indexed O(1) lookup (the key is 256 random bits,
+    # so a fast hash is safe; bcrypt in ``key_hash`` stays the at-rest hash).
+    key_lookup: str | None = None
+    # User who issued the key; attributed as ``documents.created_by``.
+    created_by: uuid.UUID | None = None
+    # Per-key request limit; None = the tenant default.
+    rate_limit_per_min: int | None = None
 
     # ---------- factory ----------
 
@@ -697,6 +704,10 @@ class ApiKey:
         name: str,
         key_hash: str,
         scopes: list[str] | None = None,
+        *,
+        key_lookup: str | None = None,
+        created_by: uuid.UUID | None = None,
+        rate_limit_per_min: int | None = None,
     ) -> ApiKey:
         """Construct a new API key. `key_hash` must already be a bcrypt hash."""
         return cls(
@@ -704,6 +715,9 @@ class ApiKey:
             name=name,
             key_hash=key_hash,
             scopes=list(scopes) if scopes else [],
+            key_lookup=key_lookup,
+            created_by=created_by,
+            rate_limit_per_min=rate_limit_per_min,
         )
 
     # ---------- validation ----------

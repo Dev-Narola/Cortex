@@ -80,11 +80,18 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
         timeout: float | None = None,
         max_retries: int | None = None,
         use_cache: bool = True,
+        nim: bool = False,
     ) -> None:
         self.model = model or settings.EMBEDDING_MODEL
         self.dimensions = dimensions or settings.EMBEDDING_DIMENSIONS
         self.supports_dimensions = supports_dimensions
         self.use_cache = use_cache
+        # NVIDIA NIM: asymmetric models need ``input_type``; ``truncate=END``
+        # lets the server clip over-long inputs with the model's own tokenizer.
+        self.nim = nim
+        self.provider = "nvidia" if nim else "openai"
+        # Provider-reported usage of the most recent API call (None on a cache hit).
+        self.last_usage = None
         client_kwargs: dict = {
             "api_key": api_key or settings.OPENAI_API_KEY or "dummy-key-for-tests",
             "timeout": timeout if timeout is not None else settings.EMBEDDING_TIMEOUT,
@@ -108,6 +115,7 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
         return vectors[0]
 
     async def embed_batch(self, texts: list[str], *, input_type: str = "passage") -> list[list[float]]:
+        self.last_usage = None  # set only when this call actually hits the API
         if not texts:
             return []
 
@@ -202,13 +210,9 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
             "model": self.model,
             "input": texts,
         }
-        if "llama-3.2-nv-embedqa" in self.model or "llama-nemotron-embed" in self.model:
-            create_kwargs["extra_body"] = {
-                "input_type": input_type,
-                "truncate": "NONE",
-                "dimensions": self.dimensions,
-            }
-        elif self.supports_dimensions:
+        if self.nim:
+            create_kwargs["extra_body"] = {"input_type": input_type, "truncate": "END"}
+        if self.supports_dimensions:
             create_kwargs["dimensions"] = self.dimensions
         try:
             response = await self._client.embeddings.create(**create_kwargs)
@@ -241,20 +245,18 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
         sorted_data = sorted(response.data, key=lambda d: d.index)
         vectors: list[list[float]] = [list(d.embedding) for d in sorted_data]
 
+        # Never slice: truncating a non-Matryoshka model's vector silently
+        # corrupts the vector space. A mismatch is a configuration error.
         expected = self.dimensions
-        for i, v in enumerate(vectors):
+        for v in vectors:
             if len(v) != expected:
-                if len(v) > expected:
-                    # Matryoshka representation learning allows slicing the vector to the desired size.
-                    logger.info("Truncating returned vector from %d to %d dimensions.", len(v), expected)
-                    vectors[i] = v[:expected]
-                else:
-                    raise PermanentEmbeddingError(
-                        f"Provider returned vector of length {len(v)}, "
-                        f"expected {expected} (model={self.model!r}). "
-                        f"Check EMBEDDING_DIMENSIONS in src/core/config.py.",
-                        code=_INTERNAL,
-                    )
+                raise PermanentEmbeddingError(
+                    f"Provider returned vector of length {len(v)}, "
+                    f"expected {expected} (model={self.model!r}). "
+                    f"Check EMBEDDING_DIMENSIONS.",
+                    code=_INTERNAL,
+                )
+        self.last_usage = getattr(response, "usage", None)
         return vectors
 
 

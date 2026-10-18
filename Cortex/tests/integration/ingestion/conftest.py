@@ -25,7 +25,11 @@ from src.identity.domain.entities import Role, Tenant, User
 from src.identity.infrastructure.repositories import TenantRepository, UserRepository
 from src.identity.infrastructure.security import hash_password
 from src.ingestion.infrastructure.storage import LocalStorage
-from src.ingestion.interface.rest.auth import require_document_read, require_document_write
+from src.ingestion.interface.rest.auth import (
+    DocumentWriteAuth,
+    require_document_read,
+    require_document_write,
+)
 from src.ingestion.interface.rest.routes import get_s3_storage
 from src.main import app
 from src.core.database import Base, get_db
@@ -121,8 +125,9 @@ def setup_auth(tenant_id):
     Override FastAPI auth dependencies so tests don't need real tokens.
     Both read and write dependencies return the same tenant_id.
     """
-    app.dependency_overrides[require_document_read] = lambda: tenant_id
-    app.dependency_overrides[require_document_write] = lambda: tenant_id
+    auth = DocumentWriteAuth(tenant_id=tenant_id, created_by=uuid.uuid4())
+    app.dependency_overrides[require_document_read] = lambda: auth
+    app.dependency_overrides[require_document_write] = lambda: auth
     yield
     app.dependency_overrides.pop(require_document_read, None)
     app.dependency_overrides.pop(require_document_write, None)

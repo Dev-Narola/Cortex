@@ -71,6 +71,8 @@ _*.txt
 _*.bak
 _*.log
 _*.py
+# ...but package markers are code: this rule had kept all 103 out of git.
+!__init__.py
 _*.json
 
 # Co-authored-by header (used by helper commits, never for the author line)

@@ -50,8 +50,18 @@ logger = logging.getLogger(__name__)
 # caps connection lifetime so we do not hold connections that
 # have been silently closed by an intermediate proxy (ALB,
 # nginx, PgBouncer) longer than the recycle window.
+# Fail fast on an unreachable database instead of the OS TCP timeout (minutes).
+# lock_timeout: a statement waiting on a row lock fails after 30 s instead of
+# hanging (a sync call blocked forever freezes an async worker's event loop).
+_CONNECT_ARGS = (
+    {"connect_timeout": 10, "options": "-c lock_timeout=30000"}
+    if settings.DATABASE_URL.startswith("postgresql")
+    else {}
+)
+
 _sync_engine = create_engine(
     settings.DATABASE_URL,
+    connect_args=_CONNECT_ARGS,
     pool_pre_ping=True,
     pool_size=settings.DB_POOL_SIZE,
     max_overflow=settings.DB_MAX_OVERFLOW,
@@ -130,6 +140,7 @@ def _derive_async_url(url: str) -> str:
 
 _async_engine = create_async_engine(
     _derive_async_url(settings.DATABASE_URL),
+    connect_args=_CONNECT_ARGS,
     pool_pre_ping=True,
     pool_size=settings.DB_POOL_SIZE,
     max_overflow=settings.DB_MAX_OVERFLOW,

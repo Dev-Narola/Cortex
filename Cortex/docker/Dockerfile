@@ -66,8 +66,10 @@ RUN apt-get update \
 # into a clean prefix we will copy into the runtime stage. Using
 # ``--prefix=/install`` keeps the wheels in a single, easy-to-copy
 # tree.
-COPY pyproject.toml README.md ./
-RUN pip install --prefix=/install .
+COPY pyproject.toml README.md constraints.txt ./
+# constraints.txt pins the exact versions CI tested (unpinned ranges drifted
+# to SQLAlchemy 2.1 / Starlette 1.8 and broke the async session import).
+RUN pip install --prefix=/install -c constraints.txt .
 
 # -----------------------------------------------------------------------------
 # Stage 2 — runtime

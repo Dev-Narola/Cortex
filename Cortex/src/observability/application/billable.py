@@ -483,4 +483,11 @@ class BillableRecorder:
             )
 
 
-__all__ = ["BillableRecorder"]
+def recorder_for_session(session) -> BillableRecorder:
+    """A recorder that writes usage events through ``session`` (caller commits)."""
+    from src.billing.infrastructure.repositories import UsageEventSqlRepository
+
+    return BillableRecorder(UsageService(UsageEventSqlRepository(session)), strict=False)
+
+
+__all__ = ["BillableRecorder", "recorder_for_session"]

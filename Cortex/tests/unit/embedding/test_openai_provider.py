@@ -147,3 +147,48 @@ class TestErrorClassification:
 
 
 __all__: list[Any] = []
+
+
+class TestProductionRecovery:
+    """Audit C1/H2: NIM parameters, no silent vector slicing, real usage."""
+
+    @pytest.mark.asyncio
+    async def test_longer_vector_is_rejected_not_sliced(self):
+        provider = OpenAIEmbeddingProvider(api_key="dummy", dimensions=2, use_cache=False)
+        provider._client = MagicMock()
+        provider._client.embeddings.create = AsyncMock(
+            return_value=_fake_response([[0.1, 0.2, 0.3]])
+        )
+        with pytest.raises(PermanentEmbeddingError):
+            await provider.embed_batch(["hello"])
+
+    @pytest.mark.asyncio
+    async def test_nim_sends_input_type_and_server_truncation(self):
+        provider = OpenAIEmbeddingProvider(
+            api_key="dummy", dimensions=3, use_cache=False, supports_dimensions=False, nim=True
+        )
+        provider._client = MagicMock()
+        provider._client.embeddings.create = AsyncMock(
+            return_value=_fake_response([[0.1, 0.2, 0.3]])
+        )
+        await provider.embed_text("what is cortex")
+        kwargs = provider._client.embeddings.create.await_args.kwargs
+        assert kwargs["extra_body"] == {"input_type": "query", "truncate": "END"}
+        assert "dimensions" not in kwargs
+        assert provider.provider == "nvidia"
+
+    def test_query_and_passage_paths_share_one_factory(self, monkeypatch):
+        from src.core.config import settings
+        from src.embedding.infrastructure.providers import build_embedding_provider
+        from src.ingestion.workers.dependencies import get_embedding_provider
+        from src.retrieval.interface.dependencies import get_embedding_provider as query_side
+
+        monkeypatch.setattr(settings, "EMBEDDING_PROVIDER", "nvidia")
+        monkeypatch.setattr(settings, "NVIDIA_API_KEY", "k")
+        monkeypatch.setattr(settings, "NVIDIA_EMBEDDING_MODEL", "nvidia/nemotron-3-embed-1b")
+        assert get_embedding_provider is build_embedding_provider
+        worker, query = get_embedding_provider(), query_side()
+        assert (worker.model, worker.nim) == (query.model, query.nim) == (
+            "nvidia/nemotron-3-embed-1b",
+            True,
+        )

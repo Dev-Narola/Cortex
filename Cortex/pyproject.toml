@@ -12,7 +12,8 @@ requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.116.0",
     "uvicorn[standard]>=0.35.0",
-    "sqlalchemy>=2.0.40",
+    # [asyncio] pulls greenlet, which SQLAlchemy >= 2.1 no longer installs by default.
+    "sqlalchemy[asyncio]>=2.0.40",
     "alembic>=1.16.0",
     "pydantic>=2.11.0",
     "pydantic-settings>=2.10.0",
@@ -31,6 +32,8 @@ dependencies = [
     "boto3>=1.34.0",
     # Required by FastAPI for multipart/form-data file upload support.
     "python-multipart>=0.0.9",
+    # URL ingestion fetches with IP pinning + SNI (src/ingestion/infrastructure/url_fetcher.py).
+    "httpx>=0.28.0",
     # Parsers
     "pypdf>=5.0.0",
     "python-docx>=1.1.2",
@@ -166,7 +169,8 @@ omit = [
 [tool.coverage.report]
 # The V4-baseline bar. Lifted in V5 once the integration
 # tests land.
-fail_under = 67
+# Ratchet: measured 77.2 % on 2026-10-18 (949 tests). Raise, never lower.
+fail_under = 75
 # Surface the per-layer breakdown so a future "did
 # coverage regress in billing?" question is one grep
 # away. ``show_missing = true`` lists uncovered line

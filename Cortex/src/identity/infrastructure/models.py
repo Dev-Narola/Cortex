@@ -29,6 +29,7 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     Index,
+    Integer,
     String,
     UniqueConstraint,
 )
@@ -141,12 +142,18 @@ class ApiKeyModel(Base):
     last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    key_lookup: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    created_by: Mapped[uuid.UUID | None] = mapped_column(
+        SAUuid(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    rate_limit_per_min: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     tenant: Mapped[TenantModel] = relationship("TenantModel", back_populates="api_keys")
 
     __table_args__ = (
         Index("ix_api_keys_tenant_id", "tenant_id"),
         Index("ix_api_keys_tenant_key_hash", "tenant_id", "key_hash"),
+        Index("uq_api_keys_key_lookup", "key_lookup", unique=True),
     )
 
     def __repr__(self) -> str:  # pragma: no cover - debug helper

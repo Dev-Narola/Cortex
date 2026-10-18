@@ -47,12 +47,15 @@ from src.observability.infrastructure.metrics import render_latest
 
 logger = logging.getLogger(__name__)
 
+from src.core.config import settings  # noqa: E402
+
 router = APIRouter(tags=["observability"])
 
 
 # --- /health (liveness) ---------------------------------------------------
 
 
+@router.get("/health/live", include_in_schema=False)
 @router.get(
     "/health",
     summary="Liveness probe — returns 200 if the process is up",
@@ -131,7 +134,9 @@ async def health_ready(request: Request) -> FastAPIResponse:
                 pass
 
     try:
-        await asyncio.to_thread(_check_postgres)
+        await asyncio.wait_for(
+            asyncio.to_thread(_check_postgres), timeout=settings.HEALTH_CHECK_TIMEOUT
+        )
     except (SQLAlchemyError, Exception) as exc:  # noqa: BLE001
         checks["database"] = f"error: {type(exc).__name__}"
         logger.warning("readiness_check_failed", extra={"dependency": "database", "error": str(exc)})
@@ -234,7 +239,9 @@ async def system_status(request: Request) -> dict[str, Any]:
                 pass
 
     try:
-        await asyncio.to_thread(_check_postgres)
+        await asyncio.wait_for(
+            asyncio.to_thread(_check_postgres), timeout=settings.HEALTH_CHECK_TIMEOUT
+        )
     except Exception as exc:  # noqa: BLE001
         checks["database"] = f"error: {type(exc).__name__}"
 
@@ -248,11 +255,8 @@ async def system_status(request: Request) -> dict[str, Any]:
     except Exception as exc:  # noqa: BLE001
         checks["redis"] = f"error: {type(exc).__name__}"
 
-    s3_bucket = os.getenv("S3_BUCKET_NAME")
-    if s3_bucket:
-        checks["s3_storage"] = f"configured: {s3_bucket}"
-    else:
-        checks["s3_storage"] = "local"
+    # Same rule as ingestion's get_s3_storage; the bucket name is not echoed.
+    checks["s3_storage"] = "s3" if settings.S3_BUCKET else "local"
 
     overall_status = "healthy" if all("error" not in v for v in checks.values()) else "degraded"
 

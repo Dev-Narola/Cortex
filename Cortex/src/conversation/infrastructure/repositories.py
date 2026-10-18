@@ -219,6 +219,32 @@ class ConversationRepository:
         models = self._session.execute(stmt).scalars().all()
         return [_model_to_conversation(m) for m in models]
 
+    def get_summary_state(
+        self, conversation_id: uuid.UUID, *, tenant_id: uuid.UUID
+    ) -> tuple[str | None, datetime | None]:
+        """Return ``(summary, summarized_through)``; ``(None, None)`` if not in tenant."""
+        model = self._session.get(ConversationModel, conversation_id)
+        if model is None or model.tenant_id != tenant_id:
+            return None, None
+        through = model.summarized_through
+        return model.summary, _as_utc(through) if through else None
+
+    def save_summary(
+        self,
+        conversation_id: uuid.UUID,
+        *,
+        tenant_id: uuid.UUID,
+        summary: str,
+        summarized_through: datetime,
+    ) -> None:
+        model = self._session.get(ConversationModel, conversation_id)
+        if model is None or model.tenant_id != tenant_id:
+            return
+        # Column (and entity) cap is 2048 chars; the summarizer is asked to stay under it.
+        model.summary = summary[:2048]
+        model.summarized_through = summarized_through
+        self._session.flush()
+
     def count(self, tenant_id: uuid.UUID, *, user_id: uuid.UUID | None = None) -> int:
         stmt = select(ConversationModel.id).where(
             ConversationModel.tenant_id == tenant_id
@@ -285,6 +311,7 @@ class ConversationMessageRepository:
         *,
         tenant_id: uuid.UUID,
         limit: int = 200,
+        after: datetime | None = None,
     ) -> Sequence[Message]:
         """
         Load the most recent ``limit`` messages for a conversation,
@@ -303,6 +330,8 @@ class ConversationMessageRepository:
             .order_by(ConversationMessageModel.created_at.desc())
             .limit(limit)
         )
+        if after is not None:
+            stmt = stmt.where(ConversationMessageModel.created_at > after)
         models = list(self._session.execute(stmt).scalars().all())
         models.reverse()
         return [_model_to_message(m) for m in models]

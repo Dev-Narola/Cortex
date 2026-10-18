@@ -101,6 +101,37 @@ class MCPToolRegistry:
             )
         )
 
+        # ask_knowledge_base / get_document (PRD FR-MCP-01: search, ask, get document)
+        self.register(
+            MCPToolDefinition(
+                name="ask_knowledge_base",
+                description="Answer a question grounded in the tenant documents, with citations.",
+                input_schema={
+                    "type": "object",
+                    "properties": {
+                        "question": {"type": "string", "description": "Natural-language question"},
+                    },
+                    "required": ["question"],
+                },
+                category="knowledge",
+            )
+        )
+        self.register(
+            MCPToolDefinition(
+                name="get_document",
+                description="Get one document's metadata and text chunks by id.",
+                input_schema={
+                    "type": "object",
+                    "properties": {
+                        "document_id": {"type": "string", "description": "Document UUID"},
+                        "max_chunks": {"type": "integer", "default": 50},
+                    },
+                    "required": ["document_id"],
+                },
+                category="knowledge",
+            )
+        )
+
         # 5. list_documents
         self.register(
             MCPToolDefinition(

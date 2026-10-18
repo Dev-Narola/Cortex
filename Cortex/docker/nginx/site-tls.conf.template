@@ -1,0 +1,43 @@
+# TLS site. Selected by NGINX_SITE=tls with CORTEX_PUBLIC_HOST set in
+# docker/.env, after certbot has issued the certificate (DEPLOYMENT_PLAN D6).
+# The nginx image renders ${CORTEX_PUBLIC_HOST} via envsubst at start-up.
+server {
+    listen      80 default_server;
+    listen      [::]:80 default_server;
+    server_name _;
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    # Container healthcheck and smoke tests probe plain HTTP.
+    location = /health {
+        access_log off;
+        add_header Content-Type application/json;
+        return 200 '{"status":"ok"}';
+    }
+
+    # 308 keeps the method and body (a 301 turns POST into GET).
+    location / {
+        return 308 https://${CORTEX_PUBLIC_HOST}$request_uri;
+    }
+}
+
+server {
+    listen      443 ssl default_server;
+    listen      [::]:443 ssl default_server;
+    http2       on;
+    server_name ${CORTEX_PUBLIC_HOST};
+
+    ssl_certificate     /etc/letsencrypt/live/${CORTEX_PUBLIC_HOST}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${CORTEX_PUBLIC_HOST}/privkey.pem;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers off;
+    ssl_session_cache   shared:SSL:10m;
+    ssl_session_timeout 1d;
+    ssl_session_tickets off;
+
+    add_header Strict-Transport-Security "max-age=31536000" always;
+
+    include /etc/nginx/cortex-locations.conf;
+}

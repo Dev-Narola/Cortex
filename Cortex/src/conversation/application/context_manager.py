@@ -232,7 +232,7 @@ class ContextWindowManager:
                 "Merge the OLD SUMMARY and the NEW TURNS into a single, "
                 "denser summary that preserves all key facts, decisions, "
                 "and open questions. Do not introduce facts that are not "
-                "present in either source.\n\n"
+                "present in either source. Stay under 1500 characters.\n\n"
                 f"OLD SUMMARY:\n{existing_summary}\n\n"
                 f"NEW TURNS:\n{joined}\n\n"
                 "UPDATED SUMMARY:"
@@ -241,7 +241,8 @@ class ContextWindowManager:
             prompt = (
                 "Summarize the following conversation turns into a dense "
                 "summary that preserves key facts, decisions, and open "
-                "questions. Do not introduce facts that are not present.\n\n"
+                "questions. Do not introduce facts that are not present. "
+                "Stay under 1500 characters.\n\n"
                 f"TURNS:\n{joined}\n\n"
                 "SUMMARY:"
             )
@@ -262,7 +263,7 @@ class ContextWindowManager:
                         content=prompt,
                     )
                 ],
-                model="gpt-4o-mini",
+                model=None,  # the provider's configured model
                 temperature=0.0,
             )
         except Exception as exc:  # noqa: BLE001

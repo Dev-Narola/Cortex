@@ -5,7 +5,6 @@ ReprocessDocumentService — handle explicit document retries and reprocessing.
 from __future__ import annotations
 
 import uuid
-from typing import Annotated
 
 from fastapi import Depends
 
@@ -29,10 +28,12 @@ class ReprocessDocumentService:
         repository: DocumentRepository,
         transition_service: DocumentStatusTransitionService,
         queue: QueueClient,
+        session=None,
     ) -> None:
         self.repository = repository
         self.transition_service = transition_service
         self.queue = queue
+        self._session = session
 
     async def execute_retry(self, document_id: uuid.UUID, *, tenant_id: uuid.UUID) -> None:
         """
@@ -40,6 +41,7 @@ class ReprocessDocumentService:
         Validates the document is failed and resets its status to pending.
         """
         self.transition_service.retry(document_id, tenant_id=tenant_id)
+        self._commit()
         await self._enqueue(document_id, tenant_id=tenant_id)
 
     async def execute_reprocess(self, document_id: uuid.UUID, *, tenant_id: uuid.UUID) -> None:
@@ -48,7 +50,13 @@ class ReprocessDocumentService:
         Validates the document is indexed, bumps its version, and resets to pending.
         """
         self.transition_service.reprocess(document_id, tenant_id=tenant_id)
+        self._commit()
         await self._enqueue(document_id, tenant_id=tenant_id)
+
+    def _commit(self) -> None:
+        # The worker must see the reset status, so commit before enqueueing.
+        if self._session is not None:
+            self._session.commit()
 
     async def _enqueue(self, document_id: uuid.UUID, *, tenant_id: uuid.UUID) -> None:
         from src.core.cache import invalidate_cache
@@ -81,4 +89,5 @@ def get_reprocess_document_service(
         repository=repository,
         transition_service=transition_service,
         queue=queue,
+        session=session,
     )

@@ -67,6 +67,8 @@ class VectorSearchRepository:
                 )
             )
             .where(DocumentChunkModel.tenant_id == tenant_id)
+            # Chunks mid-embedding have no vector yet (distance NULL).
+            .where(DocumentChunkModel.embedding.is_not(None))
             .order_by(distance_col.asc())
             .limit(limit)
         )

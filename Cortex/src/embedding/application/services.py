@@ -35,7 +35,8 @@ class EmbedDocumentChunksService:
         Returns the number of chunks embedded.
         """
         batch_size = settings.EMBEDDING_BATCH_SIZE
-        model_name = settings.EMBEDDING_MODEL
+        # Record the model that actually produced the vectors (NIM vs OpenAI).
+        model_name = getattr(self.provider, "model", settings.EMBEDDING_MODEL)
         version = "1"  # Or extract from a deeper config if necessary
         
         total_embedded = 0
@@ -85,26 +86,15 @@ class EmbedDocumentChunksService:
             total_embedded += len(updates)
             logger.info(f"Embedded batch of {len(updates)} chunks for document {document_id}")
 
-            # V4: emit a usage event for the embedding batch.
-            # Token count is a tiktoken estimate — the OpenAI
-            # ``embeddings.create`` response does not return
-            # ``usage`` for the embedding endpoint in the
-            # public SDK, so we use a conservative 4-chars-
-            # per-token estimate. This is good enough for the
-            # billing dashboard; the canonical token count
-            # (if/when exposed) can be plumbed in here
-            # without changing the recorder contract.
-            if self._billable is not None:
-                estimated_tokens = sum(
-                    max(1, len(t) // 4) for t in texts
-                )
+            # Provider-reported tokens only; a full cache hit made no API call.
+            usage = getattr(self.provider, "last_usage", None)
+            if self._billable is not None and usage is not None:
                 self._billable.record_embedding(
                     tenant_id=tenant_id,
                     model=model_name,
-                    input_tokens=estimated_tokens,
+                    input_tokens=int(getattr(usage, "prompt_tokens", 0) or 0),
                     vectors_produced=len(vectors),
-                    provider="openai",
+                    provider=getattr(self.provider, "provider", "unknown"),
                     resource_id=str(document_id),
                 )
-
         return total_embedded

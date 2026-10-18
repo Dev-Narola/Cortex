@@ -28,7 +28,9 @@ from src.core.config import settings
 
 
 def make_session_factory() -> sessionmaker:
-    engine = create_engine(settings.DATABASE_URL, pool_pre_ping=True)
+    from src.core.database import _CONNECT_ARGS
+
+    engine = create_engine(settings.DATABASE_URL, pool_pre_ping=True, connect_args=_CONNECT_ARGS)
     return sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
@@ -79,51 +81,10 @@ def get_chunker(config: ChunkingConfig):
 # Embedding resolution
 # ---------------------------------------------------------------------------
 
-def get_embedding_provider():
-    """
-    Resolve the configured embedding provider.
-
-    Centralised here (not in the application service) so the same
-    provider is reused across every worker invocation, and so the
-    worker code never imports from ``src.embedding.infrastructure``
-    directly.
-
-    Supported values for ``EMBEDDING_PROVIDER``:
-      - ``openai``  — OpenAI ``text-embedding-3-*`` models (default)
-      - ``nvidia``  — NVIDIA NIM endpoint (OpenAI-compatible surface).
-                      Uses ``NVIDIA_API_KEY`` and ``NVIDIA_BASE_URL``
-                      from settings. The model defaults to
-                      ``nvidia/nv-embedqa-e5-v5`` (1024 dims).
-    """
-    from src.embedding.infrastructure.providers.openai import (
-        OpenAIEmbeddingProvider,
-    )
-
-    provider = (settings.EMBEDDING_PROVIDER or "openai").lower()
-
-    if provider == "openai":
-        return OpenAIEmbeddingProvider()
-
-    if provider == "nvidia":
-        if not settings.NVIDIA_API_KEY:
-            raise ValueError(
-                "EMBEDDING_PROVIDER=nvidia requires NVIDIA_API_KEY to be set."
-            )
-        return OpenAIEmbeddingProvider(
-            api_key=settings.NVIDIA_API_KEY,
-            base_url=settings.NVIDIA_BASE_URL,
-            model=settings.NVIDIA_EMBEDDING_MODEL,
-            dimensions=settings.NVIDIA_EMBEDDING_DIMENSIONS,
-            # NVIDIA NIM does not accept the ``dimensions`` kwarg; pass
-            # False so we skip it in the API call. The returned vector
-            # length is still validated against ``dimensions``.
-            supports_dimensions=False,
-        )
-
-    raise ValueError(
-        f"Unknown embedding provider: {settings.EMBEDDING_PROVIDER!r}. "
-        f"Supported: 'openai', 'nvidia'."
-    )
+# One factory for passages and queries: see build_embedding_provider.
+from src.embedding.infrastructure.providers import (  # noqa: E402
+    build_embedding_provider as get_embedding_provider,
+)
 
 # ---------------------------------------------------------------------------
 # Convenience re-exports used by tasks.py

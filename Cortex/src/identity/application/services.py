@@ -17,6 +17,7 @@ import re
 import uuid
 from collections.abc import Sequence
 from dataclasses import dataclass
+from datetime import timedelta
 
 from sqlalchemy.orm import Session
 
@@ -30,6 +31,7 @@ from src.identity.infrastructure.security import (
     create_access_token,
     create_refresh_token,
     decode_access_token,
+    api_key_lookup,
     generate_api_key,
     hash_api_key,
     hash_password,
@@ -38,6 +40,7 @@ from src.identity.infrastructure.security import (
 )
 from src.shared.exceptions import (
     ConflictException,
+    ForbiddenException,
     NotFoundException,
     UnauthorizedException,
     ValidationException,
@@ -542,6 +545,8 @@ class CreateApiKeyService:
         tenant_id: uuid.UUID,
         name: str,
         scopes: Sequence[str] | None = None,
+        created_by: uuid.UUID | None = None,
+        rate_limit_per_min: int | None = None,
     ) -> IssuedApiKey:
         raw_key = generate_api_key()
         api_key = ApiKey.create(
@@ -549,6 +554,9 @@ class CreateApiKeyService:
             name=name,
             key_hash=hash_api_key(raw_key),
             scopes=list(scopes) if scopes else [],
+            key_lookup=api_key_lookup(raw_key),
+            created_by=created_by,
+            rate_limit_per_min=rate_limit_per_min,
         )
         saved = self._api_keys.create(api_key)
         self._session.commit()
@@ -635,3 +643,116 @@ __all__ = [
     "UpdateProfileService",
     "UpdateTenantService",
 ]
+
+
+# ---------------------------------------------------------------------------
+# User management: invites, roles, activation (FR-ID-02 / US-1)
+# ---------------------------------------------------------------------------
+
+INVITE_TTL = timedelta(hours=72)
+
+
+class ManageUsersService:
+    """
+    Owner/admin user management inside one tenant.
+
+    Rules: only owners grant owner/admin; only owners modify owners; the
+    tenant's last active owner can't be demoted or deactivated.
+    Invites are signed ``typ=invite`` tokens (no mail infrastructure); a
+    token is spent once the user exists (per-tenant unique email).
+    """
+
+    def __init__(self, session: Session) -> None:
+        self._session = session
+        self._users = UserRepository(session)
+
+    def list(self, tenant_id: uuid.UUID) -> list[User]:
+        return self._users.list_for_tenant(tenant_id)
+
+    def invite(self, *, actor: User, email: str, role: Role) -> str:
+        self._assert_may_grant(actor, role)
+        email = email.strip().lower()
+        if self._users.exists(tenant_id=actor.tenant_id, email=email):
+            raise ConflictException(
+                message="A user with this email already exists in this tenant.",
+                code=409,
+                data={"field": "email"},
+            )
+        return create_access_token(
+            email,
+            extra_claims={
+                "tenant_id": str(actor.tenant_id),
+                "role": role.value,
+                "invited_by": str(actor.id),
+            },
+            expires_delta=INVITE_TTL,
+            token_type="invite",
+        )
+
+    def update(
+        self,
+        *,
+        actor: User,
+        user_id: uuid.UUID,
+        role: Role | None = None,
+        is_active: bool | None = None,
+    ) -> User:
+        target = self._users.find_by_id(user_id, tenant_id=actor.tenant_id)
+        if target is None:
+            raise NotFoundException(message="User not found.", code=404, data={"user_id": str(user_id)})
+        if target.role == Role.OWNER and actor.role != Role.OWNER:
+            raise ForbiddenException(message="Only an owner can modify an owner.", code=403)
+        if role is not None:
+            self._assert_may_grant(actor, role)
+        removes_owner = target.role == Role.OWNER and (
+            (role is not None and role != Role.OWNER) or is_active is False
+        )
+        if removes_owner and self._users.count_active_owners(actor.tenant_id) <= 1:
+            raise ConflictException(message="The tenant's last owner can't be removed.", code=409)
+        if role is not None:
+            target.change_role(role)
+        if is_active is True:
+            target.activate()
+        elif is_active is False:
+            target.deactivate()
+        saved = self._users.update(target)
+        self._session.commit()
+        return saved
+
+    @staticmethod
+    def _assert_may_grant(actor: User, role: Role) -> None:
+        if role in (Role.OWNER, Role.ADMIN) and actor.role != Role.OWNER:
+            raise ForbiddenException(
+                message=f"Only an owner can grant the '{role.value}' role.", code=403
+            )
+
+
+class AcceptInviteService:
+    """Redeem an invite token: create the user, then sign them in."""
+
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def execute(self, *, token: str, password: str, full_name: str | None = None) -> IssuedToken:
+        claims = decode_access_token(token, expected_type="invite")
+        try:
+            tenant_id = uuid.UUID(str(claims["tenant_id"]))
+            email, role = str(claims["sub"]), Role(claims["role"])
+        except (KeyError, ValueError) as exc:
+            raise UnauthorizedException(message="Malformed invite.", code=401) from exc
+        tenant = TenantRepository(self._session).find_by_id(tenant_id)
+        if tenant is None or not tenant.is_active:
+            raise UnauthorizedException(message="Invite is no longer valid.", code=401)
+        UserRepository(self._session).create(
+            User.create(
+                tenant_id=tenant.id,
+                email=email,
+                hashed_password=hash_password(password),
+                role=role,
+                full_name=full_name,
+            )
+        )  # 409 if the invite was already redeemed
+        self._session.commit()
+        return AuthenticateUserService(self._session).execute(
+            tenant_slug=tenant.slug, email=email, password=password
+        )

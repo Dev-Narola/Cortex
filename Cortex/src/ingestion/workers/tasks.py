@@ -20,7 +20,6 @@ Retry:
 from __future__ import annotations
 
 import logging
-import math
 import random
 import uuid
 from datetime import UTC, datetime
@@ -44,7 +43,8 @@ from src.ingestion.workers.errors import (
     StorageError,
     TransientWorkerError,
 )
-from src.core.cache import invalidate_cache
+from src.core.cache import bump_search_version, invalidate_cache
+from src.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -108,7 +108,14 @@ async def ingest_document_task(
             logger.error("Document %s not found for tenant %s", doc_id, ten_id)
             return {"status": "not_found", "document_id": document_id}
 
-        if document.status not in (DocumentStatus.PENDING, DocumentStatus.FAILED):
+        # A retry of this same job (job_try > 1: the worker died or timed
+        # out mid-run) may resume a document it left in parsing/chunking;
+        # arq never runs one job id twice at once. Chunks are replaced
+        # wholesale, so resuming cannot duplicate them.
+        resumable = {DocumentStatus.PENDING, DocumentStatus.FAILED}
+        if attempt_number > 1:
+            resumable |= {DocumentStatus.PARSING, DocumentStatus.CHUNKING}
+        if document.status not in resumable:
             logger.warning(
                 "Document %s is already in status %s; skipping.",
                 doc_id,
@@ -135,9 +142,14 @@ async def ingest_document_task(
         session.commit()
 
         # ------------------------------------------------------------------
-        # 3. Mark PARSING
+        # 3. Claim the document (pending/failed -> parsing) atomically, so two
+        #    jobs for one document cannot both run the pipeline.
         # ------------------------------------------------------------------
-        doc_repo.update_status(doc_id, tenant_id=ten_id, status=DocumentStatus.PARSING)
+        if not doc_repo.claim(
+            doc_id, tenant_id=ten_id, from_statuses=resumable, to_status=DocumentStatus.PARSING
+        ):
+            session.rollback()
+            return {"status": "skipped", "reason": "claimed_elsewhere"}
         session.commit()
         await invalidate_cache(f"doc_status:{doc_id}")
         logger.info("Document %s → parsing (attempt %d)", doc_id, attempt_number)
@@ -380,8 +392,12 @@ async def embed_chunks_task(
         )
         session.commit()
 
+        from src.observability.application.billable import recorder_for_session
+
         provider = get_embedding_provider()
-        service = EmbedDocumentChunksService(provider, chunk_repo)
+        service = EmbedDocumentChunksService(
+            provider, chunk_repo, billable=recorder_for_session(session)
+        )
         
         try:
             embedded_count = await service.embed_document(doc_id, tenant_id=ten_id)
@@ -398,6 +414,7 @@ async def embed_chunks_task(
         attempt_repo.succeed(attempt_id)
         session.commit()
         await invalidate_cache(f"doc_status:{doc_id}")
+        await bump_search_version(ten_id)  # cached results now miss this document
         logger.info("Document %s → indexed ✓", doc_id)
 
         # V7 — fan out to the graph extraction worker.
@@ -468,7 +485,7 @@ async def embed_chunks_task(
     except Exception as exc:
         session.rollback()
         logger.exception("Unexpected error embedding document %s", doc_id)
-        if attempt_number < 4:
+        if attempt_number < settings.ARQ_MAX_TRIES:
             delay = _backoff_seconds(attempt_number)
             raise Retry(defer=delay) from exc
         

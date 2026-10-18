@@ -192,6 +192,9 @@ class LocalStorage(ObjectStorage):
     ) -> str:
         if not isinstance(uri, str) or not uri:
             raise ValueError("uri must be a non-empty string")
+        # Like S3Storage: a bare object key comes back as a canonical s3:// URI.
+        if not uri.startswith("s3://"):
+            uri = f"s3://local/{uri}"
         payload = self._read_payload(data)
         self._objects[uri] = payload
         self._content_types[uri] = content_type

@@ -29,7 +29,10 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.orm import Session
 
 from src.identity.application.services import (
+    INVITE_TTL,
+    AcceptInviteService,
     AuthenticateUserService,
+    ManageUsersService,
     CreateApiKeyService,
     CreateTenantService,
     RegisterTenantService,
@@ -38,6 +41,7 @@ from src.identity.application.services import (
     UpdateTenantService,
 )
 from src.identity.domain.entities import ApiKey, Plan, Role, Tenant, User
+from src.core.config import settings as app_settings
 from src.core.database import get_db
 from src.core.dependencies import (
     get_current_user,
@@ -236,6 +240,8 @@ class CreateTenantRequest(_Base):
 class CreateApiKeyRequest(_Base):
     name: str = Field(..., min_length=1, max_length=255)
     scopes: list[str] = Field(default_factory=list)
+    # Per-key request limit; omitted = the tenant default.
+    rate_limit_per_min: int | None = Field(default=None, ge=1, le=100_000)
 
 
 class ApiKeyResponse(_Base):
@@ -243,6 +249,7 @@ class ApiKeyResponse(_Base):
     tenant_id: uuid.UUID
     name: str
     scopes: list[str]
+    rate_limit_per_min: int | None = None
     last_used_at: str | None = None
     revoked_at: str | None = None
     created_at: str
@@ -292,6 +299,7 @@ def _api_key_to_response(key: ApiKey) -> ApiKeyResponse:
         tenant_id=key.tenant_id,
         name=key.name,
         scopes=list(key.scopes),
+        rate_limit_per_min=key.rate_limit_per_min,
         last_used_at=key.last_used_at.isoformat() if key.last_used_at else None,
         revoked_at=key.revoked_at.isoformat() if key.revoked_at else None,
         created_at=key.created_at.isoformat(),
@@ -399,6 +407,10 @@ def login(
     Authenticate with `tenant_slug` + `email` + `password` and
     receive a new access + refresh token pair.
     """
+    from src.limits.infrastructure.request_limits import enforce
+
+    # Brute-force guard: attempts per client IP per tenant slug.
+    enforce("login", f"{_client_ip(request)}:{body.tenant_slug}", app_settings.LOGIN_ATTEMPTS_PER_MINUTE)
     service = AuthenticateUserService(db)
     try:
         issued = service.execute(
@@ -754,6 +766,8 @@ def create_api_key(
         tenant_id=tenant.id,
         name=body.name,
         scopes=body.scopes,
+        created_by=user.id,
+        rate_limit_per_min=body.rate_limit_per_min,
     )
     # V4 Phase 30 — API key creation is a privileged
     # action; the audit row records the actor, the
@@ -844,3 +858,133 @@ def revoke_api_key(
 
 
 __all__ = ["router"]
+
+
+# ---------------------------------------------------------------------------
+# User management (FR-ID-02): list, invite, change role / activation
+# ---------------------------------------------------------------------------
+
+
+class InviteUserRequest(_Base):
+    email: str = Field(..., min_length=3, max_length=320)
+    role: Role = Role.MEMBER
+
+
+class InviteResponse(_Base):
+    email: str
+    role: Role
+    invite_token: str
+    expires_in: int
+
+
+class UpdateUserRequest(_Base):
+    role: Role | None = None
+    is_active: bool | None = None
+
+
+class AcceptInviteRequest(_Base):
+    token: str = Field(..., min_length=10)
+    password: str = Field(..., min_length=8, max_length=128)
+    full_name: str | None = Field(default=None, max_length=255)
+
+
+@router.get("/users", response_model=list[UserResponse], summary="List the tenant's users")
+def list_users(
+    current: tuple[User, Tenant] = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> list[UserResponse]:
+    _, tenant = current
+    return [_user_to_response(u) for u in ManageUsersService(db).list(tenant.id)]
+
+
+@router.post(
+    "/users/invite",
+    response_model=InviteResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Invite a user with a role (owner/admin only; token shown once)",
+)
+def invite_user(
+    body: InviteUserRequest,
+    request: Request,
+    current: tuple[User, Tenant] = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> InviteResponse:
+    actor, tenant = current
+    token = ManageUsersService(db).invite(actor=actor, email=body.email, role=body.role)
+    _safe_audit(
+        db,
+        tenant_id=tenant.id,
+        action=AuditAction.USER_INVITED,
+        actor_user_id=actor.id,
+        resource_type="user",
+        metadata={"email": body.email.strip().lower(), "role": body.role.value},
+        ip_address=_client_ip(request),
+    )
+    db.commit()
+    return InviteResponse(
+        email=body.email.strip().lower(),
+        role=body.role,
+        invite_token=token,
+        expires_in=int(INVITE_TTL.total_seconds()),
+    )
+
+
+@router.patch("/users/{user_id}", response_model=UserResponse, summary="Change a user's role or activation")
+def update_user(
+    body: UpdateUserRequest,
+    request: Request,
+    user_id: uuid.UUID = Path(...),
+    current: tuple[User, Tenant] = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> UserResponse:
+    actor, tenant = current
+    user = ManageUsersService(db).update(
+        actor=actor, user_id=user_id, role=body.role, is_active=body.is_active
+    )
+    _safe_audit(
+        db,
+        tenant_id=tenant.id,
+        action=AuditAction.ROLE_CHANGED if body.role is not None else AuditAction.USER_UPDATED,
+        actor_user_id=actor.id,
+        resource_type="user",
+        resource_id=str(user_id),
+        metadata={k: v for k, v in body.model_dump(mode="json").items() if v is not None},
+        ip_address=_client_ip(request),
+    )
+    db.commit()
+    return _user_to_response(user)
+
+
+@router.post(
+    "/auth/accept-invite",
+    response_model=TokenResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Redeem an invite: create the account and sign in",
+)
+def accept_invite(
+    body: AcceptInviteRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> TokenResponse:
+    issued = AcceptInviteService(db).execute(
+        token=body.token, password=body.password, full_name=body.full_name
+    )
+    _safe_audit(
+        db,
+        tenant_id=issued.tenant.id,
+        action=AuditAction.USER_UPDATED,
+        actor_user_id=issued.user.id,
+        resource_type="user",
+        resource_id=str(issued.user.id),
+        metadata={"event": "invite_accepted", "role": issued.user.role.value},
+        ip_address=_client_ip(request),
+    )
+    db.commit()
+    return TokenResponse(
+        access_token=issued.access_token,
+        refresh_token=issued.refresh_token,
+        token_type=issued.token_type,
+        expires_in=issued.expires_in,
+        user=_user_to_response(issued.user),
+        tenant=_tenant_to_response(issued.tenant),
+    )

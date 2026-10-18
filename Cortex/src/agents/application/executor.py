@@ -25,6 +25,7 @@ audit log means the loop's tests can be small and focused.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import uuid
 from dataclasses import dataclass, replace as dataclass_replace
@@ -59,6 +60,9 @@ if TYPE_CHECKING:
     from src.graph_retrieval.application.services import GraphRetrievalService
 
 logger = logging.getLogger(__name__)
+
+# Wall-clock budget for one agent run (PRD US-7: bounded time).
+_RUN_TIME_BUDGET_SECONDS = 60.0
 
 
 @dataclass(frozen=True, slots=True)
@@ -296,7 +300,7 @@ class AgentExecutor:
         guard = ExecutionGuard(
             ExecutionLimits(
                 max_iterations=agent.configuration.max_iterations,
-                max_execution_time_seconds=60.0,
+                max_execution_time_seconds=_RUN_TIME_BUDGET_SECONDS,
                 max_tool_calls=20,
             )
         )
@@ -331,15 +335,27 @@ class AgentExecutor:
             run_id=str(run.id),
         ) as run_span:
             try:
-                result = await run_agent_loop(
-                    agent=agent,
-                    run=run,
-                    llm=self._llm,
-                    registry=self._registry,
-                    tool_repo=self._tool_repo,
-                    guard=guard,
-                    loop_detector=loop_detector,
-                )
+                # The guard checks time between steps; this hard bound also
+                # stops a single LLM/tool call that runs past the budget.
+                try:
+                    result = await asyncio.wait_for(
+                        run_agent_loop(
+                            agent=agent,
+                            run=run,
+                            llm=self._llm,
+                            registry=self._registry,
+                            tool_repo=self._tool_repo,
+                            guard=guard,
+                            loop_detector=loop_detector,
+                        ),
+                        timeout=_RUN_TIME_BUDGET_SECONDS,
+                    )
+                except TimeoutError as exc:
+                    raise ExecutionGuardTripped(
+                        reason=f"max_execution_time_seconds={_RUN_TIME_BUDGET_SECONDS} exceeded",
+                        data={"limit": _RUN_TIME_BUDGET_SECONDS, "kind": "wall_clock",
+                              "reason": "wall-clock budget exceeded"},
+                    ) from exc
             except ExecutionGuardTripped as exc:
                 stopped = run.stop(reason=str(exc.data.get("reason", "guard tripped")))
                 self._run_repo.update_run(stopped)

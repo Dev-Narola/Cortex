@@ -27,6 +27,8 @@ without forcing every concrete tool into the database.
 
 from __future__ import annotations
 
+import uuid
+
 import threading
 from typing import TYPE_CHECKING
 

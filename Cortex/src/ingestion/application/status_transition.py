@@ -100,9 +100,11 @@ class DocumentStatusTransitionService:
                 data={"document_id": str(document_id)},
             )
 
-        if document.status != DocumentStatus.FAILED:
+        # PENDING too: if the enqueue after upload failed, nothing else
+        # would ever pick the document up.
+        if document.status not in (DocumentStatus.FAILED, DocumentStatus.PENDING):
             raise ValidationException(
-                message="Only failed documents can be retried.",
+                message="Only failed or pending documents can be retried.",
                 code=422,
                 data={"current_status": str(document.status)},
             )

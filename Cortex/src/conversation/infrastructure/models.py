@@ -24,6 +24,7 @@ from datetime import datetime
 from typing import Any
 
 from sqlalchemy import (
+    JSON,
     CheckConstraint,
     DateTime,
     ForeignKey,
@@ -69,6 +70,11 @@ class ConversationModel(Base):
     )
     title: Mapped[str] = mapped_column(String(512), nullable=False)
     summary: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    # created_at of the newest message folded into ``summary``; history
+    # loading starts after it so no message is summarized twice or dropped.
+    summarized_through: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False
     )
@@ -126,7 +132,7 @@ class ConversationMessageModel(Base):
     # JSONB array of chunk UUIDs (as strings). Postgres-only; SQLite
     # stores the same value as TEXT under the JSONB dialect.
     retrieved_chunk_ids: Mapped[list[Any]] = mapped_column(
-        JSONB().with_variant(String, "sqlite"),
+        JSONB().with_variant(JSON, "sqlite"),
         nullable=False,
         default=list,
         server_default=text("'[]'"),

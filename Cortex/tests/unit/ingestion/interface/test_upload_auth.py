@@ -43,7 +43,7 @@ class _FakeTenant:
 @dataclass
 class _FakeApiKey:
     id: uuid.UUID = field(default_factory=uuid.uuid4)
-    user_id: uuid.UUID = field(default_factory=uuid.uuid4)
+    created_by: uuid.UUID = field(default_factory=uuid.uuid4)
     scopes: tuple[str, ...] = ()
 
 
@@ -167,7 +167,7 @@ def test_document_write_auth_api_key_falls_back_to_user_id() -> None:
     # API key caller: ``created_by`` is the key's
     # bound user id; ``api_key_id`` is set so the
     # audit log can record which key was used.
-    assert result.created_by == api_key.user_id
+    assert result.created_by == api_key.created_by
     assert result.tenant_id == tenant.id
     assert result.api_key_id == api_key.id
 

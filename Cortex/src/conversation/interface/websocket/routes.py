@@ -35,8 +35,9 @@ import logging
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect, status
+from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from src.conversation.application.services import AnswerQueryService
 from src.conversation.domain.entities import Citation, Message, MessageRole
@@ -52,10 +53,11 @@ from src.conversation.interface.websocket.handlers import (
     make_token,
     parse_client_message,
 )
+from src.core.database import get_db
 from src.core.dependencies import (
-    get_answer_query_service_async,
-    get_async_db,
     _resolve_jwt_user,
+    build_answer_query_service,
+    get_async_db,
 )
 from src.shared.exceptions import UnauthorizedException
 
@@ -79,7 +81,7 @@ _CLOSE_BAD_REQUEST = 4400
 
 async def _authenticate(
     websocket: WebSocket,
-    db: AsyncSession,
+    db: Session,
 ) -> tuple[Any, Any] | None:
     """
     Validate the JWT from the request and resolve ``(user, tenant)``.
@@ -130,17 +132,28 @@ async def websocket_endpoint(
     websocket: WebSocket,
     conversation_id: uuid.UUID,
     db: AsyncSession = Depends(get_async_db),
+    sync_db: Session = Depends(get_db),
 ) -> None:
     await websocket.accept()
+    # The identity/conversation repositories are sync and get ``sync_db``
+    # (used from worker threads); search uses the async session.
+    await _serve(websocket, conversation_id, db, sync_db)
 
+
+async def _serve(
+    websocket: WebSocket,
+    conversation_id: uuid.UUID,
+    db: AsyncSession,
+    sync_db: Session,
+) -> None:
     # 1) Authenticate.
-    user_tenant = await _authenticate(websocket, db)
+    user_tenant = await _authenticate(websocket, sync_db)
     if user_tenant is None:
         return
     user, tenant = user_tenant
 
     # 2) Tenant-isolated conversation load.
-    conv_repo = ConversationRepository(db)
+    conv_repo = ConversationRepository(sync_db)
     conversation = await asyncio.to_thread(
         conv_repo.get_by_id, conversation_id, tenant_id=tenant.id
     )
@@ -151,9 +164,8 @@ async def websocket_endpoint(
         await websocket.close(code=_CLOSE_FORBIDDEN)
         return
 
-    # 3) Build the per-connection RAG service. The factory wires
-    #    the async DB session, embedding provider, and LLM.
-    answer_service: AnswerQueryService = await get_answer_query_service_async(db)
+    # 3) Per-connection RAG service.
+    answer_service: AnswerQueryService = build_answer_query_service(db, sync_db)
 
     # 4) Message loop.
     try:
@@ -180,7 +192,7 @@ async def websocket_endpoint(
             content = payload["content"]
             await _handle_one_turn(
                 websocket=websocket,
-                db=db,
+                db=sync_db,
                 answer_service=answer_service,
                 conversation=conversation,
                 user_content=content,
@@ -197,7 +209,7 @@ async def websocket_endpoint(
 async def _handle_one_turn(
     *,
     websocket: WebSocket,
-    db: AsyncSession,
+    db: Session,
     answer_service: AnswerQueryService,
     conversation: Any,
     user_content: str,
@@ -217,7 +229,7 @@ async def _handle_one_turn(
         content=user_content,
     )
     try:
-        await asyncio.to_thread(msg_repo.append, user_message)
+        await asyncio.to_thread(_append_and_commit, db, msg_repo, user_message)
     except Exception as exc:  # noqa: BLE001
         logger.exception("Failed to persist user message: %s", exc)
         await websocket.send_json(
@@ -246,15 +258,10 @@ async def _handle_one_turn(
                     collected_tokens.append(token)
                     await websocket.send_json(make_token(token))
             elif kind == "citation":
+                # Sent once, after the tokens (see protocol in handlers.py).
                 citation = event.get("citation")
                 if isinstance(citation, Citation):
                     citations.append(citation)
-                    await websocket.send_json(
-                        {
-                            "type": "citation",
-                            "citation": citation.to_dict(),
-                        }
-                    )
             # ``event`` may also be a plain token string (legacy
             # fallback). Treat that as a token.
             elif isinstance(event, str):
@@ -285,7 +292,7 @@ async def _handle_one_turn(
             model_name=answer_service.model_name,
         )
         try:
-            await asyncio.to_thread(msg_repo.append, assistant_message)
+            await asyncio.to_thread(_append_and_commit, db, msg_repo, assistant_message)
         except Exception as exc:  # noqa: BLE001
             logger.exception("Failed to persist assistant message: %s", exc)
             # We still send message_complete so the client knows
@@ -313,6 +320,15 @@ async def _handle_one_turn(
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
+
+
+def _append_and_commit(db: Session, repo: ConversationMessageRepository, message: Message) -> None:
+    try:
+        repo.append(message)
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
 
 
 def _rough_token_count(text: str) -> int:

@@ -37,19 +37,27 @@ class OpenAIProvider(LLMProvider):
         *,
         api_key: str | None = None,
         model: str | None = None,
+        base_url: str | None = None,
         temperature: float | None = None,
         timeout: float | None = None,
         max_tokens: int | None = None,
     ) -> None:
         self._client = AsyncOpenAI(
             api_key=api_key or settings.OPENAI_API_KEY or "dummy-key-for-tests",
+            base_url=base_url,
             timeout=timeout if timeout is not None else settings.LLM_TIMEOUT,
         )
+        self.provider = "openai"
+        # Extra request params (subclasses set provider-specific ones).
+        self._request_extras: dict = {}
         self.model = model or settings.LLM_MODEL
         self.temperature = (
             temperature if temperature is not None else settings.LLM_TEMPERATURE
         )
         self.max_tokens = max_tokens if max_tokens is not None else settings.LLM_MAX_TOKENS
+        # Provider-reported usage of the last call ({prompt,completion}_tokens)
+        # or None when the provider sent none. Never estimated.
+        self.last_usage: dict | None = None
 
     # ------------------------------------------------------------------
     # LLMProvider
@@ -67,7 +75,9 @@ class OpenAIProvider(LLMProvider):
             messages=self._format(messages),
             temperature=temperature if temperature is not None else self.temperature,
             max_tokens=self.max_tokens,
+            **self._request_extras,
         )
+        self.last_usage = _usage_dict(getattr(response, "usage", None))
         choice = response.choices[0]
         return (choice.message.content or "").strip()
 
@@ -84,8 +94,13 @@ class OpenAIProvider(LLMProvider):
             temperature=temperature if temperature is not None else self.temperature,
             max_tokens=self.max_tokens,
             stream=True,
+            stream_options={"include_usage": True},
+            **self._request_extras,
         )
+        self.last_usage = None
         async for chunk in stream:
+            if getattr(chunk, "usage", None):
+                self.last_usage = _usage_dict(chunk.usage)
             if not chunk.choices:
                 continue
             delta = chunk.choices[0].delta
@@ -110,6 +125,15 @@ class OpenAIProvider(LLMProvider):
             role = m.role.value if hasattr(m.role, "value") else str(m.role)
             out.append({"role": role, "content": m.content})
         return out
+
+
+def _usage_dict(usage) -> dict | None:
+    if usage is None:
+        return None
+    return {
+        "prompt_tokens": int(getattr(usage, "prompt_tokens", 0) or 0),
+        "completion_tokens": int(getattr(usage, "completion_tokens", 0) or 0),
+    }
 
 
 __all__ = ["OpenAIProvider"]

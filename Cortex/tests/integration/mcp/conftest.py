@@ -12,6 +12,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from src.core.database import Base
+from src.identity.infrastructure.security import hash_password
 from src.identity.infrastructure import models as _identity_models  # noqa: F401
 from src.mcp.infrastructure import models as _mcp_models  # noqa: F401
 
@@ -51,7 +52,7 @@ def db_session(engine):
         id=uuid.uuid4(),
         tenant_id=tenant.id,
         email="owner@acme.com",
-        password_hash="x",
+        password_hash=hash_password("x-test-password"),
         role="owner",
         is_active=True,
         full_name="Owner",

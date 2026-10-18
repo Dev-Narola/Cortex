@@ -35,12 +35,10 @@ from src.ingestion.interface.rest.routes import router as ingestion_router
 from src.observability.interface.rest.audit_routes import (
     router as audit_router,
 )
-from src.observability.interface.rest.routes import router as observability_router
 from src.retrieval.interface.rest.routes import router as retrieval_router
 
 api_router = APIRouter()
 api_router.include_router(identity_router)
-api_router.include_router(observability_router)
 api_router.include_router(ingestion_router)
 api_router.include_router(retrieval_router)
 api_router.include_router(conversation_router)
