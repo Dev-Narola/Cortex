@@ -182,7 +182,7 @@ services:
     environment:
       # Inherit the shared env block, then add role-specific
       # overrides. Compose merges these on top of the anchor.
-      API_WORKERS: "${API_WORKERS:-2}"
+      API_WORKERS: "${API_WORKERS:-1}"  # 1 fits the 1 GB host; raise with RAM
       API_WORKER_TIMEOUT: "60"
       # The web service must reach S3 (uploads), Secrets
       # Manager (boot), and the public LLM APIs (chat). The
@@ -228,6 +228,15 @@ services:
     mem_limit: 1.5g
     mem_reservation: 768m
     cpus: "1.0"
+    # The worker serves no HTTP, so the inherited curl :8000 check could
+    # only ever report "unhealthy". arq --check reads the worker's own
+    # health record from Redis.
+    healthcheck:
+      test: ["CMD", "python", "-m", "arq", "--check", "src.ingestion.workers.worker.WorkerSettings"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
   # -------------------------------------------------------------------------
   # postgres — primary relational store

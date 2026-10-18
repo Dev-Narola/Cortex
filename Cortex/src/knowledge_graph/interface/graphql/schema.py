@@ -7,6 +7,8 @@ from __future__ import annotations
 import strawberry
 from strawberry.fastapi import GraphQLRouter
 
+from src.core.config import settings
+
 from src.knowledge_graph.interface.graphql.resolvers import (
     GraphEntityGraphQL,
     GraphPathGraphQL,
@@ -48,6 +50,10 @@ schema = strawberry.Schema(query=Query, mutation=Mutation)
 # via ``app.dependency_overrides``; the resolvers see
 # the override because the request goes through the
 # FastAPI dependency system.
-graphql_router = GraphQLRouter(schema, context_getter=_get_kg_context)
+graphql_router = GraphQLRouter(
+    schema,
+    context_getter=_get_kg_context,
+    graphql_ide=None if settings.ENVIRONMENT.lower() == "production" else "graphiql",
+)
 
 __all__ = ["schema", "graphql_router", "Query", "Mutation"]
