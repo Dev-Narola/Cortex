@@ -103,7 +103,7 @@ class HybridSearchService:
         tenant_id: uuid.UUID,
         query: str,
         *,
-        tenant_search_version: int = 0,
+        tenant_search_version: int | None = None,
         debug: bool = False,
     ) -> list[SearchResult]:
         """
@@ -120,7 +120,11 @@ class HybridSearchService:
         if not query or not query.strip():
             return []
 
-        # 1) Cache lookup.
+        # 1) Cache lookup, keyed on the tenant's current data generation.
+        if tenant_search_version is None:
+            from src.core.cache import get_search_version
+
+            tenant_search_version = await get_search_version(tenant_id)
         cache_key = self._cache_key(tenant_id, query, tenant_search_version)
         if self._use_cache:
             cached = await self._cache_get(cache_key)

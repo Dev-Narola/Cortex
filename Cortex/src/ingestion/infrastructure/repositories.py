@@ -17,7 +17,7 @@ import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from src.ingestion.domain.entities import (
@@ -279,6 +279,28 @@ class DocumentRepository:
             model.version = model.version + 1
         self._session.flush()
         return _model_to_document(model)
+
+
+    def claim(
+        self,
+        document_id: uuid.UUID,
+        *,
+        tenant_id: uuid.UUID,
+        from_statuses: set[DocumentStatus],
+        to_status: DocumentStatus,
+    ) -> bool:
+        """Compare-and-set the status in one UPDATE; False if another worker
+        (or a finished run) already moved the document on."""
+        result = self._session.execute(
+            update(DocumentModel)
+            .where(
+                DocumentModel.id == document_id,
+                DocumentModel.tenant_id == tenant_id,
+                DocumentModel.status.in_([s.value for s in from_statuses]),
+            )
+            .values(status=to_status.value)
+        )
+        return result.rowcount == 1
 
 
 __all__ = ["DocumentRepository"]

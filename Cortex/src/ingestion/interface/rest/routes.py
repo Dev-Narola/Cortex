@@ -296,7 +296,7 @@ async def get_document_status(
 
 
 @router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_document(
+async def delete_document(
     request: Request,
     document_id: uuid.UUID,
     auth: Annotated[DocumentWriteAuth, Depends(require_document_write)],
@@ -319,6 +319,14 @@ def delete_document(
         ip_address=_client_ip(request),
     )
     db.commit()
+    from src.core.cache import bump_search_version, invalidate_cache
+
+    # Deleted chunks must not keep appearing from the search result cache.
+    await bump_search_version(auth.tenant_id)
+    try:
+        await invalidate_cache(f"doc_status:{document_id}")
+    except Exception:  # noqa: BLE001 - cache is best-effort
+        pass
     return None
 
 
