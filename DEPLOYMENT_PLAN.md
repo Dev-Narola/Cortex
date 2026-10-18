@@ -29,6 +29,40 @@ The PRD/blueprint choice (self-managed EC2 + Postgres, compose) stays. Nothing h
 | D7 | CD: GitHub Actions job that SSHes to the host and runs `scripts/deploy.sh` after CI passes on `main` (needs repo secrets `DEPLOY_HOST`, `DEPLOY_SSH_KEY`) | low | yes + you add secrets |
 | D8 | Disk: `docker image prune` / builder cache prune (≈3.5 GB reclaimable) | low | yes |
 
+## First-deploy runbook (exact commands, run on the host as `ubuntu`)
+
+Env files on the host: `Cortex/.env` (container env), `Cortex/docker/.env` (compose
+`${...}` interpolation), `/opt/cortex/.env` (unused by compose). Secret values are
+never printed; edits use `sed` in place.
+
+```bash
+cd /opt/cortex && TS=$(date -u +%Y%m%dT%H%M%SZ) && mkdir -p -m 700 backups
+# D1 snapshot: DB dump, env copies, server hotfixes (also in Docs/audit/)
+docker exec cortex-postgres sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc' > backups/pre-deploy-$TS.dump
+install -m 600 Cortex/.env backups/env-$TS && install -m 600 Cortex/docker/.env backups/docker-env-$TS
+git stash push -m "server-hotfixes-$TS"
+# D2 config (Cortex/.env): providers that still exist, 2048-d embeddings, LLM reranker
+set_env() { grep -q "^$1=" Cortex/.env && sed -i "s|^$1=.*|$1=$2|" Cortex/.env || echo "$1=$2" >> Cortex/.env; }
+set_env LLM_PROVIDER nvidia;            set_env NVIDIA_MODEL openai/gpt-oss-20b
+set_env EMBEDDING_PROVIDER nvidia;      set_env NVIDIA_EMBEDDING_MODEL nvidia/nemotron-3-embed-1b
+set_env EMBEDDING_DIMENSIONS 2048;      set_env EMBEDDING_BATCH_SIZE 32
+set_env RERANKER_PROVIDER llm;          set_env LLM_MAX_TOKENS 2048
+set_env SECRET_KEY "$(openssl rand -hex 32)"   # was 24 chars; rotation logs users out once
+grep -q '^API_WORKERS=' Cortex/docker/.env && sed -i 's/^API_WORKERS=.*/API_WORKERS=1/' Cortex/docker/.env
+# D3 + D4 deploy (migrations run on api boot: w1 clears the dead vectors)
+bash Cortex/scripts/deploy.sh <sha-that-passed-CI>
+docker exec cortex-worker python scripts/reembed.py     # re-embed the 3 documents
+# D5 nightly backup at 02:15 UTC
+( crontab -l 2>/dev/null; echo '15 2 * * * bash /opt/cortex/Cortex/scripts/backup.sh >> /opt/cortex/backups/backup.log 2>&1' ) | crontab -
+# D8 disk
+docker builder prune -f && docker image prune -f
+```
+
+Verification after deploy: `/health/ready`; register a smoke tenant; upload a TXT and
+a URL → `indexed`; `POST /search` returns the chunk with `rerank_score`; WS chat turn
+streams + cites; `GET /tenants/me/usage` > 0; KG entities > 0; API-key + MCP calls;
+`docker ps` all healthy; `backup.sh` exit 0 (or 2 = bucket policy blocks `backups/`).
+
 ## Rollback
 
 1. Code: `git -C /opt/cortex checkout a76d4ee && git stash pop` (restores the exact pre-change tree), then `docker compose build api worker && docker compose up -d api worker`.
