@@ -56,7 +56,7 @@ jobs:
           cache: pip
           cache-dependency-path: Cortex/pyproject.toml
       - name: Install
-        run: pip install -e ".[dev]"
+        run: pip install -c constraints.txt -e ".[dev]"
       - name: Lint (syntax errors, undefined names)
         run: ruff check src tests --select E9,F63,F7,F82
       - name: Architecture (no new violations beyond the recorded baseline)
