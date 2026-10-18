@@ -17,7 +17,7 @@ import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime
 
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
 from src.ingestion.domain.entities import (
@@ -193,6 +193,7 @@ class DocumentRepository:
         *,
         limit: int = 50,
         offset: int = 0,
+        status: DocumentStatus | None = None,
     ) -> Sequence[Document]:
         """
         List a tenant's documents, newest first.
@@ -202,19 +203,20 @@ class DocumentRepository:
         `(tenant_id, created_at)` index makes this query cheap
         regardless of how many documents the tenant has.
         """
-        stmt = (
-            select(DocumentModel)
-            .where(DocumentModel.tenant_id == tenant_id)
-            .order_by(DocumentModel.created_at.desc())
-            .limit(limit)
-            .offset(offset)
-        )
+        stmt = select(DocumentModel).where(DocumentModel.tenant_id == tenant_id)
+        if status is not None:
+            stmt = stmt.where(DocumentModel.status == status.value)
+        stmt = stmt.order_by(DocumentModel.created_at.desc()).limit(limit).offset(offset)
         return [_model_to_document(m) for m in self._session.execute(stmt).scalars().all()]
 
-    def count(self, tenant_id: uuid.UUID) -> int:
-        """Return how many documents a tenant has."""
-        stmt = select(DocumentModel.id).where(DocumentModel.tenant_id == tenant_id)
-        return len(self._session.execute(stmt).scalars().all())
+    def count(self, tenant_id: uuid.UUID, *, status: DocumentStatus | None = None) -> int:
+        """Return how many documents a tenant has (optionally in one status)."""
+        stmt = select(func.count()).select_from(DocumentModel).where(
+            DocumentModel.tenant_id == tenant_id
+        )
+        if status is not None:
+            stmt = stmt.where(DocumentModel.status == status.value)
+        return int(self._session.execute(stmt).scalar_one())
 
     # ---------- targeted updates ----------
 

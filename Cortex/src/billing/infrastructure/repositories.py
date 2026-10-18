@@ -31,7 +31,7 @@ import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime
 
-from sqlalchemy import func, select
+from sqlalchemy import case, func, select
 from sqlalchemy.orm import Session
 
 from src.billing.domain.entities import EventType, UnitType, UsageEvent
@@ -177,9 +177,7 @@ class UsageEventSqlRepository(UsageEventRepository):
                 UsageEventModel.event_type,
                 UsageEventModel.unit_type,
                 func.coalesce(func.sum(UsageEventModel.units), 0.0).label("units_sum"),
-                func.coalesce(func.sum(UsageEventModel.cost_usd), 0.0).label(
-                    "cost_sum"
-                ),
+                func.coalesce(func.sum(UsageEventModel.cost_usd), 0.0).label("cost_sum"),
             )
             .where(UsageEventModel.tenant_id == tenant_id)
             .group_by(UsageEventModel.event_type, UsageEventModel.unit_type)
@@ -218,59 +216,21 @@ class UsageEventSqlRepository(UsageEventRepository):
         Cortex targets Postgres so the FILTER form is
         the cheap one.
         """
-        # The CASE-based FILTER form is more portable than
-        # the standard ``FILTER`` clause and produces
-        # identical query plans on Postgres.
-        embedding_input = func.coalesce(
-            func.sum(
-                func.iif(
-                    UsageEventModel.event_type == "embedding",
-                    UsageEventModel.input_tokens,
-                    0,
-                )
-            ),
-            0,
-        )
-        completion_input = func.coalesce(
-            func.sum(
-                func.iif(
-                    UsageEventModel.event_type == "completion",
-                    UsageEventModel.input_tokens,
-                    0,
-                )
-            ),
-            0,
-        )
-        completion_output = func.coalesce(
-            func.sum(
-                func.iif(
-                    UsageEventModel.event_type == "completion",
-                    UsageEventModel.output_tokens,
-                    0,
-                )
-            ),
-            0,
-        )
-        rerank_units = func.coalesce(
-            func.sum(
-                func.iif(
-                    UsageEventModel.event_type == "rerank",
-                    UsageEventModel.units,
-                    0,
-                )
-            ),
-            0,
-        )
-        request_count = func.coalesce(
-            func.sum(
-                func.iif(
-                    UsageEventModel.event_type == "request",
-                    1,
-                    0,
-                )
-            ),
-            0,
-        )
+
+        # Conditional sums via CASE (portable). `func.iif` only exists on
+        # SQLite/SQL Server; on Postgres it raised "function iif does not
+        # exist" and the endpoint returned 500.
+        def _sum_where(event_type: str, value: Any) -> Any:
+            return func.coalesce(
+                func.sum(case((UsageEventModel.event_type == event_type, value), else_=0)),
+                0,
+            )
+
+        embedding_input = _sum_where("embedding", UsageEventModel.input_tokens)
+        completion_input = _sum_where("completion", UsageEventModel.input_tokens)
+        completion_output = _sum_where("completion", UsageEventModel.output_tokens)
+        rerank_units = _sum_where("rerank", UsageEventModel.units)
+        request_count = _sum_where("request", 1)
         total_cost = func.coalesce(func.sum(UsageEventModel.cost_usd), 0.0)
 
         stmt = select(
@@ -327,11 +287,7 @@ class UsageEventSqlRepository(UsageEventRepository):
         if until is not None:
             stmt = stmt.where(UsageEventModel.created_at < _as_utc(until))
         if event_type is not None:
-            et = (
-                event_type.value
-                if isinstance(event_type, EventType)
-                else str(event_type)
-            )
+            et = event_type.value if isinstance(event_type, EventType) else str(event_type)
             stmt = stmt.where(UsageEventModel.event_type == et)
         if cursor is not None:
             cursor_ts, cursor_id = cursor
@@ -340,10 +296,7 @@ class UsageEventSqlRepository(UsageEventRepository):
             # ``created_at < cursor_ts OR (created_at = cursor_ts AND id < cursor_id)``.
             stmt = stmt.where(
                 (UsageEventModel.created_at < cursor_ts)
-                | (
-                    (UsageEventModel.created_at == cursor_ts)
-                    & (UsageEventModel.id < cursor_id)
-                )
+                | ((UsageEventModel.created_at == cursor_ts) & (UsageEventModel.id < cursor_id))
             )
         models = self._session.execute(stmt).scalars().all()
         return [_model_to_entity(m) for m in models]

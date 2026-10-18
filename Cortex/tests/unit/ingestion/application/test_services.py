@@ -98,7 +98,21 @@ def test_list_documents_service(mock_repo, tenant_id):
 
     assert docs == ["doc1", "doc2"]
     assert total == 2
-    mock_repo.list.assert_called_once_with(tenant_id=tenant_id, limit=10, offset=0)
+    mock_repo.list.assert_called_once_with(tenant_id=tenant_id, limit=10, offset=0, status=None)
+    mock_repo.count.assert_called_once_with(tenant_id=tenant_id, status=None)
+
+
+def test_list_documents_service_filters_by_status(mock_repo, tenant_id):
+    service = ListDocumentsService(mock_repo)
+    mock_repo.list.return_value = []
+    mock_repo.count.return_value = 0
+
+    service.execute(tenant_id, limit=1, offset=0, status=DocumentStatus.FAILED)
+
+    mock_repo.list.assert_called_once_with(
+        tenant_id=tenant_id, limit=1, offset=0, status=DocumentStatus.FAILED
+    )
+    mock_repo.count.assert_called_once_with(tenant_id=tenant_id, status=DocumentStatus.FAILED)
 
 
 # ---------------------------------------------------------------------------

@@ -19,28 +19,35 @@ import uuid
 from fastapi import (
     APIRouter,
     Depends,
+    HTTPException,
     Path,
     Query,
     Request,
     Response,
     status,
 )
+import redis
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.orm import Session
 
 from src.identity.application.services import (
     INVITE_TTL,
+    PASSWORD_RESET_TTL,
     AcceptInviteService,
     AuthenticateUserService,
     ManageUsersService,
     CreateApiKeyService,
     CreateTenantService,
     RegisterTenantService,
+    ResetPasswordService,
     RevokeApiKeyService,
     UpdateProfileService,
     UpdateTenantService,
 )
 from src.identity.domain.entities import ApiKey, Plan, Role, Tenant, User
+from src.identity.infrastructure import token_denylist
+from src.identity.infrastructure.security import decode_access_token
+from src.shared.exceptions import UnauthorizedException
 from src.core.config import settings as app_settings
 from src.core.database import get_db
 from src.core.dependencies import (
@@ -176,7 +183,7 @@ class LoginRequest(_Base):
 
 
 class RefreshRequest(_Base):
-    """Body for `POST /auth/refresh`."""
+    """Body for `POST /auth/refresh` and `POST /auth/logout`."""
 
     refresh_token: str = Field(..., min_length=10)
 
@@ -495,6 +502,10 @@ def login(
 )
 def refresh_token(body: RefreshRequest, db: Session = Depends(get_db)) -> TokenResponse:
     """Trade a still-valid refresh token for a fresh access + refresh pair."""
+    if token_denylist.is_revoked(body.refresh_token):
+        raise UnauthorizedException(
+            message="Refresh token has been revoked.", code=401, data={"field": "token"}
+        )
     service = AuthenticateUserService(db)
     issued = service.refresh(refresh_token=body.refresh_token)
     return TokenResponse(
@@ -505,6 +516,29 @@ def refresh_token(body: RefreshRequest, db: Session = Depends(get_db)) -> TokenR
         user=_user_to_response(issued.user),
         tenant=_tenant_to_response(issued.tenant),
     )
+
+
+@router.post(
+    "/auth/logout",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Revoke a refresh token (sign out)",
+    responses={503: {"description": "Revocation store unavailable; token not revoked"}},
+)
+def logout(body: RefreshRequest) -> Response:
+    """Sign out: the refresh token can no longer be exchanged. Access tokens
+    stay valid until they expire (short-lived); the client discards them."""
+    try:
+        claims = decode_access_token(body.refresh_token, expected_type="refresh")
+    except UnauthorizedException:
+        return Response(status_code=status.HTTP_204_NO_CONTENT)  # already unusable
+    try:
+        token_denylist.revoke(body.refresh_token, expires_at=int(claims["exp"]))
+    except redis.RedisError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={"message": "Sign-out could not be recorded. Try again.", "code": 503},
+        ) from exc
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 # ---------------------------------------------------------------------------
@@ -888,6 +922,16 @@ class AcceptInviteRequest(_Base):
     full_name: str | None = Field(default=None, max_length=255)
 
 
+class PasswordResetLinkResponse(_Base):
+    reset_token: str
+    expires_in: int
+
+
+class ResetPasswordRequest(_Base):
+    token: str = Field(..., min_length=10)
+    password: str = Field(..., min_length=8, max_length=128)
+
+
 @router.get("/users", response_model=list[UserResponse], summary="List the tenant's users")
 def list_users(
     current: tuple[User, Tenant] = Depends(require_admin),
@@ -927,6 +971,59 @@ def invite_user(
         invite_token=token,
         expires_in=int(INVITE_TTL.total_seconds()),
     )
+
+
+@router.post(
+    "/users/{user_id}/password-reset",
+    response_model=PasswordResetLinkResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Issue a one-time password reset token for a user (owner/admin only; shown once)",
+)
+def issue_password_reset(
+    request: Request,
+    user_id: uuid.UUID = Path(...),
+    current: tuple[User, Tenant] = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> PasswordResetLinkResponse:
+    actor, tenant = current
+    token = ManageUsersService(db).password_reset_token(actor=actor, user_id=user_id)
+    _safe_audit(
+        db,
+        tenant_id=tenant.id,
+        action=AuditAction.USER_UPDATED,
+        actor_user_id=actor.id,
+        resource_type="user",
+        resource_id=str(user_id),
+        metadata={"event": "password_reset_issued"},
+        ip_address=_client_ip(request),
+    )
+    db.commit()
+    return PasswordResetLinkResponse(
+        reset_token=token, expires_in=int(PASSWORD_RESET_TTL.total_seconds())
+    )
+
+
+@router.post(
+    "/auth/reset-password",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Set a new password with a reset token",
+)
+def reset_password(
+    body: ResetPasswordRequest, request: Request, db: Session = Depends(get_db)
+) -> Response:
+    user = ResetPasswordService(db).execute(token=body.token, password=body.password)
+    _safe_audit(
+        db,
+        tenant_id=user.tenant_id,
+        action=AuditAction.USER_UPDATED,
+        actor_user_id=user.id,
+        resource_type="user",
+        resource_id=str(user.id),
+        metadata={"event": "password_reset_completed"},
+        ip_address=_client_ip(request),
+    )
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.patch("/users/{user_id}", response_model=UserResponse, summary="Change a user's role or activation")

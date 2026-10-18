@@ -130,10 +130,16 @@ class ListDocumentsService:
         self.repository = repository
 
     def execute(
-        self, tenant_id: uuid.UUID, limit: int = 50, offset: int = 0
+        self,
+        tenant_id: uuid.UUID,
+        limit: int = 50,
+        offset: int = 0,
+        status: DocumentStatus | None = None,
     ) -> tuple[list[Document], int]:
-        documents = self.repository.list(tenant_id=tenant_id, limit=limit, offset=offset)
-        total = self.repository.count(tenant_id=tenant_id)
+        documents = self.repository.list(
+            tenant_id=tenant_id, limit=limit, offset=offset, status=status
+        )
+        total = self.repository.count(tenant_id=tenant_id, status=status)
         return list(documents), total
 
 

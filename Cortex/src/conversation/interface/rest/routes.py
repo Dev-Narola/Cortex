@@ -22,10 +22,12 @@ independently of REST.
 from __future__ import annotations
 
 import uuid
+from collections.abc import Sequence
 from typing import Any
 
 from fastapi import APIRouter, Depends, Query, Request, status
 from pydantic import BaseModel, Field
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from src.conversation.domain.entities import Conversation, Message, MessageRole
@@ -34,6 +36,7 @@ from src.conversation.infrastructure.repositories import (
     ConversationRepository,
 )
 from src.core.dependencies import get_current_user, get_db
+from src.ingestion.infrastructure.models import DocumentChunkModel, DocumentModel
 from src.core.database import get_db as _get_db
 from src.shared.exceptions import NotFoundException
 
@@ -126,6 +129,9 @@ class MessageSchema(BaseModel):
     content: str
     token_count: int
     retrieved_chunk_ids: list[uuid.UUID] = Field(default_factory=list)
+    # Resolved sources for `retrieved_chunk_ids`, in the same order (so the
+    # answer's [n] markers line up). Chunks of deleted documents are omitted.
+    citations: list[CitationSchema] = Field(default_factory=list)
     model_name: str | None = None
     # **F5 Part 4 — Agent Trace wiring.** When
     # the assistant message is the result of a
@@ -183,7 +189,43 @@ def _conv_to_schema(c: Conversation) -> ConversationSchema:
     )
 
 
-def _msg_to_schema(m: Message) -> MessageSchema:
+_EXCERPT_CHARS = 600
+
+
+def _load_citations(
+    db: Session, tenant_id: uuid.UUID, messages: Sequence[Message]
+) -> dict[uuid.UUID, CitationSchema]:
+    """Resolve every cited chunk of `messages` in one tenant-scoped query."""
+    ids = {cid for m in messages for cid in m.retrieved_chunk_ids}
+    if not ids:
+        return {}
+    rows = db.execute(
+        select(
+            DocumentChunkModel.id,
+            DocumentChunkModel.document_id,
+            DocumentChunkModel.chunk_index,
+            DocumentChunkModel.content,
+            DocumentModel.title,
+        )
+        .join(DocumentModel, DocumentModel.id == DocumentChunkModel.document_id)
+        .where(DocumentChunkModel.id.in_(ids), DocumentChunkModel.tenant_id == tenant_id)
+    ).all()
+    return {
+        r.id: CitationSchema(
+            document_id=r.document_id,
+            chunk_id=r.id,
+            document_title=r.title,
+            chunk_index=r.chunk_index,
+            excerpt=r.content[:_EXCERPT_CHARS],
+        )
+        for r in rows
+    }
+
+
+def _msg_to_schema(
+    m: Message, citations: dict[uuid.UUID, CitationSchema] | None = None
+) -> MessageSchema:
+    cites = citations or {}
     return MessageSchema(
         id=m.id,
         conversation_id=m.conversation_id,
@@ -191,6 +233,7 @@ def _msg_to_schema(m: Message) -> MessageSchema:
         content=m.content,
         token_count=m.token_count,
         retrieved_chunk_ids=list(m.retrieved_chunk_ids),
+        citations=[cites[c] for c in m.retrieved_chunk_ids if c in cites],
         model_name=m.model_name,
         # F5 P4: the V4 model will add
         # ``agent_run_id``; today the entity
@@ -329,6 +372,7 @@ def get_conversation(
         ip_address=_client_ip(request),
     )
     db.commit()
+    citations = _load_citations(db, tenant.id, messages)
     return ConversationWithMessagesSchema(
         id=conversation.id,
         tenant_id=conversation.tenant_id,
@@ -337,7 +381,7 @@ def get_conversation(
         summary=conversation.summary,
         created_at=conversation.created_at.isoformat(),
         updated_at=conversation.updated_at.isoformat(),
-        messages=[_msg_to_schema(m) for m in messages],
+        messages=[_msg_to_schema(m, citations) for m in messages],
     )
 
 
@@ -367,7 +411,8 @@ def list_conversation_messages(
         tenant_id=tenant.id,
         limit=limit,
     )
-    return [_msg_to_schema(m) for m in messages]
+    citations = _load_citations(db, tenant.id, messages)
+    return [_msg_to_schema(m, citations) for m in messages]
 
 
 @router.delete(

@@ -13,6 +13,7 @@ services; nothing else in the application should.
 
 from __future__ import annotations
 
+import hashlib
 import re
 import uuid
 from collections.abc import Sequence
@@ -650,6 +651,13 @@ __all__ = [
 # ---------------------------------------------------------------------------
 
 INVITE_TTL = timedelta(hours=72)
+PASSWORD_RESET_TTL = timedelta(hours=1)
+
+
+def _password_fingerprint(hashed_password: str) -> str:
+    # Embedded in reset tokens: once the password changes the token stops
+    # matching, which makes each link single-use without storing anything.
+    return hashlib.sha256(hashed_password.encode()).hexdigest()[:16]
 
 
 class ManageUsersService:
@@ -719,6 +727,23 @@ class ManageUsersService:
         self._session.commit()
         return saved
 
+    def password_reset_token(self, *, actor: User, user_id: uuid.UUID) -> str:
+        """Issue a one-hour, single-use reset link token (no mail infrastructure)."""
+        target = self._users.find_by_id(user_id, tenant_id=actor.tenant_id)
+        if target is None:
+            raise NotFoundException(message="User not found.", code=404, data={"user_id": str(user_id)})
+        if target.role == Role.OWNER and actor.role != Role.OWNER:
+            raise ForbiddenException(message="Only an owner can reset an owner's password.", code=403)
+        return create_access_token(
+            str(target.id),
+            extra_claims={
+                "tenant_id": str(target.tenant_id),
+                "pwh": _password_fingerprint(target.hashed_password),
+            },
+            expires_delta=PASSWORD_RESET_TTL,
+            token_type="pwreset",
+        )
+
     @staticmethod
     def _assert_may_grant(actor: User, role: Role) -> None:
         if role in (Role.OWNER, Role.ADMIN) and actor.role != Role.OWNER:
@@ -756,3 +781,33 @@ class AcceptInviteService:
         return AuthenticateUserService(self._session).execute(
             tenant_slug=tenant.slug, email=email, password=password
         )
+
+
+class ResetPasswordService:
+    """Redeem a password-reset token issued by an owner/admin."""
+
+    def __init__(self, session: Session) -> None:
+        self._session = session
+        self._users = UserRepository(session)
+
+    def execute(self, *, token: str, password: str) -> User:
+        claims = decode_access_token(token, expected_type="pwreset")
+        invalid = UnauthorizedException(
+            message="This reset link is invalid, expired, or already used.", code=401
+        )
+        try:
+            user_id = uuid.UUID(str(claims["sub"]))
+            tenant_id = uuid.UUID(str(claims["tenant_id"]))
+        except (KeyError, ValueError) as exc:
+            raise invalid from exc
+        user = self._users.find_by_id(user_id, tenant_id=tenant_id)
+        if (
+            user is None
+            or not user.is_active
+            or claims.get("pwh") != _password_fingerprint(user.hashed_password)
+        ):
+            raise invalid
+        user.set_password(hash_password(password))
+        saved = self._users.update(user)
+        self._session.commit()
+        return saved

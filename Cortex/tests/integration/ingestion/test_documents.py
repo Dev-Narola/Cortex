@@ -51,6 +51,26 @@ async def test_list_documents(client, setup_auth, db_session, tenant_id, overrid
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+async def test_list_documents_status_filter(client, setup_auth, db_session, tenant_id, override_storage):
+    repo = DocumentRepository(db_session)
+    ok = repo.create(_make_doc(tenant_id, "ok.pdf"))
+    bad = repo.create(_make_doc(tenant_id, "bad.pdf"))
+    repo.create(_make_doc(tenant_id, "queued.pdf"))
+    repo.update_status(ok.id, tenant_id=tenant_id, status=DocumentStatus.INDEXED)
+    repo.update_status(bad.id, tenant_id=tenant_id, status=DocumentStatus.FAILED)
+    db_session.commit()
+
+    failed = (await client.get("/api/v1/documents?status=failed&limit=1")).json()
+    assert failed["total"] == 1
+    assert [d["title"] for d in failed["items"]] == ["bad.pdf"]
+    assert (await client.get("/api/v1/documents?status=indexed")).json()["total"] == 1
+    assert (await client.get("/api/v1/documents")).json()["total"] == 3
+    assert (await client.get("/api/v1/documents?status=bogus")).status_code == 422
+    assert (await client.get("/api/v1/documents?limit=500")).status_code == 422
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
 async def test_get_document(client, setup_auth, db_session, tenant_id, override_storage):
     repo = DocumentRepository(db_session)
     doc = repo.create(_make_doc(tenant_id, "getme.pdf"))

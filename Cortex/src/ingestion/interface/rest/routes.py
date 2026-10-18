@@ -5,6 +5,7 @@ from fastapi import (
     APIRouter,
     Depends,
     HTTPException,
+    Query,
     Request,
     UploadFile,
     status,
@@ -22,6 +23,7 @@ from src.ingestion.application.services import (
     GetDocumentStatusService,
     ListDocumentsService,
 )
+from src.ingestion.domain.entities import DocumentStatus
 from src.ingestion.infrastructure.repositories import DocumentRepository
 from src.ingestion.infrastructure.s3_storage import S3Storage
 from src.ingestion.infrastructure.storage import LocalStorage, ObjectStorage
@@ -276,14 +278,18 @@ async def create_document_from_url(
 @router.get("", response_model=PaginatedDocumentResponse)
 def list_documents(
     auth: Annotated[DocumentWriteAuth, Depends(require_document_read)],
-    limit: int = 50,
-    offset: int = 0,
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    status_filter: DocumentStatus | None = Query(None, alias="status"),
     service: ListDocumentsService = Depends(get_list_documents_service),
 ):
     """
-    List all documents for the current tenant.
+    List the current tenant's documents, newest first. `status` narrows both
+    the page and `total` (e.g. `?status=failed&limit=1` counts failures).
     """
-    documents, total = service.execute(tenant_id=auth.tenant_id, limit=limit, offset=offset)
+    documents, total = service.execute(
+        tenant_id=auth.tenant_id, limit=limit, offset=offset, status=status_filter
+    )
     return PaginatedDocumentResponse(
         items=documents,  # type: ignore
         total=total,

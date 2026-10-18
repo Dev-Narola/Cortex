@@ -113,3 +113,42 @@ def test_cannot_manage_another_tenants_users(api):
     b_owner = _register_and_get_token(api, slug="beta", email="b@b.com")
     assert api.patch(f"/api/v1/users/{a_member}", json={"role": "viewer"}, headers=_h(b_owner)).status_code == 404
     assert "m@a.com" not in str(api.get("/api/v1/users", headers=_h(b_owner)).json())
+
+
+def _login(c, email, password):
+    return c.post(
+        "/api/v1/auth/login", json={"tenant_slug": "me", "email": email, "password": password}
+    )
+
+
+def test_admin_issued_password_reset_is_single_use(api):
+    owner = _register_and_get_token(api)
+    admin, _ = _join(api, owner, "a@x.com", "admin")
+    _, member_id = _join(api, owner, "m@x.com", "member")
+
+    r = api.post(f"/api/v1/users/{member_id}/password-reset", headers=_h(admin))
+    assert r.status_code == 201, r.text
+    assert r.json()["expires_in"] == 3600
+    token = r.json()["reset_token"]
+
+    new = "BrandNewPassword456!"
+    assert api.post("/api/v1/auth/reset-password", json={"token": token, "password": new}).status_code == 204
+    assert _login(api, "m@x.com", new).status_code == 200
+    assert _login(api, "m@x.com", PASSWORD).status_code == 401
+    # The link stops working once the password has changed.
+    r = api.post("/api/v1/auth/reset-password", json={"token": token, "password": "AnotherOne789!"})
+    assert r.status_code == 401
+
+
+def test_password_reset_role_rules(api):
+    owner = _register_and_get_token(api)
+    admin, _ = _join(api, owner, "a@x.com", "admin")
+    member, member_id = _join(api, owner, "m@x.com", "member")
+    owner_id = api.get("/api/v1/users/me", headers=_h(owner)).json()["id"]
+
+    # Admins can't reset an owner; members can't issue resets at all.
+    assert api.post(f"/api/v1/users/{owner_id}/password-reset", headers=_h(admin)).status_code == 403
+    assert api.post(f"/api/v1/users/{member_id}/password-reset", headers=_h(member)).status_code == 403
+    # Other token types are rejected by the redeem endpoint.
+    r = api.post("/api/v1/auth/reset-password", json={"token": owner, "password": "Whatever123!"})
+    assert r.status_code == 401

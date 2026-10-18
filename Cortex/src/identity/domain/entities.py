@@ -603,6 +603,12 @@ class User:
         object.__setattr__(self, "full_name", new_name)
         self._touch()
 
+    def set_password(self, hashed_password: str) -> None:
+        """Replace the password hash (already hashed by the caller)."""
+        self._validate_hashed_password(hashed_password)
+        object.__setattr__(self, "hashed_password", hashed_password)
+        self._touch()
+
     def change_role(self, new_role: Role | str) -> None:
         role_value = self._validate_role(new_role)
         object.__setattr__(self, "role", role_value)
