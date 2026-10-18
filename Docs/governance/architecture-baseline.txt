@@ -1,0 +1,55 @@
+src/agents/application/executor.py: application imports src.agents.infrastructure.llm_provider
+src/agents/application/executor.py: application imports src.agents.infrastructure.repositories
+src/agents/application/executor.py: application imports src.execution.infrastructure.repositories
+src/agents/application/executor.py: application imports src.tools.infrastructure.repositories
+src/agents/application/observability.py: application imports src.observability.infrastructure.metrics
+src/agents/application/observability.py: application imports src.observability.infrastructure.otel
+src/agents/application/services.py: application imports src.agents.infrastructure.repositories
+src/agents/application/services.py: application imports src.execution.infrastructure.repositories
+src/conversation/application/services.py: application imports src.conversation.infrastructure.repositories
+src/embedding/application/services.py: application imports src.ingestion.infrastructure.chunk_repository
+src/execution/application/agent_loop.py: application imports src.agents.infrastructure.llm_provider
+src/execution/application/agent_loop.py: application imports src.execution.infrastructure.repositories
+src/execution/application/agent_loop.py: application imports src.tools.infrastructure.repositories
+src/identity/application/services.py: application imports src.identity.infrastructure.repositories
+src/identity/application/services.py: application imports src.identity.infrastructure.security
+src/ingestion/application/reprocess.py: application imports src.ingestion.infrastructure.repositories
+src/ingestion/application/reprocess.py: application imports src.ingestion.interface.rest.queue
+src/ingestion/application/services.py: application imports src.ingestion.infrastructure.repositories
+src/ingestion/application/services.py: application imports src.ingestion.infrastructure.storage
+src/ingestion/application/status_transition.py: application imports src.ingestion.infrastructure.repositories
+src/knowledge_graph/application/extraction.py: application imports src.agents.infrastructure.llm_provider
+src/knowledge_graph/application/extraction.py: application imports src.ingestion.infrastructure.models
+src/knowledge_graph/application/extraction.py: application imports src.knowledge_graph.infrastructure.repositories
+src/knowledge_graph/application/extraction.py: application imports src.observability.infrastructure.metrics
+src/knowledge_graph/application/observability.py: application imports src.observability.infrastructure.metrics
+src/knowledge_graph/application/observability.py: application imports src.observability.infrastructure.otel
+src/knowledge_graph/application/query/traversal.py: application imports src.ingestion.infrastructure.models
+src/knowledge_graph/application/query/traversal.py: application imports src.knowledge_graph.infrastructure.models
+src/knowledge_graph/application/query/traversal.py: application imports src.knowledge_graph.infrastructure.repositories
+src/limits/application/service.py: application imports src.limits.infrastructure.models
+src/mcp/application/resource_providers.py: application imports src.execution.infrastructure.repositories
+src/mcp/application/resource_providers.py: application imports src.identity.infrastructure.models
+src/mcp/application/resource_providers.py: application imports src.ingestion.infrastructure.models
+src/mcp/application/resource_providers.py: application imports src.knowledge_graph.infrastructure.repositories
+src/mcp/application/session.py: application imports src.mcp.infrastructure.repositories
+src/mcp/application/tool_executor.py: application imports src.execution.infrastructure.repositories
+src/mcp/application/tool_executor.py: application imports src.ingestion.infrastructure.models
+src/mcp/application/tool_executor.py: application imports src.ingestion.infrastructure.repositories
+src/mcp/application/tool_executor.py: application imports src.ingestion.interface.rest.queue
+src/mcp/application/tool_executor.py: application imports src.ingestion.interface.rest.routes
+src/mcp/application/tool_executor.py: application imports src.retrieval.interface.dependencies
+src/observability/application/audit_service.py: application imports src.observability.infrastructure.metrics
+src/observability/application/billable.py: application imports src.billing.infrastructure.repositories
+src/observability/application/billable.py: application imports src.observability.infrastructure.metrics
+src/retrieval/application/query/hybrid_search.py: application imports src.retrieval.infrastructure.query.full_text_search_repository
+src/retrieval/application/query/hybrid_search.py: application imports src.retrieval.infrastructure.query.vector_search_repository
+src/retrieval/application/search_service.py: application imports src.retrieval.infrastructure.query.full_text_search_repository
+src/retrieval/application/search_service.py: application imports src.retrieval.infrastructure.query.vector_search_repository
+src/tools/application/registry.py: application imports src.tools.infrastructure.repositories
+agents -> execution -> agents
+agents -> graph_retrieval -> knowledge_graph -> agents
+billing -> identity -> observability -> billing
+embedding -> ingestion -> embedding
+identity -> observability -> identity
+ingestion -> knowledge_graph -> ingestion

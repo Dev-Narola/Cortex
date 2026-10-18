@@ -42,19 +42,19 @@ class WorkerSettings:
     redis_settings = RedisSettings.from_dsn(settings.REDIS_URL)
 
     # Concurrency cap — prevents overwhelming DB or S3 during bursts
-    max_jobs: int = 10
+    max_jobs: int = settings.ARQ_MAX_JOBS
 
     # Wall-clock limit per job (5 min is generous for a 10 MB document)
-    job_timeout: int = 300
+    job_timeout: int = settings.ARQ_JOB_TIMEOUT_SECONDS
 
     # Arq retries a job when the coroutine raises an exception
     retry_jobs: bool = True
 
     # Total number of times a job is attempted (includes the first run)
-    max_tries: int = 4
+    max_tries: int = settings.ARQ_MAX_TRIES
 
     # How long (seconds) job results are kept in Redis for inspection
-    keep_result: int = 3600
+    keep_result: int = settings.ARQ_KEEP_RESULT_SECONDS
 
     # Health record TTL; the container healthcheck (arq --check) reads it,
     # so a dead worker shows unhealthy within ~1 minute, not 1 hour.

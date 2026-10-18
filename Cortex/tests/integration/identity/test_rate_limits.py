@@ -6,7 +6,7 @@ import pytest
 import redis
 
 from src.core.config import settings
-from src.limits.application import request_limits
+from src.limits.infrastructure import request_limits
 from tests.integration.identity.test_identity_routes import (  # noqa: F401 - fixture
     _register_and_get_token,
     client,

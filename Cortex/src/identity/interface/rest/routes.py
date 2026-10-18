@@ -407,7 +407,7 @@ def login(
     Authenticate with `tenant_slug` + `email` + `password` and
     receive a new access + refresh token pair.
     """
-    from src.limits.application.request_limits import enforce
+    from src.limits.infrastructure.request_limits import enforce
 
     # Brute-force guard: attempts per client IP per tenant slug.
     enforce("login", f"{_client_ip(request)}:{body.tenant_slug}", app_settings.LOGIN_ATTEMPTS_PER_MINUTE)

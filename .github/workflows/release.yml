@@ -1,48 +1,32 @@
 name: Release
 
+# Tag v* -> build the production image and publish it to GHCR as
+# ghcr.io/<owner>/cortex:<tag>. (The host still builds from git; the
+# published image is the reproducible artifact for the release.)
 on:
   push:
     tags: ["v*"]
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
-  release:
-    name: Release
+  image:
+    name: Build and publish image
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Image name (GHCR requires lowercase)
+        run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/cortex" >> "$GITHUB_ENV"
+      - uses: docker/login-action@v3
         with:
-          python-version: "3.12"
-      - uses: actions/setup-node@v4
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
         with:
-          node-version: "22"
-          cache: "pnpm"
-      - name: Install pnpm
-        run: npm install -g pnpm@10
-      - name: Install backend
-        run: |
-          cd Cortex
-          pip install -e ".[dev]"
-      - name: Install frontend
-        run: |
-          cd frontend
-          pnpm install --frozen-lockfile
-      - name: Backend tests
-        run: |
-          cd Cortex
-          pytest tests/unit tests/chaos tests/contracts tests/architecture tests/performance --no-cov
-      - name: Frontend build
-        run: |
-          cd frontend
-          pnpm --filter @cortex/web build
-      - name: Build container
-        run: |
-          docker build -t cortex:${{ github.ref_name }} .
-      - name: Publish
-        env:
-          REGISTRY_TOKEN: ${{ secrets.REGISTRY_TOKEN }}
-        run: |
-          docker push cortex:${{ github.ref_name }}
-      - name: Post-deploy validation
-        run: |
-          echo "Smoke checks run against staging after this step."
+          context: Cortex
+          file: Cortex/docker/Dockerfile
+          push: true
+          tags: ${{ env.IMAGE }}:${{ github.ref_name }}

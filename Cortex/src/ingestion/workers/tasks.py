@@ -44,6 +44,7 @@ from src.ingestion.workers.errors import (
     TransientWorkerError,
 )
 from src.core.cache import bump_search_version, invalidate_cache
+from src.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -484,7 +485,7 @@ async def embed_chunks_task(
     except Exception as exc:
         session.rollback()
         logger.exception("Unexpected error embedding document %s", doc_id)
-        if attempt_number < 4:
+        if attempt_number < settings.ARQ_MAX_TRIES:
             delay = _backoff_seconds(attempt_number)
             raise Retry(defer=delay) from exc
         

@@ -45,6 +45,8 @@ long-running agent mid-step.
 
 from __future__ import annotations
 
+import uuid
+
 import json
 import time
 from collections.abc import Awaitable, Callable

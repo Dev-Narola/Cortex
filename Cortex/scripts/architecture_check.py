@@ -141,12 +141,12 @@ def check_cross_context_cycles() -> list[str]:
         visited.add(node)
         stack.add(node)
         path.append(node)
-        for nxt in edges.get(node, set()):
+        for nxt in sorted(edges.get(node, set())):
             dfs(nxt, path)
         path.pop()
         stack.remove(node)
 
-    for node in list(edges.keys()):
+    for node in sorted(edges):
         dfs(node, [])
 
     return [" -> ".join(c) for c in cycles]
@@ -161,6 +161,13 @@ def main() -> int:
         action="store_true",
         help="Only check the V9-introduced modules (skip pre-existing V1-V8 debt).",
     )
+    parser.add_argument(
+        "--baseline",
+        type=Path,
+        help="File of known violations/cycles (pre-existing debt): reported, "
+        "not failed. Anything new fails. --write-baseline regenerates it.",
+    )
+    parser.add_argument("--write-baseline", action="store_true")
     parser.add_argument(
         "--report",
         action="store_true",
@@ -177,6 +184,30 @@ def main() -> int:
         # we just skip the per-context check entirely.
         failures = []
         # cycles are always checked (the V9 modules must be cycle-free)
+    # A cycle has no natural start; rotate to its smallest node so the same
+    # cycle always prints the same way (DFS order varies between runs).
+    def _canonical(cycle: str) -> str:
+        nodes = cycle.split(" -> ")[:-1]
+        i = nodes.index(min(nodes))
+        nodes = nodes[i:] + nodes[:i]
+        return " -> ".join(nodes + [nodes[0]])
+
+    cycles = sorted({_canonical(c) for c in cycles})
+    # Paths relative to the repo root so the baseline is portable.
+    root = SRC_ROOT.parent
+    failures = sorted({f.replace(str(root) + "\\", "").replace(str(root) + "/", "")
+                       .replace("\\", "/") for f in failures})
+    if args.baseline is not None:
+        if args.write_baseline:
+            lines = failures + sorted(cycles)
+            args.baseline.write_text("\n".join(lines) + "\n", encoding="utf-8")
+            print(f"Baseline written: {len(failures)} violations, {len(cycles)} cycles")
+            return 0
+        known = set(args.baseline.read_text(encoding="utf-8").splitlines())
+        debt = [f for f in failures if f in known] + [c for c in cycles if c in known]
+        failures = [f for f in failures if f not in known]
+        cycles = [c for c in cycles if c not in known]
+        print(f"Known architecture debt (baseline): {len(debt)} entries")
     if failures:
         print("Layer-boundary violations:")
         for f in failures:

@@ -168,7 +168,8 @@ omit = [
 [tool.coverage.report]
 # The V4-baseline bar. Lifted in V5 once the integration
 # tests land.
-fail_under = 67
+# Ratchet: measured 77.2 % on 2026-10-18 (949 tests). Raise, never lower.
+fail_under = 75
 # Surface the per-layer breakdown so a future "did
 # coverage regress in billing?" question is one grep
 # away. ``show_missing = true`` lists uncovered line

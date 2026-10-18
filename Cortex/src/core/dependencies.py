@@ -40,7 +40,15 @@ from src.shared.exceptions import (
 )
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
+    from src.agents.application.executor import AgentExecutor
+    from src.agents.infrastructure.llm_provider import LLMProvider
     from src.identity.domain.entities import ApiKey, Tenant
+    from src.limits.application.service import RateLimiter
+    from src.mcp.application.message_router import MCPMessageRouter
+    from src.mcp.application.prompt_registry import PromptRegistry
+    from src.mcp.application.resource_registry import ResourceRegistry
+    from src.mcp.application.tool_registry import MCPToolRegistry
+    from src.tools.application.registry import ToolRegistry
 
 
 # ---------------------------------------------------------------------------
@@ -134,7 +142,7 @@ def _resolve_jwt_user(token: str, db: Session):
             message="Account is inactive.",
             code=401,
         )
-    from src.limits.application.request_limits import enforce_tenant
+    from src.limits.infrastructure.request_limits import enforce_tenant
 
     enforce_tenant(db, tenant.id)
     return user, tenant
@@ -307,7 +315,7 @@ def require_api_key(
         raise UnauthorizedException(
             message="Invalid API key.", code=401, data={"field": "api_key"}
         )
-    from src.limits.application.request_limits import enforce_api_key
+    from src.limits.infrastructure.request_limits import enforce_api_key
 
     enforce_api_key(db, key, tenant.id)
     now = datetime.now(UTC)

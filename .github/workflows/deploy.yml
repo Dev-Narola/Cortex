@@ -1,0 +1,55 @@
+name: Deploy
+
+# Runs after CI succeeds on main, or by hand for a specific ref.
+# The "production" environment lets the repo require a manual approval
+# (Settings -> Environments -> production -> Required reviewers).
+#
+# Repository secrets (Settings -> Secrets and variables -> Actions):
+#   DEPLOY_HOST         e.g. 13.60.95.116
+#   DEPLOY_USER         e.g. ubuntu
+#   DEPLOY_SSH_KEY      private key allowed to SSH to the host (deploy-only key)
+#   DEPLOY_KNOWN_HOSTS  output of: ssh-keyscan -t ed25519 <host>
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Commit SHA or ref to deploy
+        required: true
+        default: origin/main
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Deploy over SSH
+        env:
+          REF: ${{ github.event.inputs.ref || github.event.workflow_run.head_sha }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key && chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes "$DEPLOY_USER@$DEPLOY_HOST" \
+            "bash /opt/cortex/Cortex/scripts/deploy.sh '$REF'"
+      - name: Smoke test
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+        run: |
+          curl -fsS --max-time 15 "http://$DEPLOY_HOST/health"
+          curl -fsS --max-time 15 "http://$DEPLOY_HOST/health/ready"
