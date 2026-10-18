@@ -29,7 +29,10 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.orm import Session
 
 from src.identity.application.services import (
+    INVITE_TTL,
+    AcceptInviteService,
     AuthenticateUserService,
+    ManageUsersService,
     CreateApiKeyService,
     CreateTenantService,
     RegisterTenantService,
@@ -850,3 +853,133 @@ def revoke_api_key(
 
 
 __all__ = ["router"]
+
+
+# ---------------------------------------------------------------------------
+# User management (FR-ID-02): list, invite, change role / activation
+# ---------------------------------------------------------------------------
+
+
+class InviteUserRequest(_Base):
+    email: str = Field(..., min_length=3, max_length=320)
+    role: Role = Role.MEMBER
+
+
+class InviteResponse(_Base):
+    email: str
+    role: Role
+    invite_token: str
+    expires_in: int
+
+
+class UpdateUserRequest(_Base):
+    role: Role | None = None
+    is_active: bool | None = None
+
+
+class AcceptInviteRequest(_Base):
+    token: str = Field(..., min_length=10)
+    password: str = Field(..., min_length=8, max_length=128)
+    full_name: str | None = Field(default=None, max_length=255)
+
+
+@router.get("/users", response_model=list[UserResponse], summary="List the tenant's users")
+def list_users(
+    current: tuple[User, Tenant] = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> list[UserResponse]:
+    _, tenant = current
+    return [_user_to_response(u) for u in ManageUsersService(db).list(tenant.id)]
+
+
+@router.post(
+    "/users/invite",
+    response_model=InviteResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Invite a user with a role (owner/admin only; token shown once)",
+)
+def invite_user(
+    body: InviteUserRequest,
+    request: Request,
+    current: tuple[User, Tenant] = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> InviteResponse:
+    actor, tenant = current
+    token = ManageUsersService(db).invite(actor=actor, email=body.email, role=body.role)
+    _safe_audit(
+        db,
+        tenant_id=tenant.id,
+        action=AuditAction.USER_INVITED,
+        actor_user_id=actor.id,
+        resource_type="user",
+        metadata={"email": body.email.strip().lower(), "role": body.role.value},
+        ip_address=_client_ip(request),
+    )
+    db.commit()
+    return InviteResponse(
+        email=body.email.strip().lower(),
+        role=body.role,
+        invite_token=token,
+        expires_in=int(INVITE_TTL.total_seconds()),
+    )
+
+
+@router.patch("/users/{user_id}", response_model=UserResponse, summary="Change a user's role or activation")
+def update_user(
+    body: UpdateUserRequest,
+    request: Request,
+    user_id: uuid.UUID = Path(...),
+    current: tuple[User, Tenant] = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> UserResponse:
+    actor, tenant = current
+    user = ManageUsersService(db).update(
+        actor=actor, user_id=user_id, role=body.role, is_active=body.is_active
+    )
+    _safe_audit(
+        db,
+        tenant_id=tenant.id,
+        action=AuditAction.ROLE_CHANGED if body.role is not None else AuditAction.USER_UPDATED,
+        actor_user_id=actor.id,
+        resource_type="user",
+        resource_id=str(user_id),
+        metadata={k: v for k, v in body.model_dump(mode="json").items() if v is not None},
+        ip_address=_client_ip(request),
+    )
+    db.commit()
+    return _user_to_response(user)
+
+
+@router.post(
+    "/auth/accept-invite",
+    response_model=TokenResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Redeem an invite: create the account and sign in",
+)
+def accept_invite(
+    body: AcceptInviteRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> TokenResponse:
+    issued = AcceptInviteService(db).execute(
+        token=body.token, password=body.password, full_name=body.full_name
+    )
+    _safe_audit(
+        db,
+        tenant_id=issued.tenant.id,
+        action=AuditAction.USER_UPDATED,
+        actor_user_id=issued.user.id,
+        resource_type="user",
+        resource_id=str(issued.user.id),
+        metadata={"event": "invite_accepted", "role": issued.user.role.value},
+        ip_address=_client_ip(request),
+    )
+    db.commit()
+    return TokenResponse(
+        access_token=issued.access_token,
+        refresh_token=issued.refresh_token,
+        token_type=issued.token_type,
+        expires_in=issued.expires_in,
+        user=_user_to_response(issued.user),
+        tenant=_tenant_to_response(issued.tenant),
+    )

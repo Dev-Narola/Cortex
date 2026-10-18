@@ -314,6 +314,22 @@ class UserRepository:
         model = self._session.execute(stmt).scalar_one_or_none()
         return _model_to_user(model) if model else None
 
+    def list_for_tenant(self, tenant_id: uuid.UUID) -> list[User]:
+        stmt = (
+            select(UserModel)
+            .where(UserModel.tenant_id == tenant_id)
+            .order_by(UserModel.created_at)
+        )
+        return [_model_to_user(m) for m in self._session.execute(stmt).scalars().all()]
+
+    def count_active_owners(self, tenant_id: uuid.UUID) -> int:
+        stmt = select(UserModel.id).where(
+            UserModel.tenant_id == tenant_id,
+            UserModel.role == Role.OWNER.value,
+            UserModel.is_active.is_(True),
+        )
+        return len(self._session.execute(stmt).scalars().all())
+
     def find_by_email_global(self, email: str) -> User | None:
         """
         Look up a user by email without a tenant filter.
