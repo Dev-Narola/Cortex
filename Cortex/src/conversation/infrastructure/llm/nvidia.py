@@ -68,6 +68,8 @@ class NVIDIAProvider(OpenAIProvider):
             max_tokens=max_tokens,
         )
         self.provider = "nvidia"
+        if settings.NVIDIA_REASONING_EFFORT:
+            self._request_extras = {"reasoning_effort": settings.NVIDIA_REASONING_EFFORT}
 
 
 __all__ = ["NVIDIAProvider"]

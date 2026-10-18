@@ -306,6 +306,8 @@ class NvidiaLLMProvider(LLMProvider):
                 {"type": "function", "function": t} for t in tools
             ]
 
+        if settings.NVIDIA_REASONING_EFFORT:
+            payload["reasoning_effort"] = settings.NVIDIA_REASONING_EFFORT
         response = await self._client.chat.completions.create(**payload)
         choice = response.choices[0]
         message = choice.message

@@ -72,8 +72,12 @@ if wait_healthy; then
     exit 0
 fi
 
-log "ERROR $TAG not healthy within ${HEALTH_TIMEOUT_SECONDS}s; recent api logs:"
-docker logs --tail 40 cortex-api 2>&1 | sed 's/^/    /' || true
+log "ERROR $TAG not healthy within ${HEALTH_TIMEOUT_SECONDS}s"
+for c in cortex-api cortex-worker; do
+    log "  $c: $(docker inspect -f '{{.State.Health.Status}} restarts={{.RestartCount}}' "$c" 2>&1)"
+    docker inspect -f '{{range .State.Health.Log}}{{.Output}}{{end}}' "$c" 2>/dev/null | tail -3 | sed 's/^/    check: /' || true
+    docker logs --tail 25 "$c" 2>&1 | sed 's/^/    /' || true
+done
 log "rolling back to $PREV_TAG"
 CORTEX_IMAGE_TAG="$PREV_TAG" "${COMPOSE[@]}" up -d api worker
 if wait_healthy; then

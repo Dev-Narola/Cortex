@@ -301,3 +301,24 @@ class TestNvidiaProviderFormat:
             {"role": "user", "content": "u"},
             {"role": "assistant", "content": "a"},
         ]
+
+
+class TestReasoningEffort:
+    """gpt-oss reasoning tokens count against max_tokens; NIM calls send
+    the configured reasoning_effort (default "low"), OpenAI calls don't."""
+
+    @pytest.mark.asyncio
+    async def test_nim_complete_sends_reasoning_effort(self):
+        from src.conversation.infrastructure.llm.openai import OpenAIProvider
+
+        nim, oai = NVIDIAProvider(api_key="k"), OpenAIProvider(api_key="k")
+        for p in (nim, oai):
+            p._client = MagicMock()
+            p._client.chat.completions.create = AsyncMock(
+                return_value=SimpleNamespace(
+                    choices=[SimpleNamespace(message=SimpleNamespace(content="ok"))], usage=None
+                )
+            )
+            await p.complete([])
+        assert nim._client.chat.completions.create.await_args.kwargs["reasoning_effort"] == "low"
+        assert "reasoning_effort" not in oai._client.chat.completions.create.await_args.kwargs

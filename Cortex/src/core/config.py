@@ -141,6 +141,12 @@ class Settings(BaseSettings):
     NVIDIA_API_KEY: str | None = None
     NVIDIA_BASE_URL: str = "https://integrate.api.nvidia.com/v1"
     NVIDIA_MODEL: str = "openai/gpt-oss-20b"
+    # gpt-oss is a reasoning model: hidden reasoning tokens count against
+    # max_tokens. Measured on a KG extraction prompt: default effort used
+    # 480-875 completion tokens (truncating at a 1024 cap -> empty JSON),
+    # "low" used ~178 with valid output. Sent on every NIM chat call;
+    # "" disables (for NIM models that reject the parameter).
+    NVIDIA_REASONING_EFFORT: str = "low"
     # NVIDIA NIM embedding model. Its output width must equal
     # ``EMBEDDING_DIMENSIONS`` (nemotron-3-embed-1b: fixed 2048). NIM has
     # retired models with little notice (nv-embedqa-e5-v5 on 2026-08-25);

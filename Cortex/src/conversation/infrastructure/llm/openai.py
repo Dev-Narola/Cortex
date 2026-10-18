@@ -48,6 +48,8 @@ class OpenAIProvider(LLMProvider):
             timeout=timeout if timeout is not None else settings.LLM_TIMEOUT,
         )
         self.provider = "openai"
+        # Extra request params (subclasses set provider-specific ones).
+        self._request_extras: dict = {}
         self.model = model or settings.LLM_MODEL
         self.temperature = (
             temperature if temperature is not None else settings.LLM_TEMPERATURE
@@ -73,6 +75,7 @@ class OpenAIProvider(LLMProvider):
             messages=self._format(messages),
             temperature=temperature if temperature is not None else self.temperature,
             max_tokens=self.max_tokens,
+            **self._request_extras,
         )
         self.last_usage = _usage_dict(getattr(response, "usage", None))
         choice = response.choices[0]
@@ -92,6 +95,7 @@ class OpenAIProvider(LLMProvider):
             max_tokens=self.max_tokens,
             stream=True,
             stream_options={"include_usage": True},
+            **self._request_extras,
         )
         self.last_usage = None
         async for chunk in stream:

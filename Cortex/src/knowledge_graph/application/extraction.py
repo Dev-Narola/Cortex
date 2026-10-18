@@ -262,7 +262,7 @@ class OpenAIExtractionProvider(ExtractionProvider):
             system=self.SYSTEM_ENTITY,
             messages=[{"role": "user", "content": text}],
             temperature=0.0,
-            max_tokens=1024,
+            max_tokens=2048,
         )
         return _parse_entity_payload(result.output, context="entity")
 
@@ -286,7 +286,7 @@ class OpenAIExtractionProvider(ExtractionProvider):
             system=self.SYSTEM_RELATION,
             messages=[{"role": "user", "content": user}],
             temperature=0.0,
-            max_tokens=1024,
+            max_tokens=2048,
         )
         return _parse_relationship_payload(
             result.output, context="relationship"
