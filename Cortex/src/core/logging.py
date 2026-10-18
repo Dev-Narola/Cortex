@@ -401,6 +401,10 @@ def configure_logging(*, force: bool = False) -> None:
     )
 
     _configure_stdlib_root()
+    # Wire-level HTTP client chatter (every TLS/header step of each LLM call)
+    # buried the worker log; keep it out unless explicitly debugging.
+    for noisy in ("httpcore", "openai", "hpack", "botocore", "urllib3"):
+        logging.getLogger(noisy).setLevel(logging.WARNING)
     configure_logging._configured = True  # type: ignore[attr-defined]
 
 
