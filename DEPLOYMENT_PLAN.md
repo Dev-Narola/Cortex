@@ -1,0 +1,48 @@
+# Cortex — Deployment Plan
+
+## Current production (observed 2026-10-18)
+
+| Item | State |
+|---|---|
+| Host | 1 × EC2, eu-north-1, Ubuntu 26.04, 2 vCPU, 908 MB RAM, 3 GB swap, 15 GB disk (80 % used) |
+| Public endpoint | `http://13.60.95.116` (nginx :80). **No TLS, no DNS name** |
+| Stack | `docker compose -f /opt/cortex/Cortex/docker/docker-compose.prod.yml`: nginx, api (2 uvicorn workers), arq worker, pgvector/pg16, redis 7 |
+| Image | `ghcr.io/cortex/cortex:latest`, **built on the host** (not pulled from a registry) |
+| Code | `/opt/cortex` git checkout at `a76d4ee` (behind `main`) + 5 uncommitted hotfixes |
+| Secrets | `/opt/cortex/Cortex/.env` on disk (Secrets Manager path in `start.sh` not used) |
+| Storage | S3 bucket via access keys in `.env` (eu-north-1) |
+| Backups | **none** |
+| CD | none (manual) |
+
+The PRD/blueprint choice (self-managed EC2 + Postgres, compose) stays. Nothing here justifies RDS/ECS yet.
+
+## Proposed changes
+
+| # | Change | Risk | Needs approval |
+|---|---|---|---|
+| D1 | Snapshot the host first: `pg_dump` to S3 + copy `.env` to a root-only backup file on the host; `git stash` the server hotfixes (also saved in `Docs/audit/`) | none | yes (writes to prod) |
+| D2 | Config: `LLM_PROVIDER=nvidia`, `NVIDIA_MODEL=openai/gpt-oss-20b`, `EMBEDDING_PROVIDER=nvidia`, `NVIDIA_EMBEDDING_MODEL=nvidia/nemotron-3-embed-1b`, `EMBEDDING_DIMENSIONS=2048`, `RERANKER_PROVIDER=llm`, `API_WORKERS=1`, `TRUSTED_HOSTS`/`CORS_ALLOWED_ORIGINS` real values | low | yes |
+| D3 | Deploy `fix/production-recovery` (after CI green): `git pull`, `docker compose build`, `up -d api worker` | medium | yes |
+| D4 | Migration: embedding column → `halfvec(2048)` (**clears the 109 existing vectors**, already unusable since their model was retired), then re-embed the 3 documents | medium; data is regenerable | **yes (destructive to vectors)** |
+| D5 | Nightly backup cron: `pg_dump -Fc` → `s3://<bucket>/backups/` with 14-day retention | low | yes |
+| D6 | TLS: certbot + nginx :443, HTTP→HTTPS redirect. Needs a hostname (your domain, or a free `13-60-95-116.sslip.io`) | low | yes + hostname choice |
+| D7 | CD: GitHub Actions job that SSHes to the host and runs `scripts/deploy.sh` after CI passes on `main` (needs repo secrets `DEPLOY_HOST`, `DEPLOY_SSH_KEY`) | low | yes + you add secrets |
+| D8 | Disk: `docker image prune` / builder cache prune (≈3.5 GB reclaimable) | low | yes |
+
+## Rollback
+
+1. Code: `git -C /opt/cortex checkout a76d4ee && git stash pop` (restores the exact pre-change tree), then `docker compose build api worker && docker compose up -d api worker`.
+2. Config: restore `.env` from the backup taken in D1.
+3. Schema (D4): `alembic downgrade -1` recreates `vector(1024)` (vectors stay empty); with the old embedding model retired there's nothing to restore, so re-embed with the active model.
+4. Database: `pg_restore --clean -d cortex <dump>` from the D1 dump.
+
+## Health checks after each step
+
+`/health` 200 · `/health/ready` db+redis ok · upload a TXT → `indexed` · `POST /search` returns that chunk ·
+WS chat turn streams tokens + citations · `GET /tenants/me/usage` shows events · `docker ps` all healthy.
+
+## Ongoing cost (estimate)
+
+EC2 t3.micro-class ≈ $8–10/mo · EBS 15 GB ≈ $1.5/mo · S3 (docs + nightly dumps, < 1 GB) < $0.10/mo ·
+NVIDIA API free tier ($0, rate-limited; models get retired, as happened twice) · OpenAI $0 unless credits are added.
+908 MB RAM is the binding constraint; upgrading to 2 GB (t3.small ≈ $17/mo) is the first scaling step.
