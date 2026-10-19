@@ -11,9 +11,7 @@ import type { NextConfig } from "next"
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   transpilePackages: ["@cortex/ui", "@cortex/api-client", "@cortex/config"],
-  experimental: {
-    typedRoutes: true,
-  },
+  typedRoutes: true,
   // Pinned for the dark/light theme — the (marketing) route group
   // is statically generated, the (app) route group is dynamic.
   // The split is enforced by the route groups themselves.
