@@ -57,7 +57,13 @@ import { useCallback, useDeferredValue, useEffect, useMemo, useState } from "rea
 
 import { EmptyState } from "@cortex/ui"
 
-import { useKGEntity, useKGEntityNeighbors, useKGEntityRelations, useKGSearch } from "@/hooks/graph"
+import {
+  useKGEntity,
+  useKGEntityNeighbors,
+  useKGEntityRelations,
+  useKGOverview,
+  useKGSearch,
+} from "@/hooks/graph"
 import { useGraphCapability } from "@/lib/graph/graph-capability"
 import { searchToGraph, toGraph } from "./adapters/kg-to-graph"
 import { GraphCanvas2D } from "./graph-canvas-2d"
@@ -157,6 +163,8 @@ export function GraphExplorer({ initialData, defaultQuery = "" }: GraphExplorerP
     query: trimmedQuery,
     enabled: trimmedQuery.length > 0,
   })
+  // Before any search or selection, show the whole workspace graph.
+  const overview = useKGOverview(!trimmedQuery && !selectedEntityId)
   const entity = useKGEntity(selectedEntityId)
   const relations = useKGEntityRelations(selectedEntityId)
   const neighbors = useKGEntityNeighbors(selectedEntityId, {
@@ -193,7 +201,18 @@ export function GraphExplorer({ initialData, defaultQuery = "" }: GraphExplorerP
   // search graph. (When the user has selected
   // an entity, the root graph wins over the
   // stale search graph.)
-  const rawGraph = graphData ?? rootGraph ?? searchGraph ?? initialData ?? null
+  const overviewGraph = useMemo<GraphData | null>(
+    () =>
+      overview.data && overview.data.entities.length > 0 ? searchToGraph(overview.data) : null,
+    [overview.data],
+  )
+  const rawGraph =
+    graphData ??
+    rootGraph ??
+    searchGraph ??
+    (trimmedQuery ? null : overviewGraph) ??
+    initialData ??
+    null
 
   // **F6 Part 4 — apply the frontend render
   // cap.** The cap is a defence-in-depth measure
@@ -294,7 +313,7 @@ export function GraphExplorer({ initialData, defaultQuery = "" }: GraphExplorerP
   const capability = useGraphCapability()
 
   // ----- JSX ------------------------------------------------------------
-  const showEmpty = !renderedGraph && !search.data && !searchTerm
+  const showEmpty = !renderedGraph && !search.data && !searchTerm && !overview.isLoading
 
   return (
     <section
@@ -329,8 +348,8 @@ export function GraphExplorer({ initialData, defaultQuery = "" }: GraphExplorerP
             <div className="max-w-md">
               <EmptyState
                 icon="Network"
-                title="Knowledge graph explorer"
-                description="Search for an entity to begin. The graph renders the entity + its connections; click a node to centre on it, click a relation to highlight its path."
+                title="No entities yet"
+                description="Entities and their links are extracted in the background, about a minute after a document finishes indexing. Upload a document, then come back."
               />
             </div>
           </div>

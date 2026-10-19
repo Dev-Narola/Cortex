@@ -13,7 +13,7 @@
  */
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { render, screen } from "@testing-library/react"
+import { act, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
@@ -332,6 +332,20 @@ describe("ConversationHeader", () => {
 // ---------------------------------------------------------------------------
 
 describe("ChatLayout", () => {
+  it("gives the conversation the full width until a source is opened", async () => {
+    const { citationPanelStore } = await import("@/hooks/chat/citationPanelStore")
+    const { container } = render(<ChatLayout title={null} conversationId="c-1" />, {
+      wrapper: makeWrapper(),
+    })
+    // Regression: the closed panel's slot reserved width on desktop and,
+    // on mobile, covered the whole conversation.
+    expect(container.querySelector("[data-citation-panel-slot]")).toBeNull()
+    act(() => citationPanelStore.open("citation:chunk-1"))
+    expect(container.querySelector("[data-citation-panel-slot]")).not.toBeNull()
+    act(() => citationPanelStore.close())
+    expect(container.querySelector("[data-citation-panel-slot]")).toBeNull()
+  })
+
   it("composes header + empty state + input", () => {
     const onSend = vi.fn()
     render(<ChatLayout title={null} onSend={onSend} conversationId="c-1" />, {

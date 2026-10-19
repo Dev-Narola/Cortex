@@ -140,6 +140,27 @@ export async function searchGraph(params: SearchGraphParams): Promise<KGSearchRe
   })
 }
 
+/**
+ * The workspace graph at a glance: the newest entities and relationships, in
+ * the search response shape so the same adapter renders it. Links whose
+ * endpoints fall outside the entity page are dropped by the adapter.
+ */
+export async function getGraphOverview(signal?: AbortSignal): Promise<KGSearchResponse> {
+  const client = getApiClient()
+  const init = signal ? { signal } : {}
+  const [entities, relationships] = await Promise.all([
+    client.get<{ items: KGSearchResponse["entities"] }>("/api/v1/graph/entities", {
+      query: { limit: 150 },
+      ...init,
+    }),
+    client.get<{ items: KGSearchResponse["relationships"] }>("/api/v1/graph/relationships", {
+      query: { limit: 200 },
+      ...init,
+    }),
+  ])
+  return { query: "", entities: entities.items, relationships: relationships.items }
+}
+
 // ---------------------------------------------------------------------------
 // getPath
 // ---------------------------------------------------------------------------

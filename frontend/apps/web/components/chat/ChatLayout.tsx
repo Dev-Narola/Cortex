@@ -45,6 +45,7 @@
 
 import { type ReactNode, useState } from "react"
 
+import { useCitationPanelStore } from "@/hooks/chat/citationPanelStore"
 import type { ActiveStream } from "@/hooks/chat/conversationStreamStore"
 import type { Message } from "@/types/conversation"
 
@@ -87,6 +88,8 @@ export function ChatLayout({
     setDraft("")
   }
 
+  const citationOpen = useCitationPanelStore((s) => s.isOpen)
+
   return (
     <div className="flex h-full min-h-0 flex-col" data-chat-layout>
       <ConversationHeader title={title} />
@@ -99,18 +102,17 @@ export function ChatLayout({
             isBusy={isBusy}
           />
         </div>
-        {/* Citation panel. Always mounted; the
-            store's `isOpen` flag drives the
-            slide/overlay visibility via the
-            `data-citation-panel-state` attribute
-            (mobile) and the inline `md:flex`
-            (desktop). */}
-        <div
-          className="absolute inset-0 z-20 flex bg-background md:static md:z-auto md:w-80 md:bg-transparent lg:w-96"
-          data-citation-panel-slot
-        >
-          <CitationPanel conversationId={conversationId} className="md:rounded-none" />
-        </div>
+        {/* Citation panel: mounted only while open. An always-mounted slot
+            took 320–384px on desktop and, on mobile (absolute + opaque),
+            covered the whole conversation. */}
+        {citationOpen ? (
+          <div
+            className="absolute inset-0 z-20 flex bg-background md:static md:z-auto md:w-80 md:bg-transparent lg:w-96"
+            data-citation-panel-slot
+          >
+            <CitationPanel conversationId={conversationId} className="md:rounded-none" />
+          </div>
+        ) : null}
       </div>
       <MessageInput
         value={draft}
