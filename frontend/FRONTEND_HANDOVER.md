@@ -3,6 +3,16 @@
 Companion docs: `FRONTEND_AUDIT.md` (findings F1–F28 + status), `FRONTEND_IMPLEMENTATION_PLAN.md`,
 `FRONTEND_DESIGN_SYSTEM.md` (tokens, components, motion, a11y rules), `FRONTEND_API_GAPS.md`.
 
+## Hosting
+
+- **Frontend:** Vercel project `cortex` (scope `dev-narolas-projects`), root directory `frontend/apps/web`,
+  production URL **https://cortex-red-three.vercel.app**. Git-connected: every push to `main` deploys to
+  production; other branches get protected preview URLs (Vercel login; they can't call the API because of
+  CORS). Env vars: `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_WS_URL`, `NEXT_PUBLIC_GRAPHQL_URL`,
+  `NEXT_PUBLIC_APP_NAME`, `NEXT_PUBLIC_APP_URL` (public values; set in the Vercel project).
+- **Backend:** unchanged (EC2 via the Deploy workflow). CORS allows only the Vercel origin and localhost.
+- Next.js was upgraded 15.0.3 → 15.5.28 because Vercel blocks versions with published security advisories.
+
 ## What changed
 
 **Identity and theming.** New palette and glass surfaces in `packages/ui/src/styles/tokens.css` (dark
