@@ -139,7 +139,7 @@ export function DocumentsView() {
               </Button>
             </div>
           ) : (
-            <div className={TABLE_GUTTER}>
+            <div className={`@container ${TABLE_GUTTER}`}>
               <DocumentsTable documents={visible} />
             </div>
           )}

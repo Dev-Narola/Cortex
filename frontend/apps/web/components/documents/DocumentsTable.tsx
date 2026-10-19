@@ -40,8 +40,8 @@ export function DocumentsTable({ documents }: DocumentsTableProps): ReactNode {
         <UiTableRow>
           <TableHead>Name</TableHead>
           <TableHead>Status</TableHead>
-          <TableHead className="hidden md:table-cell">Type</TableHead>
-          <TableHead className="hidden sm:table-cell">Added</TableHead>
+          <TableHead className="hidden @4xl:table-cell">Type</TableHead>
+          <TableHead className="hidden @2xl:table-cell">Added</TableHead>
           <TableHead className="w-12">
             <span className="sr-only">Actions</span>
           </TableHead>

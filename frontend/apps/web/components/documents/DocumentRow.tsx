@@ -111,7 +111,7 @@ export function DocumentRow({
             >
               {document.title}
             </span>
-            <span className="block truncate font-mono text-[11px] text-faint md:hidden">
+            <span className="block truncate font-mono text-[11px] text-faint @4xl:hidden">
               {document.mime_type}
             </span>
           </span>
@@ -127,13 +127,13 @@ export function DocumentRow({
         )}
       </TableCell>
 
-      <TableCell className="hidden md:table-cell">
+      <TableCell className="hidden @4xl:table-cell">
         <span className="font-mono text-xs text-muted-foreground" title={document.mime_type}>
           {document.mime_type}
         </span>
       </TableCell>
 
-      <TableCell className="hidden sm:table-cell">
+      <TableCell className="hidden @2xl:table-cell">
         <time
           dateTime={document.created_at}
           className="whitespace-nowrap text-sm text-muted-foreground"
