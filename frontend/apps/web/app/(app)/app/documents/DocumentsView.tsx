@@ -29,7 +29,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 
-import { Button, Card, PageHeader, Spinner } from "@cortex/ui"
+import { Button, PageHeader, Spinner } from "@cortex/ui"
 
 import { ConnectionIndicator } from "@/components/documents/ConnectionIndicator"
 import { DocumentErrorState } from "@/components/documents/DocumentErrorState"
@@ -49,6 +49,10 @@ import {
 
 /** The API's page-size ceiling; search, filter and sort apply to these rows. */
 const PAGE = 200
+/** Page gutter, also applied to the first and last table columns so they line up with it. */
+const GUTTER = "px-4 sm:px-6 lg:px-10"
+const TABLE_GUTTER =
+  "[&_tr>*:first-child]:pl-4 sm:[&_tr>*:first-child]:pl-6 lg:[&_tr>*:first-child]:pl-10 [&_tr>*:last-child]:pr-4 sm:[&_tr>*:last-child]:pr-6 lg:[&_tr>*:last-child]:pr-10"
 
 export function DocumentsView() {
   const { data, isLoading, isError, error, refetch, isFetching } = useDocuments({ limit: PAGE })
@@ -81,13 +85,14 @@ export function DocumentsView() {
 
   return (
     <DocumentSelectionProvider>
-      <div className="mx-auto flex max-w-7xl flex-col gap-6">
+      <div className="flex min-h-full flex-col bg-card">
         <PageHeader
+          className={`${GUTTER} pt-6 pb-5 sm:pt-8`}
           title="Documents"
           description="Everything Cortex can answer from. Upload a file or import a page; each one is parsed, chunked and embedded, and you can watch it happen live."
         />
 
-        <Card radius="xl" padding="none" className="overflow-hidden">
+        <div className="flex flex-1 flex-col">
           {isError ? null : (
             <DocumentToolbar
               total={data?.total ?? 0}
@@ -105,7 +110,7 @@ export function DocumentsView() {
           )}
 
           {isError ? (
-            <div className="p-4">
+            <div className={`${GUTTER} py-6`}>
               <DocumentErrorState error={error} onRetry={() => void refetch()} />
             </div>
           ) : isLoading ? (
@@ -116,7 +121,7 @@ export function DocumentsView() {
               <Spinner size="lg" />
             </output>
           ) : data && data.items.length === 0 ? (
-            <div className="p-4">
+            <div className={`${GUTTER} py-6`}>
               <DocumentsEmptyState onUpload={() => setUploadOpen(true)} />
             </div>
           ) : visible.length === 0 ? (
@@ -134,21 +139,24 @@ export function DocumentsView() {
               </Button>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className={TABLE_GUTTER}>
               <DocumentsTable documents={visible} />
             </div>
           )}
 
           {data && data.total > data.items.length ? (
-            <p className="border-t border-divider px-5 py-3 text-xs text-muted-foreground">
+            <p className={`border-t border-divider ${GUTTER} py-3 text-xs text-muted-foreground`}>
               Showing the {data.items.length} most recent of {data.total} documents
               {narrowed ? "; search and filters apply to these." : "."}
             </p>
           ) : null}
-        </Card>
+        </div>
 
         {isFetching && !isLoading ? (
-          <p className="text-right text-xs text-muted-foreground" aria-live="polite">
+          <p
+            className={`${GUTTER} py-3 text-right text-xs text-muted-foreground`}
+            aria-live="polite"
+          >
             Refreshing…
           </p>
         ) : null}

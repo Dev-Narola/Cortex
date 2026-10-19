@@ -106,7 +106,7 @@ export function MessageInput({
   return (
     <form
       onSubmit={handleSubmit}
-      className={`px-3 pt-2 pb-3 sm:px-6 sm:pb-4 ${className ?? ""}`}
+      className={`mx-auto w-full max-w-[calc(48rem+3rem)] px-3 pt-2 pb-3 sm:px-6 sm:pb-4 ${className ?? ""}`}
       aria-label="Send a message"
     >
       <div

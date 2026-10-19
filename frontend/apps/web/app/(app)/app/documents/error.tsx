@@ -34,7 +34,7 @@ export default function DocumentsError({
   }, [error])
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 px-4 py-5 sm:px-6 sm:py-7 lg:px-10">
       <header className="space-y-1">
         <h1 className="font-display text-3xl font-semibold tracking-tight">Documents</h1>
         <p className="text-sm text-muted-foreground">We hit a problem rendering the page.</p>

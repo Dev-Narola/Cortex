@@ -28,7 +28,7 @@ export default function GraphLoading() {
     <section
       aria-busy
       aria-label="Loading knowledge graph"
-      className="relative flex h-full min-h-[28rem] w-full flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-xs"
+      className="relative flex h-full min-h-[28rem] w-full flex-col overflow-hidden bg-card"
     >
       <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-4 p-4 md:p-6">
         {/* Search bar placeholder — same shape

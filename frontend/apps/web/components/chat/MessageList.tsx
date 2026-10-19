@@ -161,32 +161,35 @@ export function MessageList({
   return (
     <div
       ref={scrollRef}
-      className={`flex flex-1 flex-col gap-4 overflow-y-auto px-4 py-6 sm:px-6 ${className ?? ""}`}
+      className={`flex flex-1 flex-col overflow-y-auto px-4 py-6 sm:px-6 ${className ?? ""}`}
       aria-label="Conversation messages"
     >
-      {messages.map((m) => (
-        <MessageBubble
-          key={m.id}
-          message={m}
-          conversationId={conversationId}
-          isBusy={isBusy}
-          precedingUserMessage={
-            m.role === "assistant" ? (precedingTextByMessageId.get(m.id) ?? null) : null
-          }
-        />
-      ))}
-      {showStreamingSlot && stream ? (
-        <StreamingMessage
-          content={stream.content}
-          isActive={isStreamActive}
-          conversationId={conversationId}
-          retrievedChunkIds={[]}
-          finalMessage={finalMessage}
-        />
-      ) : null}
-      {isInterrupted && lastUserContent ? (
-        <InterruptedBanner conversationId={conversationId} content={lastUserContent} />
-      ) : null}
+      {/* Centred reading column, so long lines stay readable on wide screens. */}
+      <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
+        {messages.map((m) => (
+          <MessageBubble
+            key={m.id}
+            message={m}
+            conversationId={conversationId}
+            isBusy={isBusy}
+            precedingUserMessage={
+              m.role === "assistant" ? (precedingTextByMessageId.get(m.id) ?? null) : null
+            }
+          />
+        ))}
+        {showStreamingSlot && stream ? (
+          <StreamingMessage
+            content={stream.content}
+            isActive={isStreamActive}
+            conversationId={conversationId}
+            retrievedChunkIds={[]}
+            finalMessage={finalMessage}
+          />
+        ) : null}
+        {isInterrupted && lastUserContent ? (
+          <InterruptedBanner conversationId={conversationId} content={lastUserContent} />
+        ) : null}
+      </div>
     </div>
   )
 }

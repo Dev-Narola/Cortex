@@ -14,7 +14,7 @@ import { Card, CardContent, Spinner } from "@cortex/ui"
 
 export default function DocumentsLoading() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 px-4 py-5 sm:px-6 sm:py-7 lg:px-10">
       <header className="space-y-1">
         <div className="h-8 w-40 animate-pulse rounded-md bg-muted" />
         <div className="h-4 w-80 animate-pulse rounded-md bg-muted" />

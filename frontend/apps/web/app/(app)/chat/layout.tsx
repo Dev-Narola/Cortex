@@ -46,10 +46,7 @@ export default function ChatLayout({
   children: ReactNode
 }): ReactNode {
   return (
-    <div
-      data-chat-shell
-      className="flex h-full min-h-0 w-full overflow-hidden rounded-2xl border border-border bg-card shadow-xs"
-    >
+    <div data-chat-shell className="flex h-full min-h-0 w-full overflow-hidden bg-card">
       {/* Desktop history pane. Hidden on mobile
           via the `hidden md:flex` pair — the
           mobile drawer is a follow-up; Part 1

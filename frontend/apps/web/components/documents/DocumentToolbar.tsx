@@ -72,9 +72,9 @@ export function DocumentToolbar({
   connectionSlot,
 }: DocumentToolbarProps): ReactNode {
   return (
-    <div className="border-b border-border">
+    <div className="border-y border-border">
       <TableToolbar
-        className="border-b-0 pb-3"
+        className="border-b-0 px-4 pb-3 sm:px-6 lg:px-10"
         title="All documents"
         description={
           <span className="flex items-center gap-2">
@@ -91,7 +91,7 @@ export function DocumentToolbar({
           </Button>
         }
       />
-      <div className="flex flex-col gap-3 px-5 pb-4 lg:flex-row lg:items-center">
+      <div className="flex flex-col gap-3 px-4 pb-4 sm:px-6 lg:flex-row lg:items-center lg:px-10">
         <div className="relative lg:w-64">
           <Icon
             name="Search"

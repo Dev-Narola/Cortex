@@ -320,7 +320,7 @@ export function GraphExplorer({ initialData, defaultQuery = "" }: GraphExplorerP
       aria-label="Knowledge graph explorer"
       data-testid="graph-explorer"
       data-capability={capability}
-      className="relative isolate flex h-full min-h-[28rem] w-full flex-col overflow-hidden rounded-2xl border border-border bg-card bg-[radial-gradient(var(--border)_1px,transparent_1px)] [background-size:22px_22px] shadow-xs"
+      className="relative isolate flex h-full min-h-[28rem] w-full flex-col overflow-hidden bg-card bg-[radial-gradient(var(--border)_1px,transparent_1px)] [background-size:22px_22px]"
     >
       <div className="absolute inset-0 z-0">
         {renderedGraph ? (
