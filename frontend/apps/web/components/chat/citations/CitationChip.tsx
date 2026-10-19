@@ -140,8 +140,8 @@ export function CitationChip({
         data-citation-id={id}
         data-citation-index={index}
         className={cn(
-          "inline-flex h-[1.4em] min-w-[1.4em] items-center justify-center",
-          "rounded-full px-1 align-baseline text-[0.65em] font-semibold leading-none",
+          "inline-flex h-4 min-w-4 items-center justify-center",
+          "rounded-full px-1 align-baseline text-[10px] font-semibold leading-none tabular",
           "transition-colors duration-fast",
           "border border-brand-border bg-brand-soft text-brand-ink",
           "hover:border-brand hover:bg-brand/20",

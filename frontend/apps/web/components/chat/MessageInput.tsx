@@ -123,7 +123,9 @@ export function MessageInput({
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           disabled={disabled}
-          rows={1}
+          minRows={1}
+          maxRows={8}
+          autoResize
           className="min-h-10 flex-1 resize-none border-0 bg-transparent px-1 py-1.5 text-sm shadow-none focus-within:ring-0 focus-within:ring-offset-0 focus-visible:ring-0 focus-visible:ring-offset-0"
         />
         <Button
