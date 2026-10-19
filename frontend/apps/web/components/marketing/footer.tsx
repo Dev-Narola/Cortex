@@ -58,7 +58,7 @@
  */
 import Link from "next/link"
 
-import { Container } from "@cortex/ui"
+import { Container, Logo } from "@cortex/ui"
 
 /**
  * Product columns — kept in this module
@@ -108,13 +108,9 @@ export function Footer() {
             <Link
               href="/"
               aria-label="Cortex — home"
-              className="inline-flex items-center gap-2 font-display text-sm font-semibold tracking-tight text-foreground"
+              className="inline-flex items-center rounded-md text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              <span
-                aria-hidden
-                className="inline-block h-2 w-2 rounded-full bg-spark shadow-spark"
-              />
-              Cortex
+              <Logo size="sm" />
             </Link>
             <p className="text-xs leading-relaxed text-muted-foreground">
               Private AI knowledge, retrieval, and agents for teams that take citation seriously.

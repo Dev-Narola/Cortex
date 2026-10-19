@@ -193,8 +193,10 @@ describe("Footer", () => {
     // any oversized SVG decoration
     // (the spec is explicit: no floating
     // nodes, no big animation, no giant
-    // gradient at the footer).
+    // gradient at the footer). The one SVG allowed is the small brand
+    // mark inside the home link.
     const svgs = container.querySelectorAll("svg")
-    expect(svgs).toHaveLength(0)
+    expect(svgs).toHaveLength(1)
+    expect(svgs[0]?.closest('a[aria-label="Cortex — home"]')).not.toBeNull()
   })
 })

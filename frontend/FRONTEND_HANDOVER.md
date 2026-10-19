@@ -1,4 +1,32 @@
-# Cortex frontend — handover (2026-10-18)
+# Cortex frontend — handover (updated 2026-10-19)
+
+## 2026-10-19 — orange-first redesign + remaining work
+
+Checklist with per-item status: `FRONTEND_REMAINING_TASKS.md`. Design rules: `FRONTEND_DESIGN_SYSTEM.md`.
+
+- **Identity.** Orange-first tokens (warm paper light, warm charcoal dark), Manrope display type, a
+  lightning-bolt brand mark, pill controls, opaque bento cards, glass only on floating chrome. Theme menu
+  Light / Dark / System (system default), persisted, no flash.
+- **Finished / fixed.** Documents search, status filter and sort work (were placeholders); fake "Chunks"
+  column removed. Chat fills the screen, has a mobile conversations drawer, a "Sources" row of titled pills
+  (no duplicate numbers) and a one-line composer. Knowledge graph: readable disc layout facing the camera,
+  type colours, hover labels, camera fit; the 2D fallback shows every entity. Settings: pill tabs, one
+  header pattern, Team table fits, usage period readable. Dashboard: bento led by an Ask bar that starts a
+  real conversation. Auth split layout, onboarding steps (placeholder removed), pricing CTA readable and
+  pricing navigable, 404 / loading restyled.
+- **Verified on the deployed site** (headless Chromium against https://cortex-red-three.vercel.app, real
+  API): 12 app routes at 1440 px light + dark; 8 routes at 375 and 768 px light + dark; landing, pricing,
+  login, register, 404 at 1440 and 375 px light + dark; theme pick → reload → navigation → System. No
+  horizontal overflow, console errors or 5xx (the 404 page's own 404 status aside). Web unit tests 1054,
+  UI package 136, type-check and Biome clean; Vercel and the Frontend CI build green.
+- **Not verified in a browser:** agent run page (no runs in the review workspace), forgot / reset password,
+  accept-invite, workspace setup, error boundaries, the 430 / 1024 / 1920 widths.
+- **Note:** a frontend-only push also triggers backend CI → Deploy (rebuild + restart of the unchanged
+  API, ~1–2 min). Three pushes in this pass did so; each Deploy run succeeded.
+
+---
+
+## 2026-10-18 pass (earlier)
 
 Companion docs: `FRONTEND_AUDIT.md` (findings F1–F28 + status), `FRONTEND_IMPLEMENTATION_PLAN.md`,
 `FRONTEND_DESIGN_SYSTEM.md` (tokens, components, motion, a11y rules), `FRONTEND_API_GAPS.md`.
@@ -15,8 +43,8 @@ Companion docs: `FRONTEND_AUDIT.md` (findings F1–F28 + status), `FRONTEND_IMPL
 
 ## What changed
 
-**Identity and theming.** New palette and glass surfaces in `packages/ui/src/styles/tokens.css` (dark
-primary, full light theme), Inter / Space Grotesk / JetBrains Mono, radii 8/16/20/24/pill. The app no longer
+**Identity and theming.** (Superseded on 2026-10-19 by the orange-first system above.) New palette and glass
+surfaces in `packages/ui/src/styles/tokens.css`, Inter / Space Grotesk / JetBrains Mono, radii 8/16/20/24/pill. The app no longer
 forces dark and marketing no longer forces light; one theme toggle in the topbar, persisted. ~216
 hard-coded dark-only classes moved to semantic tokens. Fixed a Tailwind-beta cycle that had been rendering
 every radius square and every font as the serif fallback (F19).

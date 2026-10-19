@@ -4,6 +4,8 @@
  * Static. Three tiers (Free / Pro / Enterprise) tied to the
  * V9 capacity-planning model (100 / 1,000 / 10,000 tenants).
  */
+import { Footer, MarketingHeader } from "@/components/marketing"
+
 export default function PricingPage() {
   const tiers = [
     {
@@ -27,31 +29,35 @@ export default function PricingPage() {
     },
   ]
   return (
-    <div className="mx-auto max-w-6xl px-6 py-24">
-      <h1 className="font-display text-4xl font-semibold">Pricing</h1>
-      <p className="mt-2 text-muted-foreground">
-        Sized to your team. Every plan ships the full Cortex feature set.
-      </p>
-      <div className="mt-12 grid gap-6 md:grid-cols-3">
-        {tiers.map((tier) => (
-          <div
-            key={tier.name}
-            className={`rounded-xl border p-6 ${
-              tier.featured ? "border-brand-border bg-brand-soft" : "border-border bg-card"
-            }`}
-          >
-            <h2 className="font-display text-2xl font-semibold">{tier.name}</h2>
-            <p className="mt-2 text-3xl font-semibold">{tier.price}</p>
-            <p className="mt-4 text-sm text-muted-foreground">{tier.blurb}</p>
-            <a
-              href="/register"
-              className="mt-6 inline-flex h-10 items-center justify-center rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    <>
+      <MarketingHeader />
+      <div className="mx-auto max-w-6xl px-6 py-16 sm:py-24">
+        <h1 className="font-display text-4xl font-medium tracking-[-0.02em]">Pricing</h1>
+        <p className="mt-2 text-muted-foreground">
+          Sized to your team. Every plan ships the full Cortex feature set.
+        </p>
+        <div className="mt-12 grid gap-6 md:grid-cols-3">
+          {tiers.map((tier) => (
+            <div
+              key={tier.name}
+              className={`rounded-xl border p-6 ${
+                tier.featured ? "border-brand-border bg-brand-soft" : "border-border bg-card"
+              }`}
             >
-              {tier.cta}
-            </a>
-          </div>
-        ))}
+              <h2 className="font-display text-2xl font-semibold">{tier.name}</h2>
+              <p className="mt-2 text-3xl font-semibold">{tier.price}</p>
+              <p className="mt-4 text-sm text-muted-foreground">{tier.blurb}</p>
+              <a
+                href="/register"
+                className="mt-6 inline-flex h-10 items-center justify-center rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                {tier.cta}
+              </a>
+            </div>
+          ))}
+        </div>
       </div>
-    </div>
+      <Footer />
+    </>
   )
 }

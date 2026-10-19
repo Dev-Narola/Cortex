@@ -46,7 +46,7 @@
  */
 import Link from "next/link"
 
-import { Button, Container } from "@cortex/ui"
+import { Button, Container, Logo } from "@cortex/ui"
 
 import { MARKETING_CTA_CLICKED, track } from "@/lib/analytics"
 
@@ -69,13 +69,9 @@ export function MarketingHeader() {
         <Link
           href="/"
           aria-label="Cortex — home"
-          className="flex items-center gap-2 text-base font-semibold tracking-tight text-foreground"
+          className="flex items-center rounded-md text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <span
-            aria-hidden
-            className="inline-block h-2.5 w-2.5 rounded-full bg-spark shadow-spark"
-          />
-          <span className="font-display">Cortex</span>
+          <Logo size="md" />
         </Link>
 
         <nav
