@@ -181,7 +181,7 @@ def list_relationships(
                 "relationship_type": r.relationship_type.value if hasattr(r.relationship_type, "value") else str(r.relationship_type),
                 "confidence": r.confidence,
                 "properties": r.properties,
-                "source_chunk_id": str(r.source_chunk_id) if r.source_chunk_id else None,
+                "source_chunk_id": None,  # relationships carry no source chunk; field kept for the wire shape
                 "created_at": r.created_at.isoformat(),
             }
             for r in rels
@@ -291,7 +291,7 @@ def search_graph(
                 "target_entity_id": str(r.target_entity_id),
                 "relationship_type": r.relationship_type.value if hasattr(r.relationship_type, "value") else str(r.relationship_type),
                 "confidence": r.confidence,
-                "source_chunk_id": str(r.source_chunk_id) if r.source_chunk_id else None,
+                "source_chunk_id": None,  # relationships carry no source chunk; field kept for the wire shape
             }
             for r in res["relationships"]
         ],

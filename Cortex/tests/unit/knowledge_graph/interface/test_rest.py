@@ -156,3 +156,34 @@ def test_extract_from_document(mock_extract, client, tenant_id):
     data = response.json()
     assert data["entities_count"] == 0  # mocked return had no entities
     assert "metrics" in data
+
+
+def _two_related(db_session, tenant_id):
+    entity_repo = GraphEntityRepository(db_session)
+    a = entity_repo.create(GraphEntity.create(tenant_id=tenant_id, name="Cortex", entity_type=EntityType.CONCEPT))
+    b = entity_repo.create(GraphEntity.create(tenant_id=tenant_id, name="Postgres", entity_type=EntityType.TECHNOLOGY))
+    GraphRelationshipRepository(db_session).create(
+        GraphRelationship.create(
+            tenant_id=tenant_id, source_entity_id=a.id, target_entity_id=b.id,
+            relationship_type=RelationshipType.USES,
+        )
+    )
+    db_session.commit()
+    return a, b
+
+
+def test_list_relationships_serializes(client, db_session, tenant_id):
+    # Regression: the serializer read a field relationships don't have (500).
+    a, b = _two_related(db_session, tenant_id)
+    response = client.get("/api/v1/graph/relationships")
+    assert response.status_code == 200
+    (rel,) = response.json()["items"]
+    assert rel["source_entity_id"] == str(a.id) and rel["target_entity_id"] == str(b.id)
+    assert rel["source_chunk_id"] is None
+
+
+def test_search_graph_includes_relationships(client, db_session, tenant_id):
+    _two_related(db_session, tenant_id)
+    response = client.get("/api/v1/graph/search", params={"query": "Cortex"})
+    assert response.status_code == 200
+    assert all(r["source_chunk_id"] is None for r in response.json()["relationships"])

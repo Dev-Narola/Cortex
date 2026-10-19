@@ -15,6 +15,8 @@ from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
 from sqlalchemy.orm import Session
 
 from src.core.dependencies import _resolve_jwt_user, get_db
+from src.core.redis_client import get_redis
+from src.ingestion.infrastructure.status_events import channel
 from src.shared.exceptions import UnauthorizedException
 
 logger = logging.getLogger(__name__)
@@ -23,6 +25,7 @@ router = APIRouter(prefix="/ws/ingestion", tags=["websocket"])
 
 _CLOSE_UNAUTHORIZED = 4401
 _CLOSE_FORBIDDEN = 4403
+_CLOSE_UNAVAILABLE = 1011
 
 
 async def _resolve_token(websocket: WebSocket) -> str | None:
@@ -70,15 +73,43 @@ async def ingestion_websocket_endpoint(
         user.id,
     )
 
+    # Forward this tenant's live status events; answer client pings.
     try:
-        while True:
-            data = await websocket.receive_text()
-            if data == "ping":
-                await websocket.send_text("pong")
-    except WebSocketDisconnect:
-        logger.info("Ingestion WebSocket disconnected: tenant=%s", tenant.id)
+        redis = await get_redis()
+        pubsub = redis.pubsub()
+        await pubsub.subscribe(channel(tenant.id))
     except Exception as exc:  # noqa: BLE001
-        logger.warning("Ingestion WebSocket error: %s", exc)
+        # No live channel: close so the client falls back to polling.
+        logger.warning("Ingestion WebSocket: status channel unavailable: %s", exc)
+        await websocket.close(code=_CLOSE_UNAVAILABLE)
+        return
+
+    async def forward() -> None:
+        async for message in pubsub.listen():
+            if message.get("type") == "message":
+                await websocket.send_text(message["data"])
+
+    async def receive() -> None:
+        while True:
+            if await websocket.receive_text() == "ping":
+                await websocket.send_text("pong")
+
+    tasks = [asyncio.create_task(forward()), asyncio.create_task(receive())]
+    try:
+        done, _ = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+        for task in done:
+            exc = task.exception()
+            if exc and not isinstance(exc, WebSocketDisconnect):
+                logger.warning("Ingestion WebSocket error: %s", exc)
+    finally:
+        for task in tasks:
+            task.cancel()
+        try:
+            await pubsub.unsubscribe()
+            await pubsub.aclose()
+        except Exception:  # noqa: BLE001 - connection is going away anyway
+            pass
+        logger.info("Ingestion WebSocket disconnected: tenant=%s", tenant.id)
 
 
 __all__ = ["router"]

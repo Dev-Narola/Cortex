@@ -44,6 +44,7 @@ from src.ingestion.workers.errors import (
     TransientWorkerError,
 )
 from src.core.cache import bump_search_version, invalidate_cache
+from src.ingestion.infrastructure.status_events import publish_status
 from src.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -66,6 +67,15 @@ def _backoff_seconds(attempt: int) -> float:
     delay = min(delay, _BACKOFF_MAX_SECONDS)
     jitter = delay * 0.1 * random.uniform(-1, 1)
     return max(1.0, delay + jitter)
+
+
+async def _status_changed(ten_id, doc_id, status: DocumentStatus) -> None:
+    """Invalidate the cached status and push it to the tenant's live channel."""
+    await invalidate_cache(f"doc_status:{doc_id}")
+    try:
+        await publish_status(ten_id, doc_id, status)
+    except Exception as exc:  # noqa: BLE001 - live updates are best effort
+        logger.warning("ingestion.status_publish_failed doc=%s error=%s", doc_id, exc)
 
 
 async def ingest_document_task(
@@ -151,7 +161,7 @@ async def ingest_document_task(
             session.rollback()
             return {"status": "skipped", "reason": "claimed_elsewhere"}
         session.commit()
-        await invalidate_cache(f"doc_status:{doc_id}")
+        await _status_changed(ten_id, doc_id, DocumentStatus.PARSING)
         logger.info("Document %s → parsing (attempt %d)", doc_id, attempt_number)
 
         # ------------------------------------------------------------------
@@ -186,7 +196,7 @@ async def ingest_document_task(
         # ------------------------------------------------------------------
         doc_repo.update_status(doc_id, tenant_id=ten_id, status=DocumentStatus.CHUNKING)
         session.commit()
-        await invalidate_cache(f"doc_status:{doc_id}")
+        await _status_changed(ten_id, doc_id, DocumentStatus.CHUNKING)
         logger.info("Document %s → chunking", doc_id)
 
         # ------------------------------------------------------------------
@@ -237,7 +247,7 @@ async def ingest_document_task(
         doc_repo.update_status(doc_id, tenant_id=ten_id, status=DocumentStatus.EMBEDDING)
         attempt_repo.succeed(attempt_id)
         session.commit()
-        await invalidate_cache(f"doc_status:{doc_id}")
+        await _status_changed(ten_id, doc_id, DocumentStatus.EMBEDDING)
         logger.info("Document %s → embedding", doc_id)
         
         # Enqueue the next pipeline step
@@ -271,7 +281,7 @@ async def ingest_document_task(
                 error_message=str(exc),
             )
             session.commit()
-        await invalidate_cache(f"doc_status:{doc_id}")
+        await _status_changed(ten_id, doc_id, DocumentStatus.FAILED)
         return {"status": "failed", "reason": exc.error_code, "message": str(exc)}
 
     except TransientWorkerError as exc:
@@ -293,7 +303,7 @@ async def ingest_document_task(
                     error_message=str(exc),
                 )
             session.commit()
-            await invalidate_cache(f"doc_status:{doc_id}")
+            await _status_changed(ten_id, doc_id, DocumentStatus.FAILED)
         except Exception:
             logger.exception("Failed to record transient failure for document %s", doc_id)
 
@@ -318,7 +328,7 @@ async def ingest_document_task(
                     error_message=str(exc)[:1024],
                 )
             session.commit()
-            await invalidate_cache(f"doc_status:{doc_id}")
+            await _status_changed(ten_id, doc_id, DocumentStatus.FAILED)
         except Exception:
             logger.exception("Failed to mark document %s as failed", doc_id)
         return {"status": "failed", "reason": "unexpected_error"}
@@ -413,7 +423,7 @@ async def embed_chunks_task(
         doc_repo.update_status(doc_id, tenant_id=ten_id, status=DocumentStatus.INDEXED)
         attempt_repo.succeed(attempt_id)
         session.commit()
-        await invalidate_cache(f"doc_status:{doc_id}")
+        await _status_changed(ten_id, doc_id, DocumentStatus.INDEXED)
         await bump_search_version(ten_id)  # cached results now miss this document
         logger.info("Document %s → indexed ✓", doc_id)
 
@@ -479,7 +489,7 @@ async def embed_chunks_task(
                 error_message=str(exc),
             )
         session.commit()
-        await invalidate_cache(f"doc_status:{doc_id}")
+        await _status_changed(ten_id, doc_id, DocumentStatus.FAILED)
         return {"status": "failed", "reason": exc.error_code}
 
     except Exception as exc:
@@ -503,7 +513,7 @@ async def embed_chunks_task(
                 error_message=str(exc)[:1024],
             )
         session.commit()
-        await invalidate_cache(f"doc_status:{doc_id}")
+        await _status_changed(ten_id, doc_id, DocumentStatus.FAILED)
         return {"status": "failed", "reason": "unexpected_error"}
     finally:
         session.close()
