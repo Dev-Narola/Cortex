@@ -45,7 +45,7 @@ export function AgentRunHeader({ runId, agentId }: AgentRunHeaderProps) {
   if (query.isError) {
     return (
       <div
-        className="rounded-md border border-border p-3 text-sm text-muted-foreground"
+        className="rounded-2xl border border-border bg-card p-4 text-sm text-muted-foreground"
         data-testid="agent-run-header-error"
         role="alert"
       >
@@ -57,7 +57,7 @@ export function AgentRunHeader({ runId, agentId }: AgentRunHeaderProps) {
   const run = query.data
   return (
     <header
-      className="rounded-md border border-border bg-card/60 p-4"
+      className="rounded-2xl border border-border bg-card p-5 shadow-xs"
       data-testid="agent-run-header"
       data-run-status={run.status}
     >

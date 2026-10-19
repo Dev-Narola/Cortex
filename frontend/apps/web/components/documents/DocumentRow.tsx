@@ -32,7 +32,9 @@
 
 import type { ReactNode } from "react"
 
-import { Icon, TableCell, TableRow, TooltipRoot, cn } from "@cortex/ui"
+import { Icon, TableCell, TableRow, cn } from "@cortex/ui"
+
+import { isInFlight } from "@/lib/documents/status"
 
 import type { Document } from "@/services/documents"
 
@@ -89,59 +91,69 @@ export function DocumentRow({
         }
       }}
       tabIndex={0}
-      className={cn("cursor-pointer transition-colors", isSelected && "bg-ember-500/10")}
+      className={cn(
+        "group cursor-pointer transition-colors hover:bg-muted",
+        isSelected && "bg-brand-soft hover:bg-brand-soft",
+      )}
     >
       <TableCell>
         <div className="flex items-center gap-3">
           <span
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-tint text-muted-foreground"
             aria-hidden
           >
             <Icon name={meta.name} className="h-4 w-4" />
           </span>
-          <span className="font-medium text-foreground" title={document.title}>
-            {document.title}
+          <span className="min-w-0">
+            <span
+              className="block max-w-[14rem] truncate font-medium text-foreground sm:max-w-[22rem]"
+              title={document.title}
+            >
+              {document.title}
+            </span>
+            <span className="block truncate font-mono text-[11px] text-faint md:hidden">
+              {document.mime_type}
+            </span>
           </span>
         </div>
       </TableCell>
 
       <TableCell>
-        <div className="flex flex-col gap-1.5">
+        {/* In flight: the live stage bar; otherwise the final state. */}
+        {isInFlight(document.status) ? (
+          <DocumentIngestionProgress status={document.status} className="w-40" />
+        ) : (
           <DocumentStatusBadge status={document.status} />
-          <DocumentIngestionProgress status={document.status} className="w-32" />
-        </div>
+        )}
       </TableCell>
 
-      <TableCell>
+      <TableCell className="hidden md:table-cell">
         <span className="font-mono text-xs text-muted-foreground" title={document.mime_type}>
           {document.mime_type}
         </span>
       </TableCell>
 
-      <TableCell>
-        <span className="text-sm text-muted-foreground">—</span>
-      </TableCell>
-
-      <TableCell>
-        <time dateTime={document.created_at} className="text-sm text-muted-foreground">
+      <TableCell className="hidden sm:table-cell">
+        <time
+          dateTime={document.created_at}
+          className="whitespace-nowrap text-sm text-muted-foreground"
+        >
           {formatDate(document.created_at)}
         </time>
       </TableCell>
 
       <TableCell>
-        <TooltipRoot content="Open details (Part 3)" side="left">
-          <button
-            type="button"
-            aria-label={`Open ${document.title} details`}
-            onClick={(e) => {
-              e.stopPropagation()
-              onOpenDetail(document.id)
-            }}
-            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-          >
-            <Icon name="MoveHorizontal" className="h-4 w-4" />
-          </button>
-        </TooltipRoot>
+        <button
+          type="button"
+          aria-label={`Open ${document.title} details`}
+          onClick={(e) => {
+            e.stopPropagation()
+            onOpenDetail(document.id)
+          }}
+          className="rounded-full p-1.5 text-faint transition-[color,background-color,transform] duration-fast group-hover:translate-x-0.5 group-hover:text-foreground hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <Icon name="ChevronRight" className="h-4 w-4" />
+        </button>
       </TableCell>
     </TableRow>
   )

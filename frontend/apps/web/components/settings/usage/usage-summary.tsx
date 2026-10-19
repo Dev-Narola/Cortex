@@ -144,12 +144,14 @@ export function UsageSummarySection() {
         value={formatUsdCost(data.estimated_cost_usd)}
         sublabel="current period"
         testId="usage-stat-cost"
+        emphasis
       />
       <StatCard
         label="Period"
         value={formatPeriod(data.period.from, data.period.to)}
         sublabel="UTC"
         testId="usage-stat-period"
+        compact
       />
     </div>
   )
@@ -160,18 +162,28 @@ function StatCard({
   value,
   sublabel,
   testId,
+  emphasis = false,
+  compact = false,
 }: {
   label: string
   value: string
   sublabel?: string
   testId: string
+  /** The headline figure: pale-orange card. */
+  emphasis?: boolean
+  /** Text values (dates) that would wrap at display size. */
+  compact?: boolean
 }) {
   return (
-    <Card>
-      <CardContent className="space-y-1 p-4">
-        <p className="text-xs font-medium uppercase tracking-wider text-faint">{label}</p>
+    <Card radius="xl" className={emphasis ? "border-brand-border bg-brand-soft" : undefined}>
+      <CardContent className="space-y-1 p-0">
+        <p className="text-xs font-medium text-muted-foreground">{label}</p>
         <p
-          className="font-display text-2xl font-semibold tracking-tight text-foreground"
+          className={
+            compact
+              ? "pt-1 text-sm font-medium leading-snug text-foreground"
+              : "tabular font-display text-[1.75rem] font-medium tracking-[-0.02em] text-foreground"
+          }
           data-testid={testId}
         >
           {value}

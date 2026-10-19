@@ -80,7 +80,7 @@ export default async function AgentRunPage({ params }: PageProps) {
       <AgentRunHeader runId={runId} agentId={agentId} />
 
       <section className="flex flex-col gap-2">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        <h2 className="font-display text-[0.9375rem] font-semibold text-foreground">
           Tool-call trace
         </h2>
         <AgentTrace runId={runId} defaultExpanded />

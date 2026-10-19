@@ -58,10 +58,8 @@ export function DocumentIngestionProgress({
         className={`flex items-center gap-1.5 ${className ?? ""}`}
         aria-label={statusLabel(status)}
       >
-        <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-destructive" />
-        <span className="text-[10px] font-medium uppercase tracking-wide text-destructive">
-          Failed
-        </span>
+        <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-error" />
+        <span className="text-xs font-medium text-error">Failed</span>
       </output>
     )
   }
@@ -79,15 +77,13 @@ export function DocumentIngestionProgress({
       aria-valuemax={100}
       aria-label={label}
     >
-      <div className="relative h-1 flex-1 overflow-hidden rounded-full bg-muted/60" aria-hidden>
+      <div className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-muted" aria-hidden>
         <div
-          className="h-full rounded-full bg-ember-500 transition-[width] duration-300 ease-out"
+          className="h-full rounded-full bg-brand transition-[width] duration-slow ease-out-quint"
           style={{ width: `${value}%` }}
         />
       </div>
-      <span className="min-w-[5.5rem] text-right text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-        {label}
-      </span>
+      <span className="min-w-[4.5rem] text-xs font-medium text-brand-ink">{label}</span>
     </div>
   )
 }

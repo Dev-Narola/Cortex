@@ -19,15 +19,15 @@ describe("Card", () => {
     expect(card.className).toMatch(/bg-card/)
   })
 
-  it("glass variant uses the frosted surface, not bg-card", () => {
+  it("glass variant is an opaque panel (real glass is for floating chrome only)", () => {
     render(
       <Card data-testid="card" variant="glass">
         Body
       </Card>,
     )
     const card = screen.getByTestId("card")
-    expect(card.className.split(" ")).toContain("glass")
-    expect(card.className).not.toMatch(/bg-card/)
+    expect(card.className.split(" ")).not.toContain("glass")
+    expect(card.className).toMatch(/bg-card/)
   })
 
   it("applies variant classes", () => {

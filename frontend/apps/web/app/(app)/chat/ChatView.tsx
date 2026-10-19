@@ -40,123 +40,20 @@
 
 "use client"
 
-import { useRouter } from "next/navigation"
-import { type ReactNode, useCallback } from "react"
-
-import { toast } from "@cortex/ui"
-import { useQueryClient } from "@tanstack/react-query"
+import type { ReactNode } from "react"
 
 import { ChatLayout } from "@/components/chat/ChatLayout"
-import { useCreateConversation, useSendMessage } from "@/hooks/chat"
-import { sendMessage as sendMessageService } from "@/services/conversations"
-import type { Conversation, Message } from "@/types/conversation"
-import { ApiError } from "@cortex/api-client"
-
-function makeOptimisticUserMessage(conversationId: string, content: string): Message {
-  const id =
-    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
-      ? crypto.randomUUID()
-      : `tmp-${Date.now()}-${Math.random().toString(36).slice(2)}`
-  return {
-    id,
-    conversationId,
-    role: "user",
-    content,
-    tokenCount: 0,
-    retrievedChunkIds: [],
-    agentRunId: null,
-    modelName: null,
-    createdAt: new Date().toISOString(),
-  }
-}
+import { useStartConversation } from "@/hooks/chat"
 
 export function ChatView(): ReactNode {
-  const router = useRouter()
-  const qc = useQueryClient()
-  const create = useCreateConversation()
-  // The mutation needs a conversationId. We
-  // bind it to a sentinel "" — the mutation
-  // isn't called on this view; the send
-  // handler below orchestrates create +
-  // manual optimistic patch + WS send.
-  const send = useSendMessage({ conversationId: "" })
-
-  const handleSend = useCallback(
-    async (value: string) => {
-      if (!value.trim()) return
-      if (create.isPending || send.isPending) return
-      try {
-        // Step 1: create the conversation.
-        const conversation = await create.mutateAsync({
-          title: "New conversation",
-        })
-        // Step 2: optimistically patch the
-        // user message into the new
-        // conversation's cache so it's
-        // visible the moment the new view
-        // mounts.
-        const optimistic = makeOptimisticUserMessage(conversation.id, value)
-        qc.setQueryData<Conversation>(["conversations", conversation.id], (prev) => {
-          if (prev) {
-            return {
-              ...prev,
-              messages: [...(prev.messages ?? []), optimistic],
-            }
-          }
-          // No prior cache (expected — fresh
-          // conversation). Synthesize a
-          // minimal Conversation row so the
-          // list cache + the empty-state
-          // path work consistently.
-          return {
-            id: conversation.id,
-            tenantId: conversation.tenantId,
-            userId: conversation.userId,
-            title: conversation.title,
-            summary: conversation.summary,
-            createdAt: conversation.createdAt,
-            updatedAt: conversation.updatedAt,
-            messages: [optimistic],
-          }
-        })
-        // Step 3: fire the WS send. This
-        // initializes the stream store; the
-        // stream hook in the new view picks
-        // it up and drives the socket.
-        sendMessageService({
-          conversationId: conversation.id,
-          content: value,
-          userMessageId: optimistic.id,
-        })
-        // Step 4: navigate. The new view
-        // acquires the WS socket + sends the
-        // queued `pendingContent`.
-        router.push(`/chat/${conversation.id}` as never)
-      } catch (err) {
-        const message =
-          err instanceof ApiError
-            ? ((err.body as { message?: string } | undefined)?.message ??
-              "Couldn't start the conversation.")
-            : err instanceof Error
-              ? err.message
-              : "Couldn't start the conversation."
-        toast({
-          title: "Couldn't send your message",
-          description: message,
-          variant: "destructive",
-        })
-      }
-    },
-    [create, send.isPending, qc, router],
-  )
-
+  const { start, isPending } = useStartConversation()
   return (
     <ChatLayout
       title={null}
       messages={[]}
       conversationId="new"
-      onSend={handleSend}
-      isBusy={create.isPending || send.isPending}
+      onSend={(value) => void start(value)}
+      isBusy={isPending}
     />
   )
 }

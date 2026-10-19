@@ -29,7 +29,7 @@ export interface TableRowProps extends HTMLAttributes<HTMLTableRowElement> {
 
 const STATE = {
   default: "",
-  selected: "bg-ember-500/5 data-[state=selected]:bg-ember-500/10",
+  selected: "bg-brand-soft",
   disabled: "opacity-50 pointer-events-none",
   loading: "opacity-70 pointer-events-none",
 } as const
@@ -40,8 +40,8 @@ const TableRow = forwardRef<HTMLTableRowElement, TableRowProps>(
       ref={ref}
       data-state={state === "default" ? undefined : state}
       className={cn(
-        "border-b border-border transition-colors",
-        interactive ? "hover:bg-muted/40 cursor-pointer" : "",
+        "border-b border-divider transition-colors last:border-b-0",
+        interactive ? "hover:bg-muted cursor-pointer" : "",
         STATE[state],
         className,
       )}

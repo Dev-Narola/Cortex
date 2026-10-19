@@ -48,14 +48,14 @@ const EmptyState = ({
 }: EmptyStateProps) => (
   <div
     className={cn(
-      "flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border bg-muted/30 px-6 py-12 text-center",
+      "flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border-strong px-6 py-12 text-center",
       className,
     )}
     {...props}
   >
     <div
       aria-hidden
-      className="flex h-12 w-12 items-center justify-center rounded-full bg-muted text-muted-foreground"
+      className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-soft text-brand"
     >
       <Icon name={icon} size="lg" />
     </div>

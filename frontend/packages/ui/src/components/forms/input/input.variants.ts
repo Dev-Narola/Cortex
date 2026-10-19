@@ -19,8 +19,8 @@ import { type VariantProps, cva } from "class-variance-authority"
 export const inputVariants = cva(
   [
     // Base surface
-    "flex w-full items-center gap-2 rounded-md border bg-background px-3 text-sm text-foreground",
-    "transition-colors placeholder:text-muted-foreground",
+    "flex w-full items-center gap-2 rounded-lg border bg-card px-3 text-sm text-foreground",
+    "transition-colors placeholder:text-faint hover:border-border-strong",
     "focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-background",
     "disabled:cursor-not-allowed disabled:opacity-50",
     "aria-[invalid=true]:border-destructive aria-[invalid=true]:focus-within:ring-destructive",

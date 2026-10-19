@@ -31,25 +31,25 @@ import { type HTMLAttributes, forwardRef } from "react"
 import { cn } from "../../utils/cn"
 
 export const badgeVariants = cva(
-  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+  "inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
   {
     variants: {
       variant: {
         default: "border-transparent bg-secondary text-secondary-foreground",
-        secondary: "border-transparent bg-muted text-foreground",
-        success: "border-transparent bg-success/15 text-success",
-        warning: "border-transparent bg-warning/15 text-warning",
-        error: "border-transparent bg-destructive/15 text-destructive",
-        outline: "text-foreground",
+        secondary: "border-transparent bg-muted text-muted-foreground",
+        success: "border-transparent bg-success/12 text-success",
+        warning: "border-transparent bg-warning/12 text-warning",
+        error: "border-transparent bg-error/12 text-error",
+        outline: "border-border text-muted-foreground",
         // V9 ingestion-state aliases (consumed by the F3 document list).
         pending: "border-transparent bg-muted text-muted-foreground",
-        processing: "border-transparent bg-volt-200 text-volt-900",
-        completed: "border-transparent bg-success/15 text-success",
-        failed: "border-transparent bg-destructive/15 text-destructive",
+        processing: "border-brand-border bg-brand-soft text-brand-ink",
+        completed: "border-transparent bg-success/12 text-success",
+        failed: "border-transparent bg-error/12 text-error",
         // V9 health-mapping aliases (consumed by the platform status pill).
-        healthy: "border-transparent bg-success/15 text-success",
-        degraded: "border-transparent bg-warning/15 text-warning",
-        unhealthy: "border-transparent bg-destructive/15 text-destructive",
+        healthy: "border-transparent bg-success/12 text-success",
+        degraded: "border-transparent bg-warning/12 text-warning",
+        unhealthy: "border-transparent bg-error/12 text-error",
       },
       size: {
         sm: "h-5 px-1.5 text-[10px]",

@@ -30,11 +30,12 @@
  */
 "use client"
 
-import { Card, CardContent, Icon } from "@cortex/ui"
+import { Card, CardContent } from "@cortex/ui"
 
 import { apiConfig } from "@cortex/config"
 
 import { type McpTool, toolsByCategory } from "@/services/mcp"
+import { SectionHeader } from "../section-header"
 
 function categoryLabel(category: McpTool["category"]): string {
   switch (category) {
@@ -55,36 +56,20 @@ export function McpOverview() {
 
   return (
     <div className="space-y-4" data-testid="mcp-overview">
-      <Card>
-        <CardContent className="space-y-3 p-4 sm:p-6">
-          <div className="flex items-center gap-2">
-            <div
-              aria-hidden
-              className="flex h-9 w-9 items-center justify-center rounded-lg bg-volt-500/10 text-volt-400"
-            >
-              <Icon name="Workflow" className="h-5 w-5" />
-            </div>
-            <div>
-              <h2 className="font-display text-base font-semibold tracking-tight">What is MCP?</h2>
-              <p className="text-sm text-muted-foreground">
-                Connect Cortex to MCP-compatible clients such as Claude and other AI agents. The
-                client authenticates with an API key (the same one you manage under Settings → API
-                Keys) and calls the tools below over JSON-RPC 2.0.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <SectionHeader
+        title="MCP"
+        description="Connect Cortex to MCP-compatible clients such as Claude and other AI agents. The client authenticates with an API key (the same one you manage under Settings → API Keys) and calls the tools below over JSON-RPC 2.0."
+      />
 
-      <Card>
-        <CardContent className="space-y-3 p-4 sm:p-6">
-          <h3 className="font-display text-sm font-semibold tracking-tight">Connection</h3>
+      <Card radius="xl">
+        <CardContent className="space-y-3 p-0 sm:p-1">
+          <h3 className="font-display text-[0.9375rem] font-semibold tracking-tight">Connection</h3>
           <dl className="space-y-2 text-xs">
             <div>
               <dt className="font-medium uppercase tracking-wider text-faint">Endpoint</dt>
               <dd className="mt-1">
                 <code
-                  className="block break-all rounded-md border border-border bg-muted px-3 py-2 font-mono text-sm text-foreground"
+                  className="block break-all rounded-lg border border-border bg-background-2 px-3 py-2 font-mono text-sm text-foreground"
                   data-testid="mcp-endpoint"
                 >
                   {endpoint}
@@ -108,9 +93,11 @@ export function McpOverview() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardContent className="space-y-3 p-4 sm:p-6">
-          <h3 className="font-display text-sm font-semibold tracking-tight">Available tools</h3>
+      <Card radius="xl">
+        <CardContent className="space-y-3 p-0 sm:p-1">
+          <h3 className="font-display text-[0.9375rem] font-semibold tracking-tight">
+            Available tools
+          </h3>
           <p className="text-xs text-faint">
             The tools your MCP client can call. Tools are tenant-scoped — clients see only this
             workspace&apos;s data.
@@ -158,9 +145,9 @@ export function McpOverview() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardContent className="space-y-2 p-4 sm:p-6">
-          <h3 className="font-display text-sm font-semibold tracking-tight">
+      <Card radius="xl">
+        <CardContent className="space-y-2 p-0 sm:p-1">
+          <h3 className="font-display text-[0.9375rem] font-semibold tracking-tight">
             Tenant-scoped access
           </h3>
           <p className="text-sm text-muted-foreground">

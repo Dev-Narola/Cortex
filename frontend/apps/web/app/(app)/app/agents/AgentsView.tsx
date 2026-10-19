@@ -25,6 +25,7 @@ import {
   Icon,
   Input,
   Label,
+  PageHeader,
   Skeleton,
   Textarea,
   toast,
@@ -205,7 +206,7 @@ function RunAgentDialog({ agent, onClose }: { agent: Agent | null; onClose: () =
                 {agent ? (
                   <Link
                     href={`/app/agents/${agent.id}/runs/${run.data.run_id}` as never}
-                    className="ml-auto text-brand hover:underline"
+                    className="ml-auto text-brand-ink hover:underline"
                   >
                     Inspect run
                   </Link>
@@ -276,20 +277,16 @@ export function AgentsView() {
 
   return (
     <div className="mx-auto flex max-w-7xl flex-col gap-6">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="space-y-1">
-          <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground">
-            Agents
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Multi-step agents that search your knowledge base to complete a task.
-          </p>
-        </div>
-        <Button onClick={() => setCreating(true)}>
-          <Icon name="Plus" className="h-4 w-4" aria-hidden />
-          New agent
-        </Button>
-      </header>
+      <PageHeader
+        title="Agents"
+        description="Multi-step agents that search your knowledge base to complete a task."
+        actions={
+          <Button onClick={() => setCreating(true)}>
+            <Icon name="Plus" className="h-4 w-4" aria-hidden />
+            New agent
+          </Button>
+        }
+      />
 
       {agents.isLoading ? (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -298,7 +295,7 @@ export function AgentsView() {
           ))}
         </div>
       ) : agents.isError ? (
-        <Card variant="glass" radius="xl" className="flex items-center justify-between gap-4">
+        <Card radius="xl" className="flex items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground">Couldn't load agents.</p>
           <Button variant="outline" size="sm" onClick={() => void agents.refetch()}>
             Retry
@@ -316,10 +313,14 @@ export function AgentsView() {
         <ul className="stagger-rise grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {items.map((a) => (
             <li key={a.id}>
-              <Card variant="glass" radius="xl" className="flex h-full flex-col gap-3">
+              <Card
+                variant="interactive"
+                radius="xl"
+                className="flex h-full cursor-default flex-col gap-3"
+              >
                 <div className="flex items-start gap-3">
                   <span
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-ai/10 text-ai"
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-soft text-brand"
                     aria-hidden
                   >
                     <Icon name="Bot" className="h-4 w-4" />

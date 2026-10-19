@@ -34,7 +34,7 @@ const DialogContent = forwardRef<ElementRef<typeof DialogPrimitive.Content>, Dia
     <DialogPrimitive.Portal>
       <DialogPrimitive.Overlay
         className={cn(
-          "fixed inset-0 z-50 bg-ink-950/60 backdrop-blur-sm",
+          "fixed inset-0 z-50 bg-gray-950/40 backdrop-blur-[3px] dark:bg-black/60",
           "data-[state=open]:animate-in data-[state=closed]:animate-out",
           "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
         )}
@@ -53,7 +53,7 @@ const DialogContent = forwardRef<ElementRef<typeof DialogPrimitive.Content>, Dia
         {children}
         {showClose ? (
           <DialogPrimitive.Close
-            className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+            className="absolute right-4 top-4 rounded-full p-1 text-muted-foreground opacity-80 ring-offset-background transition-[opacity,background-color] hover:bg-muted hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
             aria-label="Close"
           >
             <X className="h-4 w-4" />

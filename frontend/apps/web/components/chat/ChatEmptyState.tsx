@@ -14,19 +14,14 @@
 
 import type { ReactNode } from "react"
 
-import { Icon } from "@cortex/ui"
+import { BoltMark } from "./BoltMark"
 
 export function ChatEmptyState(): ReactNode {
   return (
     <output className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-12 text-center">
-      <div
-        aria-hidden
-        className="flex h-14 w-14 items-center justify-center rounded-full bg-ember-500/10 text-ember-600"
-      >
-        <Icon name="Sparkles" className="h-7 w-7" />
-      </div>
-      <div className="space-y-1">
-        <h2 className="font-display text-xl font-semibold tracking-tight text-foreground">
+      <BoltMark className="h-12 w-12 rounded-2xl shadow-md" />
+      <div className="space-y-1.5">
+        <h2 className="font-display text-2xl font-medium tracking-[-0.02em] text-foreground">
           Ask anything about your knowledge base
         </h2>
         <p className="mx-auto max-w-md text-sm text-muted-foreground">

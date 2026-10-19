@@ -35,7 +35,7 @@ export function GlobalSearch(): ReactNode {
       type="button"
       onClick={open}
       aria-keyshortcuts="Control+K Meta+K"
-      className="glass inline-flex h-9 w-full min-w-0 max-w-md items-center gap-2 rounded-full px-3.5 text-left text-sm text-faint transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="inline-flex h-9 w-full min-w-0 max-w-md items-center gap-2 rounded-full border border-border bg-card px-3.5 text-left text-sm text-faint shadow-xs transition-colors hover:border-border-strong hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       <Icon name="Search" className="h-4 w-4 shrink-0" aria-hidden />
       <span className="flex-1 truncate">Search knowledge…</span>

@@ -151,7 +151,7 @@ export function AuditLogDetail({ event, open, onOpenChange }: AuditLogDetailProp
               {actionLabel(event.action)}
             </DrawerTitle>
             <DrawerClose
-              className="text-xs text-faint transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-volt-500"
+              className="text-xs text-faint transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               data-testid={`audit-log-detail-close-${event.id}`}
             >
               Close

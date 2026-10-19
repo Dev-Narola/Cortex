@@ -43,7 +43,7 @@ export function GraphSearchResults({
     return (
       <div
         role="alert"
-        className="pointer-events-auto w-full max-w-sm rounded-md border border-destructive/40 bg-card/90 p-3 text-xs text-destructive shadow-lg backdrop-blur"
+        className="pointer-events-auto w-full max-w-sm glass rounded-xl border-error/40 p-3 text-xs text-error shadow-lg"
       >
         Couldn&apos;t search the knowledge graph.
       </div>
@@ -52,7 +52,7 @@ export function GraphSearchResults({
   const items = results.entities.slice(0, 8)
   if (items.length === 0 && !loading) {
     return (
-      <output className="pointer-events-auto w-full max-w-sm rounded-md border border-border bg-card/90 p-3 text-xs text-muted-foreground shadow-lg backdrop-blur">
+      <output className="pointer-events-auto w-full max-w-sm glass rounded-xl p-3 text-xs text-muted-foreground shadow-lg">
         No matching entity found.
       </output>
     )
@@ -61,7 +61,7 @@ export function GraphSearchResults({
     <ul
       aria-label="Search results"
       data-testid="graph-search-results"
-      className="pointer-events-auto w-full max-w-sm overflow-hidden rounded-md border border-border bg-card/95 shadow-lg backdrop-blur"
+      className="pointer-events-auto w-full max-w-sm glass-strong overflow-hidden rounded-xl p-1 shadow-lg"
     >
       {items.map((entity) => (
         <li key={entity.id}>
@@ -69,7 +69,7 @@ export function GraphSearchResults({
             type="button"
             onClick={() => onSelect(entity.id)}
             data-testid={`graph-search-result-${entity.id}`}
-            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-volt-500"
+            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <Icon name="Network" size="sm" tone="muted" aria-hidden />
             <span className="min-w-0 flex-1 truncate">{entity.name}</span>

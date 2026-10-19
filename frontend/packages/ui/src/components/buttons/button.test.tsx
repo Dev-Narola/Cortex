@@ -42,7 +42,7 @@ describe("Button", () => {
   it("renders the icon-only size", () => {
     render(<Button size="icon" aria-label="Close" />)
     const btn = screen.getByRole("button", { name: "Close" })
-    expect(btn.className).toMatch(/h-10 w-10/)
+    expect(btn.className).toMatch(/h-9 w-9/)
   })
 
   it("is disabled when the `disabled` prop is set", () => {

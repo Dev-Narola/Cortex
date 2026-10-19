@@ -108,7 +108,7 @@ export function McpTokenCard() {
   return (
     <>
       <Card data-testid="mcp-token-card">
-        <CardContent className="space-y-3 p-4 sm:p-6">
+        <CardContent className="space-y-3 p-0 sm:p-1">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="font-display text-base font-semibold tracking-tight">
@@ -136,7 +136,7 @@ export function McpTokenCard() {
             All API keys you generate are listed under{" "}
             <a
               href="/app/settings/api-keys"
-              className="text-volt-400 underline-offset-2 hover:underline"
+              className="text-brand-ink underline-offset-2 hover:underline"
               data-testid="mcp-api-keys-link"
             >
               Settings → API Keys

@@ -48,7 +48,7 @@ export function WorkspaceSetupLayout({
   return (
     <div className="flex min-h-screen flex-col bg-background">
       {/* Top bar — logo + progress + secondary link. */}
-      <header className="flex items-center justify-between border-b border-border bg-background/80 px-6 py-4 backdrop-blur sm:px-10">
+      <header className="flex items-center justify-between px-6 py-5 sm:px-10">
         <Link
           href={"/" as never}
           aria-label="Cortex home"
@@ -69,19 +69,26 @@ export function WorkspaceSetupLayout({
       <main className="flex flex-1 items-center justify-center px-6 py-12">
         <div className="grid w-full max-w-5xl gap-12 md:grid-cols-2 md:items-center">
           <section className="hidden flex-col gap-4 md:flex">
-            <div
-              className="relative aspect-square w-full overflow-hidden rounded-2xl border border-border bg-muted/40"
-              aria-hidden="true"
-            >
-              {/* Workspace illustration placeholder — an ambient
-                  gradient mesh that hints at "the network lights up
-                  when your documents connect". F3+ replaces this
-                  with a real SVG / canvas illustration. */}
-              <div className="absolute inset-0 bg-gradient-to-br from-ember-100 via-foreground to-volt-100" />
-              <div className="absolute left-1/2 top-1/2 h-32 w-32 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-br from-ember-300 to-volt-300 opacity-50 blur-2xl" />
-            </div>
+            {/* What happens after setup — the real next steps, not decoration. */}
+            <ol className="space-y-3 rounded-3xl border border-brand-border bg-brand-soft p-6">
+              {[
+                ["Name your workspace", "Your documents, agents and team live here."],
+                ["Upload documents", "PDF, Markdown, text, or a web page. Indexed in seconds."],
+                ["Ask with citations", "Every answer links back to the passage it came from."],
+              ].map(([step, hint], i) => (
+                <li key={step} className="flex items-start gap-3 rounded-2xl bg-card p-4 shadow-xs">
+                  <span className="tabular flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
+                    {i + 1}
+                  </span>
+                  <span>
+                    <span className="block text-sm font-medium text-foreground">{step}</span>
+                    <span className="block text-sm text-muted-foreground">{hint}</span>
+                  </span>
+                </li>
+              ))}
+            </ol>
             <div className="space-y-1">
-              <h2 className="font-display text-2xl font-semibold tracking-tight text-foreground">
+              <h2 className="font-display text-xl font-medium tracking-tight text-foreground">
                 Build your knowledge graph
               </h2>
               <Text tone="muted" size="sm">
@@ -93,7 +100,7 @@ export function WorkspaceSetupLayout({
 
           <section className="mx-auto w-full max-w-md space-y-4">
             <div className="space-y-1">
-              <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground">
+              <h1 className="font-display text-[1.875rem] font-medium leading-tight tracking-[-0.02em] text-foreground">
                 {title}
               </h1>
               {description ? (

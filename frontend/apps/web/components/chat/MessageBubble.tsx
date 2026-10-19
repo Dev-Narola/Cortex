@@ -74,6 +74,7 @@ import { cn } from "@cortex/ui"
 
 import { useCitationPanelStore } from "@/hooks/chat"
 import { useResolvedCitations } from "@/hooks/chat/useResolvedCitations"
+import { BoltMark } from "./BoltMark"
 import { MarkdownMessage } from "./MarkdownMessage"
 import { MessageActions } from "./MessageActions"
 import { AgentTrace } from "./agents/AgentTrace"
@@ -109,15 +110,15 @@ export interface MessageBubbleProps {
 }
 
 const ROLE_STYLES: Record<MessageRole, string> = {
-  user: "ml-auto max-w-2xl rounded-2xl bg-ember-500/15 px-4 py-2.5 text-foreground border border-ember-500/30",
+  user: "ml-auto max-w-[85%] rounded-2xl rounded-br-md border border-brand-border bg-brand-soft px-4 py-2.5 text-foreground sm:max-w-2xl",
   assistant:
-    "mr-auto max-w-2xl rounded-2xl bg-card px-4 py-2.5 text-foreground border border-border",
+    "mr-auto max-w-3xl rounded-2xl rounded-bl-md border border-border bg-background-2 px-4 py-3 text-foreground",
   tool: "mr-auto max-w-2xl rounded-md bg-muted px-3 py-2 font-mono text-xs text-muted-foreground border border-border",
 }
 
 const ROLE_LABEL: Record<MessageRole, string> = {
   user: "You",
-  assistant: "Assistant",
+  assistant: "Cortex",
   tool: "Tool",
 }
 
@@ -173,14 +174,15 @@ export function MessageBubble({
     >
       <div
         className={cn(
-          "mb-1 text-[10px] font-semibold uppercase tracking-wide",
+          "mb-1.5 flex items-center gap-1.5 text-xs font-semibold",
           message.role === "user"
-            ? "text-ember-700"
+            ? "text-brand-ink"
             : message.role === "tool"
               ? "text-muted-foreground"
-              : "text-foreground/70",
+              : "text-foreground",
         )}
       >
+        {message.role === "assistant" ? <BoltMark /> : null}
         {label}
       </div>
       {message.role === "assistant" ? (
@@ -190,10 +192,11 @@ export function MessageBubble({
       )}
       {showChips ? (
         <div
-          className="mt-2 flex flex-wrap items-center gap-1.5"
+          className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-divider pt-2.5"
           data-citation-rail
           data-citation-count={citations.length}
         >
+          <span className="mr-1 text-xs font-medium text-faint">Sources</span>
           {citations.map((c) => (
             <CitationChip
               key={c.id}
@@ -201,6 +204,7 @@ export function MessageBubble({
               index={c.index}
               documentTitle={c.documentTitle}
               isActive={selectedCitationId === c.id}
+              variant="source"
             />
           ))}
         </div>

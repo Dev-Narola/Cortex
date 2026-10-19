@@ -1,32 +1,43 @@
 /**
- * DocumentToolbar — the row above the table.
+ * DocumentToolbar — the row above the documents table.
  *
- * **F3 Part 2 (Task 15) + Part 4 (Task 42).**
- * Search box + filter + sort + Upload button.
- * The F1 `TableToolbar` primitive provides the
- * title/description/actions layout; we compose
- * the action surface.
- *
- * **State.** The search box is local UI state
- * (the spec says "search and filter locally —
- * UI only where backend support is absent"). The
- * filter + sort dropdowns are placeholders.
- *
- * **Connection indicator.** The description
- * slot is shared with the live ingestion
- * indicator: the page passes both `total` and
- * `connectionSlot` so the user sees "3 documents
- * • Live" (or "• Reconnecting…") in a single row.
- *
- * **Upload.** The Upload button opens the
- * `DocumentUploadModal`.
+ * Title + count (with the live ingestion indicator), then the working
+ * controls: name search, status filter pills, sort, Upload. The page owns the
+ * state and narrows the loaded list with `filterDocuments` (the list API has
+ * no search or sort), so every control here changes what the table shows.
  */
 
 "use client"
 
-import { type ReactNode, useState } from "react"
+import type { ReactNode } from "react"
 
-import { Button, Icon, Input, TableToolbar, TooltipRoot } from "@cortex/ui"
+import {
+  Button,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+  Icon,
+  Input,
+  TableToolbar,
+  cn,
+} from "@cortex/ui"
+
+import type { DocumentSort, DocumentStatusFilter } from "@/lib/documents/filter"
+
+const STATUS_OPTIONS: { value: DocumentStatusFilter; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "indexed", label: "Indexed" },
+  { value: "processing", label: "Processing" },
+  { value: "failed", label: "Failed" },
+]
+
+const SORT_LABEL: Record<DocumentSort, string> = {
+  newest: "Newest first",
+  oldest: "Oldest first",
+  name: "Name A–Z",
+}
 
 export interface DocumentToolbarProps {
   /** Total count for the description line ("N documents"). */
@@ -35,18 +46,15 @@ export interface DocumentToolbarProps {
   loading: boolean
   /** Upload button click — opens the modal. */
   onUpload: () => void
-  /**
-   * Filter dropdown change. The F3 backend doesn't
-   * support server-side filtering yet, so this is a
-   * no-op stub. The hook layer will eventually
-   * thread the filter into the query.
-   */
-  onFilterChange?: (filter: string | null) => void
-  /**
-   * Optional slot for the ingestion connection
-   * indicator. Rendered inline with the count
-   * description (e.g. "3 documents · Live").
-   */
+  query?: string
+  onQueryChange?: (query: string) => void
+  status?: DocumentStatusFilter
+  onStatusChange?: (status: DocumentStatusFilter) => void
+  /** Per-filter counts over the loaded documents, shown on the pills. */
+  statusCounts?: Partial<Record<DocumentStatusFilter, number>>
+  sort?: DocumentSort
+  onSortChange?: (sort: DocumentSort) => void
+  /** Live ingestion indicator, rendered next to the count. */
   connectionSlot?: ReactNode
 }
 
@@ -54,69 +62,100 @@ export function DocumentToolbar({
   total,
   loading,
   onUpload,
-  onFilterChange,
+  query = "",
+  onQueryChange,
+  status = "all",
+  onStatusChange,
+  statusCounts,
+  sort = "newest",
+  onSortChange,
   connectionSlot,
 }: DocumentToolbarProps): ReactNode {
-  // Local search input — not yet wired to the data
-  // layer (the spec marks this as a future task).
-  const [search, setSearch] = useState("")
-
   return (
-    <TableToolbar
-      title="All documents"
-      description={
-        <span className="flex items-center gap-2">
-          <span>{loading ? "Loading…" : `${total} ${total === 1 ? "document" : "documents"}`}</span>
-          {connectionSlot}
-        </span>
-      }
-      actions={
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Search box — local state, no filtering yet. */}
-          <div className="relative">
-            <Icon
-              name="Search"
-              className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
-            />
-            <Input
-              type="search"
-              placeholder="Search documents…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              aria-label="Search documents"
-              className="h-8 w-48 pl-8 text-sm"
-            />
-          </div>
-
-          {/* Filter dropdown — placeholder, surfaces
-              the spec's "no backend support yet" story. */}
-          <TooltipRoot content="Filters land once the backend supports them" side="bottom">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onFilterChange?.(null)}
-              aria-label="Filter documents (coming soon)"
-            >
-              <Icon name="Filter" className="h-3.5 w-3.5" />
-              <span>Filter</span>
-            </Button>
-          </TooltipRoot>
-
-          {/* Sort dropdown — placeholder. */}
-          <TooltipRoot content="Sorting lands once the backend supports it" side="bottom">
-            <Button variant="outline" size="sm" aria-label="Sort documents (coming soon)">
-              <Icon name="SlidersHorizontal" className="h-3.5 w-3.5" />
-              <span>Sort</span>
-            </Button>
-          </TooltipRoot>
-
-          {/* Upload — opens the modal. Live in Part 3. */}
+    <div className="border-b border-border">
+      <TableToolbar
+        className="border-b-0 pb-3"
+        title="All documents"
+        description={
+          <span className="flex items-center gap-2">
+            <span>
+              {loading ? "Loading…" : `${total} ${total === 1 ? "document" : "documents"}`}
+            </span>
+            {connectionSlot}
+          </span>
+        }
+        actions={
           <Button size="sm" onClick={onUpload} aria-label="Upload documents">
             <Icon name="Upload" className="h-3.5 w-3.5" />
             <span>Upload</span>
           </Button>
+        }
+      />
+      <div className="flex flex-col gap-3 px-5 pb-4 lg:flex-row lg:items-center">
+        <div className="relative lg:w-64">
+          <Icon
+            name="Search"
+            className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-faint"
+          />
+          <Input
+            type="search"
+            placeholder="Search by name…"
+            value={query}
+            onChange={(e) => onQueryChange?.(e.target.value)}
+            aria-label="Search documents"
+            className="h-9 rounded-full pl-8 text-sm"
+          />
         </div>
-      }
-    />
+        <fieldset className="flex min-w-0 flex-wrap items-center gap-1.5">
+          <legend className="sr-only">Filter by status</legend>
+          {STATUS_OPTIONS.map((o) => {
+            const active = status === o.value
+            const count = statusCounts?.[o.value]
+            return (
+              <button
+                key={o.value}
+                type="button"
+                aria-pressed={active}
+                onClick={() => onStatusChange?.(o.value)}
+                className={cn(
+                  "inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition-colors duration-fast",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  active
+                    ? "border-foreground bg-foreground text-background"
+                    : "border-border bg-card text-muted-foreground hover:border-border-strong hover:text-foreground",
+                )}
+              >
+                {o.label}
+                {count !== undefined ? (
+                  <span className={cn("tabular", active ? "text-background/70" : "text-faint")}>
+                    {count}
+                  </span>
+                ) : null}
+              </button>
+            )
+          })}
+        </fieldset>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="lg:ml-auto" aria-label="Sort documents">
+              <Icon name="ArrowUpDown" className="h-3.5 w-3.5" />
+              <span>{SORT_LABEL[sort]}</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-44">
+            <DropdownMenuRadioGroup
+              value={sort}
+              onValueChange={(v) => onSortChange?.(v as DocumentSort)}
+            >
+              {(Object.keys(SORT_LABEL) as DocumentSort[]).map((k) => (
+                <DropdownMenuRadioItem key={k} value={k}>
+                  {SORT_LABEL[k]}
+                </DropdownMenuRadioItem>
+              ))}
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </div>
   )
 }

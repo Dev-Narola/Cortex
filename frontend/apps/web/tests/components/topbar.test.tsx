@@ -41,7 +41,7 @@ describe("Topbar", () => {
         </ViewTransitions>
       </ThemeProvider>,
     )
-    expect(screen.getByRole("button", { name: /switch to (light|dark) mode/i })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /^theme:/i })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: /open user menu/i })).toBeInTheDocument()
   })
 })

@@ -21,7 +21,7 @@
 import { type VariantProps, cva } from "class-variance-authority"
 
 export const dialogContentVariants = cva(
-  "fixed left-1/2 top-1/2 z-50 grid w-full -translate-x-1/2 -translate-y-1/2 gap-4 border border-border bg-background p-6 shadow-2xl rounded-xl",
+  "fixed left-1/2 top-1/2 z-50 grid w-[calc(100vw-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-2xl border border-border bg-popover p-6 text-popover-foreground shadow-xl",
   {
     variants: {
       size: {

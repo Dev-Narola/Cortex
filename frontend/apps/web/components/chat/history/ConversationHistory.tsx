@@ -65,7 +65,7 @@
 import { useParams, usePathname, useRouter } from "next/navigation"
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react"
 
-import { Icon, cn } from "@cortex/ui"
+import { cn } from "@cortex/ui"
 
 import {
   type UseConversationsResult,
@@ -284,19 +284,14 @@ export function ConversationHistory({
       aria-label="Conversation history"
       data-conversation-history
       className={cn(
-        "flex h-full min-h-0 flex-col gap-1 border-r border-border bg-card/40",
+        "flex h-full min-h-0 flex-col gap-1 border-r border-border bg-background-2",
         className,
       )}
     >
-      <div className="flex items-center justify-between gap-2 px-3 pt-3 pb-2">
+      <div className="flex items-center justify-between gap-2 px-4 pt-4 pb-2">
         <div className="flex min-w-0 items-center gap-1.5">
-          <Icon
-            name="MessagesSquare"
-            className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
-            aria-hidden
-          />
           <h2
-            className="truncate font-display text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+            className="truncate font-display text-sm font-semibold text-foreground"
             data-history-header
           >
             Conversations
@@ -305,7 +300,7 @@ export function ConversationHistory({
         <NewConversationButton
           variant="default"
           size="sm"
-          className="h-7"
+          className="h-8"
           {...(onNavigate ? { onAfterCreate: onNavigate } : {})}
         />
       </div>

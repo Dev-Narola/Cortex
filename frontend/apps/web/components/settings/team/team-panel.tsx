@@ -39,6 +39,7 @@
 import { useCallback, useState } from "react"
 
 import {
+  Avatar,
   Badge,
   Button,
   Card,
@@ -72,6 +73,7 @@ import { useAuthStore } from "@/lib/auth/store"
 import { toFrontendError } from "@/lib/http/errors"
 import { type TeamMember, type TeamMemberRole, issuePasswordReset } from "@/services/team"
 
+import { SectionHeader } from "../section-header"
 import { InviteMemberModal } from "./invite-member-modal"
 
 /**
@@ -142,16 +144,12 @@ export function TeamPanel() {
   const closeInvite = useCallback(() => setInviteOpen(false), [])
 
   return (
-    <Card data-testid="team-panel">
-      <CardContent className="space-y-4 p-4 sm:p-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="font-display text-base font-semibold tracking-tight">Team</h2>
-            <p className="text-sm text-muted-foreground">
-              The members of your workspace. Owners and admins can invite teammates.
-            </p>
-          </div>
-          {userIsInviter ? (
+    <section data-testid="team-panel" className="space-y-4">
+      <SectionHeader
+        title="Team"
+        description="The members of your workspace. Owners and admins can invite teammates."
+        actions={
+          userIsInviter ? (
             <Button
               type="button"
               variant="default"
@@ -162,47 +160,50 @@ export function TeamPanel() {
               <Icon name="Mail" className="h-3.5 w-3.5" />
               <span>Invite by email</span>
             </Button>
+          ) : undefined
+        }
+      />
+      <Card radius="xl">
+        <CardContent className="space-y-4 p-0 sm:p-1">
+          {!userIsInviter ? (
+            <p className="text-sm text-muted-foreground" data-testid="team-panel-restricted">
+              Only workspace owners and admins can view and manage members.
+            </p>
           ) : null}
-        </div>
 
-        {!userIsInviter ? (
-          <p className="text-sm text-muted-foreground" data-testid="team-panel-restricted">
-            Only workspace owners and admins can view and manage members.
-          </p>
-        ) : null}
+          {userIsInviter && isLoading ? <TeamPanelSkeleton /> : null}
 
-        {userIsInviter && isLoading ? <TeamPanelSkeleton /> : null}
+          {!isLoading && isError ? (
+            <ErrorState
+              title="Unable to load your team"
+              description="We couldn't reach the team-members service. Check your connection and try again."
+              retryLabel="Retry"
+              onRetry={() => {
+                void refetch()
+              }}
+              code={
+                error && "status" in error
+                  ? String((error as { status?: number }).status ?? "")
+                  : undefined
+              }
+            />
+          ) : null}
 
-        {!isLoading && isError ? (
-          <ErrorState
-            title="Unable to load your team"
-            description="We couldn't reach the team-members service. Check your connection and try again."
-            retryLabel="Retry"
-            onRetry={() => {
-              void refetch()
-            }}
-            code={
-              error && "status" in error
-                ? String((error as { status?: number }).status ?? "")
-                : undefined
-            }
-          />
-        ) : null}
-
-        {!isLoading && !isError && data ? (
-          data.length <= 1 ? (
-            <>
-              {data.length === 1 ? <TeamMemberTable members={data} /> : null}
-              <TeamPanelEmpty canInvite={userIsInviter} onInvite={openInvite} />
-            </>
-          ) : (
-            <TeamMemberTable members={data} />
-          )
-        ) : null}
-      </CardContent>
+          {!isLoading && !isError && data ? (
+            data.length <= 1 ? (
+              <>
+                {data.length === 1 ? <TeamMemberTable members={data} /> : null}
+                <TeamPanelEmpty canInvite={userIsInviter} onInvite={openInvite} />
+              </>
+            ) : (
+              <TeamMemberTable members={data} />
+            )
+          ) : null}
+        </CardContent>
+      </Card>
 
       <InviteMemberModal open={inviteOpen} onOpenChange={setInviteOpen} onClose={closeInvite} />
-    </Card>
+    </section>
   )
 }
 
@@ -276,7 +277,7 @@ function TeamMemberTable({ members }: { members: TeamMember[] }) {
   }
 
   return (
-    <>
+    <div className="-mx-1 overflow-x-auto px-1">
       <Table data-testid="team-member-table">
         <TableHeader>
           <TableRow>
@@ -304,14 +305,29 @@ function TeamMemberTable({ members }: { members: TeamMember[] }) {
                 className={m.is_active === false ? "opacity-60" : undefined}
               >
                 <TableCell>
-                  <div className="flex flex-col">
-                    <span className="text-sm font-medium text-foreground">
-                      {m.full_name || m.email}
-                      {m.id === me?.id ? (
-                        <span className="ml-1.5 text-xs font-normal text-faint">(you)</span>
+                  <div className="flex min-w-0 items-center gap-3">
+                    <Avatar
+                      size="sm"
+                      tone={m.id === me?.id ? "primary" : "accent"}
+                      name={m.full_name || m.email}
+                      fallback={(m.full_name || m.email).charAt(0).toUpperCase()}
+                    />
+                    <div className="flex min-w-0 flex-col">
+                      <span
+                        className="max-w-[18rem] truncate text-sm font-medium text-foreground"
+                        title={m.full_name || m.email}
+                      >
+                        {m.full_name || m.email}
+                        {m.id === me?.id ? (
+                          <span className="ml-1.5 text-xs font-normal text-faint">(you)</span>
+                        ) : null}
+                      </span>
+                      {m.full_name ? (
+                        <span className="max-w-[18rem] truncate text-xs text-faint" title={m.email}>
+                          {m.email}
+                        </span>
                       ) : null}
-                    </span>
-                    {m.full_name ? <span className="text-xs text-faint">{m.email}</span> : null}
+                    </div>
                   </div>
                 </TableCell>
                 <TableCell>
@@ -351,12 +367,12 @@ function TeamMemberTable({ members }: { members: TeamMember[] }) {
                     {m.is_active === false ? "Deactivated" : "Active"}
                   </Badge>
                 </TableCell>
-                <TableCell className="hidden text-xs text-muted-foreground sm:table-cell">
+                <TableCell className="hidden whitespace-nowrap text-xs text-muted-foreground sm:table-cell">
                   {formatDate(m.created_at)}
                 </TableCell>
                 <TableCell className="text-right">
                   {manageable ? (
-                    <div className="flex justify-end gap-1">
+                    <div className="flex justify-end gap-1 whitespace-nowrap">
                       <Button
                         variant="ghost"
                         size="sm"
@@ -384,7 +400,7 @@ function TeamMemberTable({ members }: { members: TeamMember[] }) {
         </TableBody>
       </Table>
       <ResetLinkDialog link={resetLink} onClose={() => setResetLink(null)} />
-    </>
+    </div>
   )
 }
 

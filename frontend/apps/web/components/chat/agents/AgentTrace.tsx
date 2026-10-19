@@ -151,7 +151,7 @@ export function AgentTrace(props: AgentTraceProps) {
           "text-xs text-muted-foreground",
           "hover:bg-muted/60",
           "focus-visible:outline-none focus-visible:ring-2",
-          "focus-visible:ring-volt-500/40",
+          "focus-visible:ring-ring/50",
         )}
         data-testid="agent-trace-toggle"
       >

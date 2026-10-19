@@ -130,9 +130,9 @@ function FeedbackButton({
         "inline-flex h-7 w-7 items-center justify-center rounded-md",
         "text-muted-foreground transition-colors duration-200",
         "hover:bg-ember-500/10 hover:text-foreground",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-volt-500/60",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
         "disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent",
-        isActive && "bg-ember-500/15 text-ember-600 hover:text-ember-700",
+        isActive && "bg-ember-500/15 text-brand-ink hover:text-brand-ink",
       )}
     >
       <Icon name={value === "up" ? "ThumbsUp" : "ThumbsDown"} className="h-3.5 w-3.5" />

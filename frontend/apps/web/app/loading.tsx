@@ -11,6 +11,8 @@
  * and means the loading state is shown immediately on slow
  * networks.
  */
+import { Logo } from "@cortex/ui"
+
 export default function Loading() {
   return (
     <output
@@ -19,16 +21,9 @@ export default function Loading() {
       className="flex min-h-screen items-center justify-center bg-background"
     >
       <div className="flex flex-col items-center gap-4">
-        {/* Pulsing brand mark — the only motion in F0 loading UI.
-            F9 P5: this is the app shell, so it must not use the
-            Spark gradient (rationed to the marketing surface + the
-            actively-streaming Spark Glow). Use a calm Volt accent
-            instead. */}
-        <div
-          aria-hidden="true"
-          className="h-10 w-10 animate-pulse rounded-xl bg-volt-500/40 ring-1 ring-volt-500/30"
-        />
-        <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">Loading</p>
+        {/* Pulsing brand mark — the only motion in the loading UI. */}
+        <Logo size="lg" showText={false} className="animate-pulse" />
+        <p className="text-xs text-muted-foreground">Loading…</p>
       </div>
     </output>
   )

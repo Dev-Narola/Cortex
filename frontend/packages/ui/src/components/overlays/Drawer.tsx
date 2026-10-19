@@ -37,22 +37,25 @@ const DrawerClose = DialogPrimitive.Close
 
 export type DrawerSide = "left" | "right" | "top" | "bottom"
 
-const drawerOverlayVariants = cva("fixed inset-0 z-50 bg-ink-950/60 backdrop-blur-sm", {
-  variants: {
-    side: {
-      left: "",
-      right: "",
-      top: "",
-      bottom: "",
+const drawerOverlayVariants = cva(
+  "fixed inset-0 z-50 bg-gray-950/40 backdrop-blur-[3px] dark:bg-black/60",
+  {
+    variants: {
+      side: {
+        left: "",
+        right: "",
+        top: "",
+        bottom: "",
+      },
+    },
+    defaultVariants: {
+      side: "right",
     },
   },
-  defaultVariants: {
-    side: "right",
-  },
-})
+)
 
 const drawerContentVariants = cva(
-  "fixed z-50 gap-4 bg-background shadow-2xl border-border flex flex-col",
+  "fixed z-50 gap-4 bg-popover text-popover-foreground shadow-xl border-border flex flex-col",
   {
     variants: {
       side: {

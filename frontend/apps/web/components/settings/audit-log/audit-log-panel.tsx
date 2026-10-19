@@ -55,6 +55,7 @@ import { Button, Card, CardContent, ErrorState, Icon, Skeleton } from "@cortex/u
 import { useAuditLog } from "@/hooks/audit"
 import type { AuditEvent, AuditEventListResponse } from "@/services/audit"
 
+import { SectionHeader } from "../section-header"
 import { AuditLogDetail } from "./audit-log-detail"
 import { AuditLogFilters, type AuditLogFiltersValue } from "./audit-log-filters"
 import { AuditLogTable } from "./audit-log-table"
@@ -167,18 +168,17 @@ export function AuditLogPanel() {
 
   return (
     <div className="space-y-6" data-testid="audit-log-panel" aria-label="Audit log">
-      <header className="space-y-1">
-        <h2 className="font-display text-base font-semibold tracking-tight">Audit Log</h2>
-        <p className="text-sm text-muted-foreground">
-          Review activity and changes made in this workspace.
-        </p>
+      <SectionHeader
+        title="Audit Log"
+        description="Review activity and changes made in this workspace."
+      >
         <p className="text-xs text-faint">
           Append-only. Workspace events recorded by Cortex — you can&rsquo;t edit or delete them.
         </p>
-      </header>
+      </SectionHeader>
 
       <Card>
-        <CardContent className="space-y-4 p-4 sm:p-6">
+        <CardContent className="space-y-4 p-0 sm:p-1">
           <AuditLogFilters
             value={filters}
             onChange={onFiltersChange}
@@ -287,7 +287,7 @@ function AuditLogBody({
 function AuditLogEmptyState() {
   return (
     <Card data-testid="audit-log-empty">
-      <CardContent className="space-y-2 p-4 sm:p-6 text-center">
+      <CardContent className="space-y-2 p-0 sm:p-1 text-center">
         <div
           aria-hidden
           className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-card/60 text-faint"
@@ -307,7 +307,7 @@ function AuditLogEmptyState() {
 function AuditLogForbiddenState() {
   return (
     <Card data-testid="audit-log-forbidden">
-      <CardContent className="space-y-2 p-4 sm:p-6 text-center">
+      <CardContent className="space-y-2 p-0 sm:p-1 text-center">
         <div
           aria-hidden
           className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-card/60 text-faint"

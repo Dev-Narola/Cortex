@@ -46,13 +46,16 @@ export default function ChatLayout({
   children: ReactNode
 }): ReactNode {
   return (
-    <div data-chat-shell className="flex h-full min-h-0 w-full">
+    <div
+      data-chat-shell
+      className="flex h-full min-h-0 w-full overflow-hidden rounded-2xl border border-border bg-card shadow-xs"
+    >
       {/* Desktop history pane. Hidden on mobile
           via the `hidden md:flex` pair — the
           mobile drawer is a follow-up; Part 1
           ships the desktop layout + the data
           layer. */}
-      <div data-chat-history-slot className="hidden w-72 shrink-0 md:flex md:w-80 lg:w-96">
+      <div data-chat-history-slot className="hidden w-72 shrink-0 md:flex lg:w-80">
         <ConversationHistory className="w-full" />
       </div>
       {/* Main pane. The page components own the

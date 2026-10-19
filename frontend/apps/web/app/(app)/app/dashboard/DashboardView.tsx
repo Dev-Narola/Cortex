@@ -1,14 +1,12 @@
 /**
- * DashboardView — workspace overview as a bento grid.
+ * DashboardView — the workspace overview, as a bento grid.
  *
- * Every number is read from the backend:
- *   documents      GET /documents (total, and per-status totals via ?status=)
- *   conversations  GET /conversations (total + latest five)
- *   usage          GET /tenants/me/usage/summary (month to date, backend default)
- *   activity       GET /audit-log (owner/admin only; hidden for other roles)
- *   health         GET /health/ready (measured round-trip, not a claim)
- * Loading shows skeletons; a failed request says "Unavailable" for that card
- * only. A workspace with no documents gets the upload call-to-action first.
+ * The primary task (asking Cortex) leads: a wide hero with the Ask bar.
+ * Around it, smaller cards answer "what's in my knowledge base, what did I
+ * do recently, what is it costing". Every number comes from the backend:
+ * document counts use `?status=` totals, usage is the month-to-date summary,
+ * health is a live readiness probe. Each card loads and fails on its own;
+ * a failed source reads "Unavailable", never zero.
  */
 
 "use client"
@@ -17,9 +15,9 @@ import { useQuery } from "@tanstack/react-query"
 import Link from "next/link"
 import type { ReactNode } from "react"
 
-import { Button, Card, Icon, Skeleton } from "@cortex/ui"
+import { Button, Card, Icon, type IconName, Skeleton, cn } from "@cortex/ui"
 
-import { MetricCard } from "@/components/dashboard/MetricCard"
+import { AskBar } from "@/components/dashboard/AskBar"
 import { DocumentStatusBadge } from "@/components/documents/DocumentStatusBadge"
 import { useAuditLog } from "@/hooks/audit"
 import { useConversations } from "@/hooks/chat"
@@ -38,23 +36,39 @@ const usd = new Intl.NumberFormat("en", {
 
 function Panel({
   title,
+  icon,
   action,
   className = "",
   children,
 }: {
   title: string
+  icon?: IconName
   action?: ReactNode
   className?: string
   children: ReactNode
 }) {
   return (
-    <Card variant="glass" radius="xl" padding="none" className={`flex flex-col ${className}`}>
-      <div className="flex items-center justify-between gap-3 px-5 pt-4 pb-3">
-        <h2 className="font-display text-base font-semibold text-foreground">{title}</h2>
+    <Card radius="xl" padding="none" className={cn("flex flex-col", className)}>
+      <div className="flex items-center justify-between gap-3 px-5 pt-4 pb-2">
+        <h2 className="flex items-center gap-2 font-display text-[0.9375rem] font-semibold text-foreground">
+          {icon ? <Icon name={icon} className="h-4 w-4 text-faint" aria-hidden /> : null}
+          {title}
+        </h2>
         {action}
       </div>
       <div className="flex-1 px-2 pb-2">{children}</div>
     </Card>
+  )
+}
+
+function PanelLink({ href, children }: { href: string; children: ReactNode }) {
+  return (
+    <Link
+      href={href as never}
+      className="rounded-full px-2 py-0.5 text-xs font-medium text-brand-ink transition-colors hover:bg-brand-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      {children}
+    </Link>
   )
 }
 
@@ -73,6 +87,47 @@ function Unavailable({ what }: { what: string }) {
     <p className="px-3 py-6 text-sm text-muted-foreground">
       Couldn't load {what}. Refresh to try again.
     </p>
+  )
+}
+
+/** One stacked bar of real proportions; segments with a zero value are omitted. */
+function ProportionBar({
+  label,
+  segments,
+}: {
+  label: string
+  segments: { key: string; value: number; className: string }[]
+}) {
+  const total = segments.reduce((n, s) => n + s.value, 0)
+  if (total === 0) return <div className="h-2 rounded-full bg-muted" aria-hidden />
+  return (
+    <div className="flex h-2 gap-0.5 overflow-hidden rounded-full" role="img" aria-label={label}>
+      {segments
+        .filter((s) => s.value > 0)
+        .map((s) => (
+          <span
+            key={s.key}
+            className={cn("h-full rounded-full", s.className)}
+            style={{ width: `${(s.value / total) * 100}%` }}
+          />
+        ))}
+    </div>
+  )
+}
+
+function Legend({ items }: { items: { label: string; value: ReactNode; dot: string }[] }) {
+  return (
+    <dl className="grid grid-cols-3 gap-2">
+      {items.map((i) => (
+        <div key={i.label} className="min-w-0">
+          <dt className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <span className={cn("h-2 w-2 shrink-0 rounded-full", i.dot)} aria-hidden />
+            <span className="truncate">{i.label}</span>
+          </dt>
+          <dd className="tabular mt-0.5 text-sm font-medium text-foreground">{i.value}</dd>
+        </div>
+      ))}
+    </dl>
   )
 }
 
@@ -99,142 +154,184 @@ export function DashboardView() {
   const indexed = indexedQ.data?.total
   const failed = failedQ.data?.total
   const counts = total !== undefined && indexed !== undefined && failed !== undefined
+  const processing = counts ? Math.max(0, total - indexed - failed) : undefined
   const countsLoading = docs.isLoading || indexedQ.isLoading || failedQ.isLoading
   const countsError = docs.isError || indexedQ.isError || failedQ.isError
   const empty = total === 0
-  const tokens = usage.data
-    ? usage.data.embedding_tokens +
-      usage.data.completion_input_tokens +
-      usage.data.completion_output_tokens
-    : 0
+  const u = usage.data
+  const tokens = u ? u.embedding_tokens + u.completion_input_tokens + u.completion_output_tokens : 0
 
   return (
-    <div className="mx-auto flex max-w-7xl flex-col gap-6">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="space-y-1">
-          <p className="text-sm text-muted-foreground">{workspaceName}</p>
-          <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground">
-            Overview
-          </h1>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" asChild>
+    <div className="mx-auto flex max-w-7xl flex-col gap-5">
+      <header className="flex flex-col gap-1">
+        <p className="text-sm text-muted-foreground">{workspaceName}</p>
+        <h1 className="font-display text-[1.75rem] font-medium leading-tight tracking-[-0.02em] text-foreground sm:text-[2.125rem]">
+          Overview
+        </h1>
+      </header>
+
+      <div className="stagger-rise grid gap-4 lg:grid-cols-12">
+        {/* Hero: the primary task. */}
+        <section
+          aria-labelledby="ask-heading"
+          className="relative overflow-hidden rounded-3xl border border-brand-border bg-brand-soft p-6 sm:p-8 lg:col-span-8"
+        >
+          <div className="relative flex h-full flex-col justify-between gap-8">
+            <div className="max-w-xl space-y-2">
+              <p className="text-sm font-medium text-brand-ink">Ask Cortex</p>
+              <h2
+                id="ask-heading"
+                className="font-display text-[1.75rem] font-medium leading-[1.15] tracking-[-0.025em] text-foreground sm:text-[2.25rem]"
+              >
+                What do you want to know?
+              </h2>
+              <p className="text-sm text-muted-foreground sm:text-[0.9375rem]">
+                Answers are grounded in your indexed documents, with a citation for every claim.
+              </p>
+            </div>
+            <AskBar
+              hint={
+                indexed === 0
+                  ? "No document is indexed yet, so answers won't have sources. Upload one first."
+                  : undefined
+              }
+            />
+          </div>
+        </section>
+
+        {/* Knowledge base status. */}
+        <Card radius="xl" className="flex flex-col gap-5 p-5 lg:col-span-4">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="flex items-center gap-2 font-display text-[0.9375rem] font-semibold text-foreground">
+              <Icon name="FileText" className="h-4 w-4 text-faint" aria-hidden />
+              Documents
+            </h2>
+            <PanelLink href="/app/documents">Manage</PanelLink>
+          </div>
+          <div aria-live="polite">
+            {countsLoading ? (
+              <Skeleton size="h-10 w-24" />
+            ) : docs.isError ? (
+              <p className="text-sm text-muted-foreground">Unavailable</p>
+            ) : (
+              <p className="tabular font-display text-5xl font-medium tracking-[-0.03em] text-foreground">
+                {total !== undefined ? compact.format(total) : "—"}
+              </p>
+            )}
+            {indexed !== undefined && !countsLoading ? (
+              <p className="mt-1 text-sm text-muted-foreground">
+                {`${compact.format(indexed)} indexed and searchable`}
+              </p>
+            ) : null}
+          </div>
+          {counts && !countsError ? (
+            <div className="mt-auto space-y-3">
+              <ProportionBar
+                label={`${indexed} indexed, ${processing} processing, ${failed} failed`}
+                segments={[
+                  { key: "indexed", value: indexed, className: "bg-success" },
+                  { key: "processing", value: processing ?? 0, className: "bg-brand" },
+                  { key: "failed", value: failed, className: "bg-error" },
+                ]}
+              />
+              <Legend
+                items={[
+                  { label: "Indexed", value: compact.format(indexed), dot: "bg-success" },
+                  {
+                    label: "Processing",
+                    value: compact.format(processing ?? 0),
+                    dot: "bg-brand",
+                  },
+                  { label: "Failed", value: compact.format(failed), dot: "bg-error" },
+                ]}
+              />
+              <p className="text-xs text-faint">
+                {failed > 0 ? `${failed} failed, retry from Documents` : "No failures"}
+              </p>
+            </div>
+          ) : countsError ? (
+            <p className="mt-auto text-sm text-muted-foreground">Unavailable</p>
+          ) : null}
+          <Button variant="outline" size="sm" asChild className="self-start">
             <Link href={"/app/documents?upload=1" as never}>
-              <Icon name="Upload" className="h-4 w-4" aria-hidden />
+              <Icon name="Upload" aria-hidden />
               Upload
             </Link>
           </Button>
-          <Button asChild>
-            <Link href="/chat">
-              <Icon name="Sparkles" className="h-4 w-4" aria-hidden />
-              Ask Cortex
-            </Link>
-          </Button>
-        </div>
-      </header>
-
-      {empty ? (
-        <Card variant="glass" radius="2xl" className="relative overflow-hidden p-8 sm:p-10">
-          <div
-            aria-hidden
-            className="pointer-events-none absolute -top-24 -right-24 h-64 w-64 rounded-full bg-brand/15 blur-3xl"
-          />
-          <div className="relative max-w-xl space-y-3">
-            <h2 className="font-display text-2xl font-semibold text-foreground">
-              Add your first document
-            </h2>
-            <p className="text-muted-foreground">
-              Upload a PDF, Markdown or text file, or import a web page. Cortex parses, chunks and
-              embeds it, and answers questions with citations back to the source.
-            </p>
-            <Button asChild size="lg" className="mt-2">
-              <Link href={"/app/documents?upload=1" as never}>Upload a document</Link>
-            </Button>
-          </div>
         </Card>
-      ) : null}
 
-      <section
-        aria-label="Key metrics"
-        className="stagger-rise grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
-      >
-        <MetricCard
-          label="Documents"
-          icon="FileText"
-          href="/app/documents"
-          loading={docs.isLoading}
-          error={docs.isError}
-          value={total !== undefined ? compact.format(total) : null}
-          hint={
-            indexed !== undefined ? `${compact.format(indexed)} indexed and searchable` : undefined
-          }
-        />
-        <MetricCard
-          label="Processing"
-          icon="LoaderCircle"
-          tone={failed ? "warning" : "info"}
-          loading={countsLoading}
-          error={countsError}
-          value={counts ? compact.format(total - indexed - failed) : null}
-          hint={
-            failed !== undefined
-              ? failed > 0
-                ? `${failed} failed, retry from Documents`
-                : "No failures"
-              : undefined
-          }
-        />
-        <MetricCard
-          label="Conversations"
+        {empty ? (
+          <Card radius="xl" className="p-6 lg:col-span-12">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="max-w-xl space-y-1">
+                <h2 className="font-display text-xl font-medium text-foreground">
+                  Add your first document
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Upload a PDF, Markdown or text file, or import a web page. Cortex parses, chunks
+                  and embeds it, then answers questions with citations back to the source.
+                </p>
+              </div>
+              <Button asChild>
+                <Link href={"/app/documents?upload=1" as never}>Upload a document</Link>
+              </Button>
+            </div>
+          </Card>
+        ) : null}
+
+        <Panel
+          title="Recent conversations"
           icon="MessageSquare"
-          tone="ai"
-          href="/chat"
-          loading={conversations.isLoading}
-          error={conversations.isError}
-          value={conversations.data ? compact.format(conversations.data.total) : null}
-        />
-        <MetricCard
-          label="Requests, month to date"
-          icon="Activity"
-          tone="info"
-          href="/app/settings/usage"
-          loading={usage.isLoading}
-          error={usage.isError}
-          value={usage.data ? compact.format(usage.data.requests) : null}
-          hint={
-            usage.data
-              ? `${compact.format(tokens)} tokens · ${usd.format(usage.data.estimated_cost_usd)} estimated`
-              : undefined
-          }
-        />
-      </section>
+          className="lg:col-span-5"
+          action={<PanelLink href="/chat">Open chat</PanelLink>}
+        >
+          {conversations.isLoading ? (
+            <RowsSkeleton />
+          ) : conversations.isError ? (
+            <Unavailable what="conversations" />
+          ) : conversations.data && conversations.data.items.length > 0 ? (
+            <ul>
+              {conversations.data.items.map((c) => (
+                <li key={c.id}>
+                  <Link
+                    href={`/chat/${c.id}` as never}
+                    className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <span className="min-w-0 flex-1 truncate text-sm text-foreground">
+                      {c.title || "Untitled"}
+                    </span>
+                    <span className="shrink-0 text-xs text-faint">
+                      {formatRelative(c.updatedAt)}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="px-3 py-6 text-sm text-muted-foreground">
+              No conversations yet. Ask your first question above.
+            </p>
+          )}
+        </Panel>
 
-      <div className="stagger-rise grid gap-4 lg:grid-cols-12">
         <Panel
           title="Recent documents"
-          className="lg:col-span-7"
-          action={
-            <Link href="/app/documents" className="text-sm text-brand hover:underline">
-              View all
-            </Link>
-          }
+          icon="Files"
+          className="lg:col-span-4"
+          action={<PanelLink href="/app/documents">View all</PanelLink>}
         >
           {docs.isLoading ? (
             <RowsSkeleton />
           ) : docs.isError ? (
             <Unavailable what="documents" />
           ) : docs.data && docs.data.items.length > 0 ? (
-            <ul className="divide-y divide-divider">
+            <ul>
               {docs.data.items.map((d) => (
-                <li key={d.id} className="flex items-center gap-3 rounded-lg px-3 py-2.5">
-                  <Icon name="FileText" className="h-4 w-4 shrink-0 text-faint" aria-hidden />
+                <li key={d.id} className="flex items-center gap-3 rounded-xl px-3 py-2.5">
                   <span className="min-w-0 flex-1 truncate text-sm text-foreground" title={d.title}>
                     {d.title}
                   </span>
                   <DocumentStatusBadge status={d.status} />
-                  <span className="hidden w-24 shrink-0 text-right text-xs text-faint sm:block">
-                    {formatRelative(d.created_at)}
-                  </span>
                 </li>
               ))}
             </ul>
@@ -243,11 +340,94 @@ export function DashboardView() {
           )}
         </Panel>
 
-        <Panel title="System" className="lg:col-span-5">
-          <dl className="space-y-1 px-3 py-1">
+        {/* Month-to-date usage with the real token mix. */}
+        <Card radius="xl" className="flex flex-col gap-4 p-5 lg:col-span-3">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="flex items-center gap-2 font-display text-[0.9375rem] font-semibold text-foreground">
+              <Icon name="Activity" className="h-4 w-4 text-faint" aria-hidden />
+              This month
+            </h2>
+            <PanelLink href="/app/settings/usage">Usage</PanelLink>
+          </div>
+          {usage.isLoading ? (
+            <Skeleton size="h-16 w-full" />
+          ) : usage.isError || !u ? (
+            <p className="text-sm text-muted-foreground">Unavailable</p>
+          ) : (
+            <>
+              <div>
+                <p className="tabular font-display text-3xl font-medium tracking-[-0.02em] text-foreground">
+                  {compact.format(u.requests)}
+                </p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  requests · {`${usd.format(u.estimated_cost_usd)} estimated`}
+                </p>
+              </div>
+              <div className="mt-auto space-y-2.5">
+                <ProportionBar
+                  label={`Token mix: ${u.embedding_tokens} embedding, ${u.completion_input_tokens} prompt, ${u.completion_output_tokens} output`}
+                  segments={[
+                    { key: "emb", value: u.embedding_tokens, className: "bg-chart-2" },
+                    { key: "in", value: u.completion_input_tokens, className: "bg-chart-1" },
+                    { key: "out", value: u.completion_output_tokens, className: "bg-chart-3" },
+                  ]}
+                />
+                <p className="text-xs text-muted-foreground">
+                  <span className="tabular font-medium text-foreground">
+                    {compact.format(tokens)}
+                  </span>{" "}
+                  tokens: <span className="text-chart-2">●</span> embed{" "}
+                  <span className="text-chart-1">●</span> prompt{" "}
+                  <span className="text-chart-3">●</span> output
+                </p>
+              </div>
+            </>
+          )}
+        </Card>
+
+        {isAdmin ? (
+          <Panel
+            title="Recent activity"
+            icon="ScrollText"
+            className="lg:col-span-8"
+            action={<PanelLink href="/app/settings/audit-log">Audit log</PanelLink>}
+          >
+            {audit.isLoading ? (
+              <RowsSkeleton />
+            ) : audit.isError ? (
+              <Unavailable what="activity" />
+            ) : audit.data && audit.data.items.length > 0 ? (
+              <ul className="grid gap-x-4 sm:grid-cols-2">
+                {audit.data.items.map((e) => (
+                  <li key={e.id} className="flex items-center gap-3 rounded-xl px-3 py-2.5">
+                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-brand" aria-hidden />
+                    <span className="min-w-0 flex-1 truncate font-mono text-xs text-foreground">
+                      {e.action}
+                    </span>
+                    <span className="shrink-0 text-xs text-faint">
+                      {formatRelative(e.created_at)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="px-3 py-6 text-sm text-muted-foreground">No activity recorded yet.</p>
+            )}
+          </Panel>
+        ) : null}
+
+        <Card
+          radius="xl"
+          className={cn("flex flex-col gap-3 p-5", isAdmin ? "lg:col-span-4" : "lg:col-span-12")}
+        >
+          <h2 className="flex items-center gap-2 font-display text-[0.9375rem] font-semibold text-foreground">
+            <Icon name="Gauge" className="h-4 w-4 text-faint" aria-hidden />
+            System
+          </h2>
+          <dl className="divide-y divide-divider text-sm">
             <div className="flex items-center justify-between py-2">
-              <dt className="text-sm text-muted-foreground">API</dt>
-              <dd className="flex items-center gap-2 text-sm">
+              <dt className="text-muted-foreground">API</dt>
+              <dd className="flex items-center gap-2">
                 {health.isLoading ? (
                   <Skeleton size="h-4 w-24" />
                 ) : health.data?.kind === "healthy" ? (
@@ -269,23 +449,11 @@ export function DashboardView() {
                 )}
               </dd>
             </div>
-            <div className="flex items-center justify-between border-t border-divider py-2">
-              <dt className="text-sm text-muted-foreground">Indexed documents</dt>
-              <dd className="tabular text-sm text-foreground">
-                {indexed !== undefined ? (
-                  indexed
-                ) : indexedQ.isError ? (
-                  "—"
-                ) : (
-                  <Skeleton size="h-4 w-8" />
-                )}
-              </dd>
-            </div>
-            <div className="flex items-center justify-between border-t border-divider py-2">
-              <dt className="text-sm text-muted-foreground">Rerank units, month to date</dt>
-              <dd className="tabular text-sm text-foreground">
-                {usage.data ? (
-                  compact.format(usage.data.rerank_units)
+            <div className="flex items-center justify-between py-2">
+              <dt className="text-muted-foreground">Rerank units, month to date</dt>
+              <dd className="tabular text-foreground">
+                {u ? (
+                  compact.format(u.rerank_units)
                 ) : usage.isError ? (
                   "—"
                 ) : (
@@ -294,90 +462,8 @@ export function DashboardView() {
               </dd>
             </div>
           </dl>
-          <p className="px-3 pt-1 pb-2 text-xs text-faint">
-            Checked every minute from your browser.
-          </p>
-        </Panel>
-
-        <Panel
-          title="Recent conversations"
-          className={isAdmin ? "lg:col-span-6" : "lg:col-span-12"}
-          action={
-            <Link href="/chat" className="text-sm text-brand hover:underline">
-              Open chat
-            </Link>
-          }
-        >
-          {conversations.isLoading ? (
-            <RowsSkeleton />
-          ) : conversations.isError ? (
-            <Unavailable what="conversations" />
-          ) : conversations.data && conversations.data.items.length > 0 ? (
-            <ul className="divide-y divide-divider">
-              {conversations.data.items.map((c) => (
-                <li key={c.id}>
-                  <Link
-                    href={`/chat/${c.id}` as never}
-                    className="flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  >
-                    <Icon
-                      name="MessageSquare"
-                      className="h-4 w-4 shrink-0 text-faint"
-                      aria-hidden
-                    />
-                    <span className="min-w-0 flex-1 truncate text-sm text-foreground">
-                      {c.title || "Untitled"}
-                    </span>
-                    <span className="shrink-0 text-xs text-faint">
-                      {formatRelative(c.updatedAt)}
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="px-3 py-6 text-sm text-muted-foreground">
-              No conversations yet.{" "}
-              <Link href="/chat" className="text-brand hover:underline">
-                Ask your first question
-              </Link>
-            </p>
-          )}
-        </Panel>
-
-        {isAdmin ? (
-          <Panel
-            title="Recent activity"
-            className="lg:col-span-6"
-            action={
-              <Link href="/app/settings/audit-log" className="text-sm text-brand hover:underline">
-                Audit log
-              </Link>
-            }
-          >
-            {audit.isLoading ? (
-              <RowsSkeleton />
-            ) : audit.isError ? (
-              <Unavailable what="activity" />
-            ) : audit.data && audit.data.items.length > 0 ? (
-              <ul className="divide-y divide-divider">
-                {audit.data.items.map((e) => (
-                  <li key={e.id} className="flex items-center gap-3 px-3 py-2.5">
-                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-brand-2" aria-hidden />
-                    <span className="min-w-0 flex-1 truncate font-mono text-xs text-foreground">
-                      {e.action}
-                    </span>
-                    <span className="shrink-0 text-xs text-faint">
-                      {formatRelative(e.created_at)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="px-3 py-6 text-sm text-muted-foreground">No activity recorded yet.</p>
-            )}
-          </Panel>
-        ) : null}
+          <p className="mt-auto text-xs text-faint">Checked every minute from your browser.</p>
+        </Card>
       </div>
     </div>
   )

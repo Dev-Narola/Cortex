@@ -100,8 +100,16 @@ function AppShell({ children }: { children: ReactNode }) {
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar onOpenMobileNav={() => setMobileNavOpen(true)} />
         <RateLimitBanner />
-        <main id="main" className="flex-1 overflow-y-auto px-4 py-5 sm:px-6 lg:px-8">
-          <div key={navItemFor(pathname)?.href ?? pathname} className="animate-rise-in">
+        <main id="main" className="flex-1 overflow-y-auto px-4 py-5 sm:px-6 sm:py-7 lg:px-10">
+          {/* Chat and the graph are full-height workspaces; other pages scroll in `main`. */}
+          <div
+            key={navItemFor(pathname)?.href ?? pathname}
+            className={
+              pathname.startsWith("/chat") || pathname.startsWith("/app/graph")
+                ? "animate-rise-in h-full"
+                : "animate-rise-in"
+            }
+          >
             {children}
           </div>
         </main>

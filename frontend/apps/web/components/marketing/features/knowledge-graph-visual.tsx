@@ -147,8 +147,8 @@ export function KnowledgeGraphVisual() {
       >
         <defs>
           <linearGradient id="kg-edge-highlight" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="#FF6A3D" />
-            <stop offset="100%" stopColor="#0BE3C4" />
+            <stop offset="0%" stopColor="#FF914D" />
+            <stop offset="100%" stopColor="#E86524" />
           </linearGradient>
         </defs>
 

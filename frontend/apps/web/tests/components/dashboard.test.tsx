@@ -17,7 +17,10 @@ const state: {
 vi.mock("@/hooks/documents", () => ({
   useDocuments: (p: { status?: string }) => state.docs[p.status ?? "all"] ?? {},
 }))
-vi.mock("@/hooks/chat", () => ({ useConversations: () => state.conversations }))
+vi.mock("@/hooks/chat", () => ({
+  useConversations: () => state.conversations,
+  useStartConversation: () => ({ start: vi.fn(), isPending: false }),
+}))
 vi.mock("@/hooks/usage", () => ({ useTenantUsageSummary: () => state.usage }))
 vi.mock("@/hooks/audit", () => ({
   useAuditLog: (p: { enabled: boolean }) => (p.enabled ? state.audit : {}),

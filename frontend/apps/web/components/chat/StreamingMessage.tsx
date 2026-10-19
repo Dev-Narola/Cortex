@@ -52,6 +52,7 @@ import { cn } from "@cortex/ui"
 
 import { useCitationPanelStore } from "@/hooks/chat"
 import { useResolvedCitations } from "@/hooks/chat/useResolvedCitations"
+import { BoltMark } from "./BoltMark"
 import { MarkdownMessage } from "./MarkdownMessage"
 import { MessageBubble } from "./MessageBubble"
 import { CitationChip } from "./citations/CitationChip"
@@ -144,8 +145,9 @@ export function StreamingMessage({
       aria-label={isActive ? "Assistant is generating a response" : "Assistant message"}
       aria-live={isActive ? "polite" : "off"}
       className={cn(
-        "streaming-bubble group relative mr-auto max-w-2xl",
-        "rounded-2xl border border-border bg-card px-4 py-2.5 text-foreground",
+        "streaming-bubble group relative mr-auto max-w-3xl",
+        "rounded-2xl rounded-bl-md border bg-background-2 px-4 py-3 text-foreground transition-colors duration-slow",
+        isActive ? "border-brand-border" : "border-border",
         className,
       )}
     >
@@ -153,18 +155,19 @@ export function StreamingMessage({
         aria-hidden="true"
         className={cn(
           "pointer-events-none absolute inset-0 -z-10 rounded-2xl",
-          "bg-[radial-gradient(120%_120%_at_50%_50%,rgba(124,191,255,0.18),transparent_70%)]",
+          "bg-[radial-gradient(120%_120%_at_50%_50%,rgba(255,145,77,0.14),transparent_70%)]",
           "transition-opacity duration-500",
           isActive ? "opacity-100 animate-pulse" : "opacity-0",
         )}
       />
-      <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-foreground/70">
-        Assistant
+      <div className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-foreground">
+        <BoltMark />
+        Cortex
         {isActive ? (
-          <span className="ml-2 inline-flex items-center gap-1 text-[10px] font-normal normal-case tracking-normal text-muted-foreground">
+          <span className="ml-1 inline-flex items-center gap-1.5 text-xs font-normal text-muted-foreground">
             <span className="relative flex h-1.5 w-1.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-volt-400 opacity-60" />
-              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-volt-500" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand opacity-60" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-brand" />
             </span>
             Generating
           </span>
@@ -179,10 +182,11 @@ export function StreamingMessage({
       ) : null}
       {citations.length > 0 ? (
         <div
-          className="mt-2 flex flex-wrap items-center gap-1.5"
+          className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-divider pt-2.5"
           data-citation-rail
           data-citation-count={citations.length}
         >
+          <span className="mr-1 text-xs font-medium text-faint">Sources</span>
           {citations.map((c) => (
             <CitationChip
               key={c.id}
@@ -190,6 +194,7 @@ export function StreamingMessage({
               index={c.index}
               documentTitle={c.documentTitle}
               isActive={selectedCitationId === c.id}
+              variant="source"
             />
           ))}
         </div>

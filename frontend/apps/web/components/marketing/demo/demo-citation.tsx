@@ -91,9 +91,9 @@ export function DemoCitation({ citation, isActive, onOpen }: DemoCitationProps) 
           "inline-flex h-[1.4em] min-w-[1.4em] items-center justify-center",
           "rounded-full px-1 align-baseline text-[0.65em] font-semibold leading-none",
           "transition-colors duration-fast",
-          "border border-ember-500/40 bg-ember-500/10 text-ember-600",
+          "border border-ember-500/40 bg-ember-500/10 text-brand-ink",
           "hover:bg-ember-500/20 hover:border-ember-500/60",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember-500/50",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
           "focus-visible:ring-offset-1 focus-visible:ring-offset-background",
           isActive && "bg-ember-500/25 border-ember-500/70",
         )}

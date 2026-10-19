@@ -84,11 +84,11 @@ describe("DocumentStatusBadge", () => {
   it("renders with the expected variant per status", () => {
     const cases: Array<[Document["status"], string]> = [
       ["pending", "bg-muted"],
-      ["parsing", "volt-200"],
-      ["chunking", "volt-200"],
-      ["embedding", "volt-200"],
+      ["parsing", "bg-brand-soft"],
+      ["chunking", "bg-brand-soft"],
+      ["embedding", "bg-brand-soft"],
       ["indexed", "success"],
-      ["failed", "destructive"],
+      ["failed", "text-error"],
     ]
     for (const [status, expectedClass] of cases) {
       const { container } = render(<DocumentStatusBadge status={status} />)
@@ -115,12 +115,10 @@ describe("DocumentRow", () => {
       ),
     )
     expect(screen.getByText("Quarterly Plan.pdf")).toBeInTheDocument()
-    expect(screen.getByText("application/pdf")).toBeInTheDocument()
-    // "Indexed" appears in both the badge and the
-    // progress line; assert at least one.
-    expect(screen.getAllByText("Indexed").length).toBeGreaterThanOrEqual(1)
-    // Chunks placeholder
-    expect(screen.getByText("—")).toBeInTheDocument()
+    expect(screen.getAllByText("application/pdf").length).toBeGreaterThanOrEqual(1)
+    expect(screen.getByText("Indexed")).toBeInTheDocument()
+    // No fake columns: the list API has no chunk count.
+    expect(screen.queryByText("—")).not.toBeInTheDocument()
   })
 
   it("calls onSelect + onOpenDetail when the row is clicked", async () => {
@@ -182,9 +180,9 @@ describe("DocumentsTable", () => {
     const headerRow = within(table).getAllByRole("row")[0]!
     expect(within(headerRow).getByText("Name")).toBeInTheDocument()
     expect(within(headerRow).getByText("Status")).toBeInTheDocument()
-    expect(within(headerRow).getByText("Source")).toBeInTheDocument()
-    expect(within(headerRow).getByText("Chunks")).toBeInTheDocument()
-    expect(within(headerRow).getByText("Updated")).toBeInTheDocument()
+    expect(within(headerRow).getByText("Type")).toBeInTheDocument()
+    expect(within(headerRow).getByText("Added")).toBeInTheDocument()
+    expect(within(headerRow).queryByText("Chunks")).not.toBeInTheDocument()
   })
 
   it("renders one row per document", () => {
@@ -375,6 +373,29 @@ describe("DocumentToolbar", () => {
   it("renders the search input", () => {
     render(<DocumentToolbar total={0} loading={false} onUpload={() => {}} />)
     expect(screen.getByLabelText(/search documents/i)).toBeInTheDocument()
+  })
+
+  it("wires search, status filter and sort to the page state", async () => {
+    const user = userEvent.setup()
+    const onQueryChange = vi.fn()
+    const onStatusChange = vi.fn()
+    render(
+      <DocumentToolbar
+        total={3}
+        loading={false}
+        onUpload={() => {}}
+        onQueryChange={onQueryChange}
+        onStatusChange={onStatusChange}
+        status="all"
+        statusCounts={{ all: 3, indexed: 2, processing: 0, failed: 1 }}
+      />,
+    )
+    await user.type(screen.getByLabelText(/search documents/i), "q")
+    expect(onQueryChange).toHaveBeenCalledWith("q")
+    await user.click(screen.getByRole("button", { name: /failed/i }))
+    expect(onStatusChange).toHaveBeenCalledWith("failed")
+    expect(screen.getByRole("button", { name: /^all/i })).toHaveAttribute("aria-pressed", "true")
+    expect(screen.getByRole("button", { name: /sort documents/i })).toHaveTextContent(/newest/i)
   })
 
   it("calls onUpload when the Upload button is clicked", async () => {

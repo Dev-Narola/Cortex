@@ -106,7 +106,7 @@ describe("MessageBubble", () => {
       />,
       { wrapper: makeWrapper() },
     )
-    expect(screen.getByText("Assistant")).toBeInTheDocument()
+    expect(screen.getByText("Cortex")).toBeInTheDocument()
     expect(screen.getByText(/Cortex uses pgvector for semantic retrieval/i)).toBeInTheDocument()
     const article = screen.getByRole("article")
     expect(article).toHaveAttribute("data-role", "assistant")
@@ -242,15 +242,16 @@ describe("MessageInput", () => {
     expect(onChange).toHaveBeenCalledWith("h")
   })
 
-  it("renders the Slate placeholder + Volt focus hint", () => {
+  it("renders the placeholder and the keyboard hint", () => {
     render(<MessageInput value="" onChange={() => {}} onSubmit={() => {}} />, {
       wrapper: makeWrapper(),
     })
     expect(
       screen.getByPlaceholderText(/ask something about your knowledge base/i),
     ).toBeInTheDocument()
-    // The "Enter to send · Shift+Enter for newline" hint is rendered.
-    expect(screen.getByText(/shift\+enter for newline/i)).toBeInTheDocument()
+    // "Enter to send · Shift+Enter for a new line" (keys are <kbd>s).
+    expect(screen.getByText("Shift+Enter")).toBeInTheDocument()
+    expect(screen.getByText(/for a new line/i)).toBeInTheDocument()
   })
 })
 

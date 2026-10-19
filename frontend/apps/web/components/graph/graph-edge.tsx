@@ -81,6 +81,8 @@ export interface GraphEdgeProps {
    * ``scaleY``). Required.
    */
   geometry: BufferGeometry
+  /** Show the relation name (small graphs). Active edges always show it. */
+  showLabel?: boolean
 }
 
 /**
@@ -112,8 +114,8 @@ function findNode(nodes: GraphNode[], id: string): GraphNode | null {
  * on the cylinder's ``emissiveIntensity`` +
  * opacity to make the active state pop.
  */
-const EDGE_COLOR = "#475569" // slate-600 — default
-const EDGE_COLOR_ACTIVE = "#f97316" // Ember-500 — active path
+const EDGE_COLOR = "#8a8882" // warm grey: visible on paper and charcoal
+const EDGE_COLOR_ACTIVE = "#f47732" // brand orange: active path
 const EDGE_OPACITY = 0.6
 const EDGE_OPACITY_ACTIVE = 0.95
 
@@ -167,7 +169,14 @@ export function computeEdgeTransform(start: Vector3, end: Vector3): EdgeTransfor
   }
 }
 
-function GraphEdgeImpl({ edge, nodes, isActive = false, onSelect, geometry }: GraphEdgeProps) {
+function GraphEdgeImpl({
+  edge,
+  nodes,
+  isActive = false,
+  onSelect,
+  geometry,
+  showLabel = true,
+}: GraphEdgeProps) {
   // Memoize the curve so the geometry isn't
   // recomputed on every React render. The
   // dependency list is small (edge + nodes) so
@@ -266,7 +275,7 @@ function GraphEdgeImpl({ edge, nodes, isActive = false, onSelect, geometry }: Gr
           The midpoint float is a good place for
           it; the label's ``distanceFactor``
           keeps it readable at any zoom. */}
-      {edge.relationType && !isDegenerate ? (
+      {edge.relationType && !isDegenerate && (showLabel || isActive) ? (
         <EdgeLabel position={midpoint} text={edge.relationType} active={isActive} />
       ) : null}
     </group>
@@ -284,6 +293,7 @@ function GraphEdgeImpl({ edge, nodes, isActive = false, onSelect, geometry }: Gr
  */
 export const GraphEdge = memo(GraphEdgeImpl, (prev, next) => {
   if (prev.isActive !== next.isActive) return false
+  if (prev.showLabel !== next.showLabel) return false
   if (prev.onSelect !== next.onSelect) return false
   if (prev.geometry !== next.geometry) return false
   if (prev.edge.id !== next.edge.id) return false
@@ -327,7 +337,7 @@ function EdgeLabel({
       zIndexRange={[-1, -1]}
     >
       <span
-        className="select-none whitespace-nowrap rounded bg-background/60 px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-muted-foreground"
+        className={`pointer-events-none select-none whitespace-nowrap rounded-full px-1.5 py-0.5 font-mono text-[10px] ${active ? "bg-brand-soft text-brand-ink" : "bg-background/70 text-muted-foreground"}`}
         data-active={active || undefined}
         data-testid={`graph-edge-label-${text}`}
       >

@@ -66,16 +66,18 @@ async function walk(
 }
 
 describe("Final QA — F9 Part 5 (design token discipline + Spark rationing + typography)", () => {
-  it("the design token table is the single source of truth (emerald / teal / signal / violet / gray + semantic)", async () => {
+  it("the design token table is the single source of truth (orange-first + warm neutrals + semantic)", async () => {
     // Every theme colour enters through tokens.css. process.cwd() is
     // `apps/web/` under vitest, so go up two levels to `packages/`.
     const tokensPath = path.resolve(process.cwd(), "..", "..", "packages/ui/src/styles/tokens.css")
     const tokens = (await fs.readFile(tokensPath, "utf8")).toLowerCase()
-    // Brand + neutral scales, plus the legacy aliases older classes rely on.
+    // Brand + accent + neutral scales, plus the legacy aliases older classes rely on.
     for (const token of [
-      "emerald-400",
+      "orange-400",
+      "orange-700",
+      "lime-400",
       "teal-400",
-      "signal-400",
+      "blue-400",
       "violet-400",
       "gray-950",
       "ink-900",
@@ -86,29 +88,43 @@ describe("Final QA — F9 Part 5 (design token discipline + Spark rationing + ty
     ]) {
       expect(tokens).toContain(`--${token}:`)
     }
-    // The brief's exact identity values.
+    // The brief's exact identity values (2026-10-19 orange-first direction).
     for (const hex of [
-      "#080b12",
-      "#0d1220",
-      "#111827",
-      "#34d399",
-      "#059669",
-      "#2dd4bf",
-      "#60a5fa",
-      "#a78bfa",
-      "#c4b5fd",
-      "#fbbf24",
-      "#fb7185",
-      "#f3f6fc",
-      "#a1aec3",
-      "#738198",
-      "#f7f9fc",
-      "#eef2f8",
-      "#101828",
-      "#475467",
-      "#667085",
-      "#047857",
-      "#0f766e",
+      // light: paper, surfaces, text, borders
+      "#f3f3f0",
+      "#ffffff",
+      "#f8f7f4",
+      "#f5ede5",
+      "#202020",
+      "#65635f",
+      "#e7e4de",
+      "#d8d3cb",
+      // orange brand
+      "#ff914d",
+      "#f47732",
+      "#e86524",
+      "#ffe4d2",
+      "#fff3ea",
+      "#f5c5a7",
+      // supporting accents
+      "#d8ff57",
+      "#afcf35",
+      "#6ec7b2",
+      "#91b9f4",
+      "#b6a2e8",
+      // dark: warm charcoal
+      "#171715",
+      "#1d1d1a",
+      "#242421",
+      "#2b2a26",
+      "#f4f0e9",
+      "#c0bbb2",
+      "#918b82",
+      "#393832",
+      "#4a473f",
+      "#ff9b5e",
+      "#ffad78",
+      "#ffc19d",
     ]) {
       expect(tokens).toContain(hex)
     }

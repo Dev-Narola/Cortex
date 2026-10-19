@@ -1,5 +1,7 @@
 import type { ReactNode } from "react"
 
+const MARK = "rounded-sm bg-brand-soft px-0.5 text-foreground ring-1 ring-brand-border"
+
 /** Wrap each query term (3+ chars, case-insensitive) found in `text` in <mark>. */
 export function highlight(text: string, query: string): ReactNode[] {
   const terms = [
@@ -16,7 +18,7 @@ export function highlight(text: string, query: string): ReactNode[] {
   return text.split(new RegExp(`(${escaped.join("|")})`, "gi")).map((part, i) =>
     i % 2 === 1 ? (
       // biome-ignore lint/suspicious/noArrayIndexKey: parts are positional and static per render
-      <mark key={i} className="rounded-sm bg-brand/20 px-0.5 text-foreground">
+      <mark key={i} className={MARK}>
         {part}
       </mark>
     ) : (

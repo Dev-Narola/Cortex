@@ -128,7 +128,7 @@ export function ConversationActionMenu({
               close()
               onRename()
             }}
-            className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-volt-500/40"
+            className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
           >
             <Icon name="Pencil" className="h-3.5 w-3.5 text-muted-foreground" />
             <span>Rename</span>
@@ -143,7 +143,7 @@ export function ConversationActionMenu({
                 close()
                 onDelete()
               }}
-              className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm text-destructive hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-volt-500/40"
+              className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm text-destructive hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
             >
               <Icon name="Trash" className="h-3.5 w-3.5" />
               <span>Delete</span>

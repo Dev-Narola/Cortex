@@ -1,10 +1,9 @@
 /**
  * Global stylesheet — Tailwind v4 @theme + base reset.
  *
- * The web app imports this once at the root layout. The OKLCH
- * token table is the single source of truth; Tailwind utilities
- * like `bg-ember-500` are generated automatically from the
- * `--color-*` entries below.
+ * The web app imports this once at the root layout. tokens.css is
+ * the single source of truth; Tailwind utilities like `bg-brand`
+ * or `bg-orange-400` are generated from the `--color-*` entries below.
  */
 
 @import "./tokens.css";
@@ -94,26 +93,24 @@
   --color-mist-800: var(--mist-800);
   --color-mist-900: var(--mist-900);
 
-  --color-emerald-50: var(--emerald-50);
-  --color-emerald-100: var(--emerald-100);
-  --color-emerald-200: var(--emerald-200);
-  --color-emerald-300: var(--emerald-300);
-  --color-emerald-400: var(--emerald-400);
-  --color-emerald-500: var(--emerald-500);
-  --color-emerald-600: var(--emerald-600);
-  --color-emerald-700: var(--emerald-700);
-  --color-emerald-800: var(--emerald-800);
-  --color-emerald-900: var(--emerald-900);
-  --color-teal-50: var(--teal-50);
-  --color-teal-100: var(--teal-100);
-  --color-teal-200: var(--teal-200);
-  --color-teal-300: var(--teal-300);
+  --color-orange-50: var(--orange-50);
+  --color-orange-100: var(--orange-100);
+  --color-orange-200: var(--orange-200);
+  --color-orange-300: var(--orange-300);
+  --color-orange-400: var(--orange-400);
+  --color-orange-500: var(--orange-500);
+  --color-orange-600: var(--orange-600);
+  --color-orange-700: var(--orange-700);
+  --color-orange-800: var(--orange-800);
+  --color-orange-900: var(--orange-900);
+  --color-lime-400: var(--lime-400);
+  --color-lime-600: var(--lime-600);
   --color-teal-400: var(--teal-400);
-  --color-teal-500: var(--teal-500);
-  --color-teal-600: var(--teal-600);
   --color-teal-700: var(--teal-700);
-  --color-teal-800: var(--teal-800);
-  --color-teal-900: var(--teal-900);
+  --color-blue-400: var(--blue-400);
+  --color-blue-700: var(--blue-700);
+  --color-violet-400: var(--violet-400);
+  --color-violet-700: var(--violet-700);
   --color-gray-0: var(--gray-0);
   --color-gray-50: var(--gray-50);
   --color-gray-100: var(--gray-100);
@@ -127,10 +124,11 @@
   --color-gray-850: var(--gray-850);
   --color-gray-900: var(--gray-900);
   --color-gray-950: var(--gray-950);
-  --color-signal-400: var(--signal-400);
-  --color-signal-600: var(--signal-600);
-  --color-violet-300: var(--violet-300);
-  --color-violet-400: var(--violet-400);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
 
   /* Semantic */
   --color-background: var(--background);
@@ -138,6 +136,12 @@
   --color-faint: var(--faint);
   --color-divider: var(--divider);
   --color-brand: var(--brand);
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-border: var(--brand-border);
+  --color-surface-tint: var(--surface-tint);
+  --color-border-strong: var(--border-strong);
+  --color-primary-hover: var(--primary-hover);
   --color-brand-2: var(--brand-2);
   --color-info: var(--info);
   --color-ai: var(--ai);
@@ -212,8 +216,10 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Spark gradient utility (used by hero, CTA, graph edge-pulse). */
+/* Brand gradient (orange only): logo tile, marketing accents. Text on it is
+   always charcoal; unlayered so it wins over a text-* utility on the same node. */
 .bg-spark {
+  color: #202020;
   background-image: linear-gradient(
     135deg,
     var(--spark-from) 0%,
@@ -248,20 +254,10 @@ body {
   backdrop-filter: blur(var(--glass-blur)) saturate(140%);
 }
 
-/* Ambient app background: two faint, static brand glows (no animation). */
+/* App background: flat warm paper / charcoal. Kept as a utility so the
+   shell has one hook if a texture is ever wanted. */
 @utility bg-ambient {
   background-color: var(--background);
-  background-image: radial-gradient(
-      60rem 40rem at 85% -10%,
-      color-mix(in srgb, var(--brand) 9%, transparent),
-      transparent 60%
-    ),
-    radial-gradient(
-      50rem 36rem at -10% 110%,
-      color-mix(in srgb, var(--brand-2) 7%, transparent),
-      transparent 60%
-    );
-  background-attachment: fixed;
 }
 
 /* Tabular numerals for metrics, tokens, money. */

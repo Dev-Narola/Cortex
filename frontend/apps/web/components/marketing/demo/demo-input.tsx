@@ -96,7 +96,7 @@ export function DemoInput({
         e.preventDefault()
         if (canSubmit) onSubmit()
       }}
-      className="flex items-center gap-2 rounded-full border border-border bg-background/80 px-4 py-2 shadow-sm backdrop-blur-sm focus-within:border-volt-500 focus-within:ring-2 focus-within:ring-volt-500/30"
+      className="flex items-center gap-2 rounded-full border border-border bg-background/80 px-4 py-2 shadow-sm backdrop-blur-sm focus-within:border-brand focus-within:ring-2 focus-within:ring-ring/50"
     >
       <label htmlFor="demo-input" className="sr-only">
         Ask Cortex
@@ -122,7 +122,7 @@ export function DemoInput({
         disabled={!canSubmit}
         aria-label="Ask Cortex"
         data-testid="demo-submit"
-        className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-spark text-foreground shadow-spark transition-opacity disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-volt-500"
+        className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-spark text-foreground shadow-spark transition-opacity disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <Icon name="ArrowUp" className="h-4 w-4" aria-hidden />
       </button>

@@ -54,9 +54,15 @@ import type { GraphData, GraphEdge, GraphEdgeMetadata, GraphNode, Vec3 } from ".
  * graph doesn't have the same crowding as a
  * 50-node one.
  */
-const BASE_RADIUS = 3.5
-const RADIUS_PER_NODE = 0.05
-const MAX_RADIUS = 12
+const MIN_RADIUS = 2.5
+const RADIUS_PER_SQRT_NODE = 1.05
+const MAX_RADIUS = 16
+const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5))
+
+/** Disc radius that keeps ~1 unit between neighbours at any graph size. */
+function radiusFor(count: number): number {
+  return Math.min(MAX_RADIUS, Math.max(MIN_RADIUS, RADIUS_PER_SQRT_NODE * Math.sqrt(count)))
+}
 
 /**
  * The seed for the deterministic shuffle. The
@@ -117,20 +123,14 @@ function shuffleStable<T>(items: T[], seed: number): T[] {
  * (Part 2 — Part 4 can lift the plane to a
  * sphere or a force-directed layout).
  */
-function positionFor(index: number, total: number, radius: number, isRoot: boolean): Vec3 {
-  if (isRoot) return [0, 0, 0]
-  // Subtract 1 because the root takes the
-  // first slot in the ordering.
-  const i = index - 1
-  const n = total - 1
-  if (n <= 0) return [0, 0, 0]
-  // Even spread around the ring. Slight Y
-  // wobble (one node slightly above, one
-  // below) keeps the graph from looking
-  // perfectly flat.
-  const theta = (i / n) * Math.PI * 2
-  const yWobble = (i % 2 === 0 ? 0.4 : -0.4) * (radius / 6)
-  return [Math.cos(theta) * radius, yWobble, Math.sin(theta) * radius]
+function positionFor(slot: number, count: number, radius: number): Vec3 {
+  if (count <= 0) return [0, 0, 0]
+  // Sunflower (Vogel) disc in the XY plane, i.e. facing the default camera:
+  // even spacing at any size. (A ring in XZ was seen edge-on and collapsed
+  // every label into one line.) A small z wobble keeps orbiting readable.
+  const r = radius * Math.sqrt((slot + 0.5) / count)
+  const theta = slot * GOLDEN_ANGLE
+  return [Math.cos(theta) * r, Math.sin(theta) * r, slot % 2 === 0 ? 0.25 : -0.25]
 }
 
 // ---------------------------------------------------------------------------
@@ -160,18 +160,12 @@ function seedForEntityIds(ids: string[]): number {
  * the index within the layout — see
  * :func:`positionFor`.
  */
-function entityToNode(
-  entity: KGEntity,
-  index: number,
-  total: number,
-  radius: number,
-  isRoot: boolean,
-): GraphNode {
+function entityToNode(entity: KGEntity, position: Vec3): GraphNode {
   return {
     id: entity.id,
     label: entity.name,
     type: entity.entity_type,
-    position: positionFor(index, total, radius, isRoot),
+    position,
     metadata: {
       canonicalId: entity.canonical_id,
       sourceChunkId: entity.source_chunk_id,
@@ -306,10 +300,11 @@ export function toGraph(input: ToGraphInput): GraphData {
       shuffled.unshift(root)
     }
   }
-  const total = shuffled.length
-  const radius = Math.min(MAX_RADIUS, BASE_RADIUS + total * RADIUS_PER_NODE)
+  // The root sits at the origin; everyone else fills the disc around it.
+  const rest = shuffled.length - 1
+  const radius = radiusFor(rest)
   const nodes: GraphNode[] = shuffled.map((entity, i) =>
-    entityToNode(entity, i, total, radius, i === 0),
+    entityToNode(entity, i === 0 ? [0, 0, 0] : positionFor(i - 1, rest, radius)),
   )
   const nodeIdSet = new Set(nodes.map((n) => n.id))
 
@@ -379,9 +374,9 @@ export function searchToGraph(response: KGSearchResponse): GraphData {
   const seed = seedForEntityIds(nodeIds)
   const shuffled = shuffleStable(Array.from(entityById.values()), seed)
   const total = shuffled.length
-  const radius = Math.min(MAX_RADIUS, BASE_RADIUS + total * RADIUS_PER_NODE)
+  const radius = radiusFor(total)
   const nodes: GraphNode[] = shuffled.map((entity, i) =>
-    entityToNode(entity, i, total, radius, false),
+    entityToNode(entity, positionFor(i, total, radius)),
   )
   const knownNodeIds = new Set(nodes.map((n) => n.id))
   const edges: GraphEdge[] = []
@@ -431,9 +426,10 @@ export function pathToGraph(input: {
   // The first node in the path is the
   // "source" (the user's start) — it lands at
   // the origin. The rest spread around it.
-  const radius = Math.min(MAX_RADIUS, BASE_RADIUS + ordered.length * RADIUS_PER_NODE)
+  const rest = ordered.length - 1
+  const radius = radiusFor(rest)
   const nodes: GraphNode[] = ordered.map((entity, i) =>
-    entityToNode(entity, i, ordered.length, radius, i === 0),
+    entityToNode(entity, i === 0 ? [0, 0, 0] : positionFor(i - 1, rest, radius)),
   )
   const relById = new Map<string, KGRelationship>()
   for (const r of input.relations) relById.set(r.id, r)

@@ -33,8 +33,8 @@ export type SidebarItemState = "default" | "active" | "disabled"
 
 const STATE = {
   default: "text-muted-foreground hover:bg-muted hover:text-foreground",
-  active:
-    "bg-brand/10 text-foreground before:absolute before:inset-y-2 before:left-0 before:w-0.5 before:rounded-full before:bg-brand [&_svg]:text-brand",
+  // Raised pill + orange icon: marks the current place without a glow.
+  active: "bg-card text-foreground shadow-xs ring-1 ring-border [&_svg]:text-brand",
   disabled: "opacity-50 pointer-events-none",
 } as const
 
@@ -55,7 +55,7 @@ const SidebarItem = forwardRef<HTMLAnchorElement, SidebarItemProps>(
     ref,
   ) => {
     const classNames = cn(
-      "group relative flex h-9 items-center gap-3 rounded-md px-3 text-sm font-medium transition-colors duration-fast",
+      "group relative flex h-9 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-[background-color,color,box-shadow] duration-fast",
       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
       STATE[state],
       className,

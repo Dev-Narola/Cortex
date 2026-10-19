@@ -25,8 +25,8 @@ const TableHeader = forwardRef<HTMLTableSectionElement, TableHeaderProps>(
     <thead
       ref={ref}
       className={cn(
-        "border-b border-border bg-muted/40 [&_tr]:border-b",
-        sticky ? "sticky top-0 z-10 bg-muted/80 backdrop-blur-sm" : "",
+        "border-b border-border bg-background-2 [&_tr]:border-b",
+        sticky ? "sticky top-0 z-10 bg-background-2/90 backdrop-blur-sm" : "",
         className,
       )}
       {...props}

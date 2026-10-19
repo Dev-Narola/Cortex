@@ -93,7 +93,7 @@ function GraphCanvasSkeleton() {
       aria-label="Loading knowledge graph"
       className="flex h-full w-full items-center justify-center"
     >
-      <div className="h-12 w-12 animate-spin rounded-full border-2 border-border border-t-volt-400" />
+      <div className="h-12 w-12 animate-spin rounded-full border-2 border-border border-t-brand" />
     </output>
   )
 }
@@ -320,7 +320,7 @@ export function GraphExplorer({ initialData, defaultQuery = "" }: GraphExplorerP
       aria-label="Knowledge graph explorer"
       data-testid="graph-explorer"
       data-capability={capability}
-      className="relative isolate -m-6 flex h-[calc(100vh-3.5rem)] w-[calc(100%+3rem)] flex-col bg-background"
+      className="relative isolate flex h-full min-h-[28rem] w-full flex-col overflow-hidden rounded-2xl border border-border bg-card bg-[radial-gradient(var(--border)_1px,transparent_1px)] [background-size:22px_22px] shadow-xs"
     >
       <div className="absolute inset-0 z-0">
         {renderedGraph ? (
@@ -356,7 +356,7 @@ export function GraphExplorer({ initialData, defaultQuery = "" }: GraphExplorerP
         ) : null}
         {isRootLoading ? (
           <output aria-live="polite" className="pointer-events-none absolute right-4 top-20 z-10">
-            <div className="rounded-md border border-border bg-card/90 px-3 py-1.5 text-xs text-muted-foreground shadow-lg backdrop-blur">
+            <div className="glass rounded-full px-3 py-1.5 text-xs text-muted-foreground shadow-md">
               Loading entity…
             </div>
           </output>
@@ -366,7 +366,7 @@ export function GraphExplorer({ initialData, defaultQuery = "" }: GraphExplorerP
             aria-live="polite"
             className="pointer-events-none absolute bottom-6 left-1/2 z-10 -translate-x-1/2"
           >
-            <div className="max-w-md rounded-md border border-volt-500/30 bg-card/90 px-3 py-1.5 text-center text-xs text-muted-foreground shadow-lg backdrop-blur">
+            <div className="glass max-w-md rounded-full px-3.5 py-1.5 text-center text-xs text-muted-foreground shadow-md">
               {truncationMessage}
             </div>
           </output>

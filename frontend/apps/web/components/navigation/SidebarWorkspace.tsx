@@ -41,7 +41,7 @@ export function SidebarWorkspace({ collapsed = false, onClose }: SidebarWorkspac
 
   if (collapsed) {
     return (
-      <div className="flex h-14 items-center justify-center border-b border-divider px-2">
+      <div className="flex h-16 items-center justify-center px-2">
         <TooltipRoot content={name} side="right">
           {home}
         </TooltipRoot>
@@ -50,20 +50,28 @@ export function SidebarWorkspace({ collapsed = false, onClose }: SidebarWorkspac
   }
 
   return (
-    <div className="border-b border-divider px-3 pb-3">
-      <div className="flex h-14 items-center">{home}</div>
-      <div className="glass rounded-lg px-3 py-2">
-        <p className="truncate text-sm font-medium text-foreground" title={name}>
-          {name}
-        </p>
-        <p className="flex items-center gap-1.5 truncate text-[11px] text-muted-foreground">
-          {slug ? <span className="truncate font-mono">/{slug}</span> : null}
-          {current?.plan ? (
-            <span className="rounded-full bg-brand/10 px-1.5 py-px font-medium capitalize text-brand">
-              {current.plan}
-            </span>
-          ) : null}
-        </p>
+    <div className="px-3 pb-2">
+      <div className="flex h-16 items-center px-1.5">{home}</div>
+      <div className="flex items-center gap-2.5 rounded-xl border border-border bg-card px-2.5 py-2 shadow-xs">
+        <span
+          aria-hidden
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-tint font-display text-sm font-semibold text-foreground"
+        >
+          {name.charAt(0).toUpperCase()}
+        </span>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-medium text-foreground" title={name}>
+            {name}
+          </p>
+          <p className="flex items-center gap-1.5 truncate text-[11px] text-muted-foreground">
+            {slug ? <span className="truncate font-mono">/{slug}</span> : null}
+            {current?.plan ? (
+              <span className="rounded-full bg-brand-soft px-1.5 py-px font-medium capitalize text-brand-ink">
+                {current.plan}
+              </span>
+            ) : null}
+          </p>
+        </div>
       </div>
     </div>
   )

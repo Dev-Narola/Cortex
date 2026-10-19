@@ -16,12 +16,9 @@
  * inside ``GraphExplorer`` and is loaded via
  * ``next/dynamic`` with ``ssr: false``.
  *
- * **Full-bleed.** The (app) layout adds ``p-6``
- * to the main column. We undo that with
- * ``-m-6`` on the explorer's section so the
- * canvas reaches the layout's available
- * viewport. The header is suppressed via the
- * explicit null — the explorer owns the screen.
+ * **Full height.** The (app) layout gives /app/graph
+ * (like /chat) a full-height content box; the explorer
+ * fills it as one rounded panel and owns the screen.
  *
  * **Future deep-link support.** A future V9 item
  * can read ``searchParams.q`` and pass it as

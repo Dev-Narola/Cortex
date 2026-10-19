@@ -39,7 +39,7 @@ const TableToolbar = ({
 }: TableToolbarProps) => (
   <div
     className={cn(
-      "flex flex-col gap-2 border-b border-border bg-background px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4",
+      "flex flex-col gap-3 border-b border-border px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4",
       className,
     )}
     {...props}

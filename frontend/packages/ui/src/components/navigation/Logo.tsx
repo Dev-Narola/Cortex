@@ -1,17 +1,15 @@
 /**
  * Logo — the Cortex wordmark.
  *
- * **F1 Part 3 (Task 27).** Pure SVG; the gradient uses the
- * `ember-500` → `ember-300` → `volt-500` spark palette so
- * it matches the brand mark used on the marketing site.
+ * Pure SVG: a charcoal lightning bolt on an orange tile, the same
+ * mark as `public/favicon.svg`.
  *
  * **Sizes.** `sm | md | lg | xl` — the same scale as the
  * Avatar. Use `sm` for the sidebar (collapsed), `md` for
  * the topbar, `lg` / `xl` for marketing surfaces.
  *
- * **Theme integration.** The mark uses the brand gradient
- * in both themes; the wordmark text uses `text-foreground`
- * so it flips with the surface.
+ * **Theme integration.** The mark is identical in both themes;
+ * the wordmark text uses `text-foreground` so it flips with the surface.
  *
  * **No href.** The Logo is just the visual; wrap it in a
  * `next/link` (or a `SidebarItem` / `Breadcrumb` link)
@@ -59,24 +57,15 @@ const Logo = forwardRef<HTMLSpanElement, LogoProps>(
           aria-hidden="true"
           className={cn(dims.mark, "shrink-0")}
         >
-          <defs>
-            <linearGradient
-              id="cortex-logo-gradient"
-              x1="0"
-              y1="0"
-              x2="32"
-              y2="32"
-              gradientUnits="userSpaceOnUse"
-            >
-              <stop stopColor="var(--emerald-400)" />
-              <stop offset="0.55" stopColor="var(--teal-400)" />
-              <stop offset="1" stopColor="var(--signal-400)" />
-            </linearGradient>
-          </defs>
-          <rect width="32" height="32" rx="8" fill="url(#cortex-logo-gradient)" />
+          {/* Lightning bolt on an orange tile: the bolt stays charcoal in
+              both themes so the mark reads the same everywhere. */}
+          <rect width="32" height="32" rx="9" fill="var(--orange-400)" />
           <path
-            d="M9 22V10h6.5a3.5 3.5 0 0 1 1.4 6.7L20 22h-3.2l-2.6-4.6H12V22H9zm3-7.4h3.1a1.2 1.2 0 1 0 0-2.4H12v2.4z"
-            fill="var(--gray-950)"
+            d="M18.4 5.5 9.6 17.6h6l-1.9 8.9 8.8-12.3h-6l1.9-8.7z"
+            fill="#202020"
+            stroke="#202020"
+            strokeWidth="1.2"
+            strokeLinejoin="round"
           />
         </svg>
         {showText ? (

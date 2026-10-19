@@ -93,20 +93,20 @@ export function AppSidebar({ state, onClose }: AppSidebarProps): ReactNode {
       <SidebarWorkspace collapsed={resolvedState !== "expanded"} onClose={onClose} />
 
       {/* The nav list. */}
-      <div className="flex-1 overflow-y-auto py-4">
+      <div className="flex-1 overflow-y-auto py-3">
         <SidebarNav collapsed={resolvedState === "collapsed"} />
       </div>
 
       {/* Collapse toggle (only in desktop states). */}
       {state !== "mobile" ? (
-        <div className="border-t border-divider p-2">
+        <div className="border-t border-divider p-3">
           <TooltipRoot content={collapsed ? "Expand sidebar" : "Collapse sidebar"} side="right">
             <button
               type="button"
               onClick={() => setCollapsed((c) => !c)}
               aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
               aria-pressed={collapsed}
-              className="flex h-8 w-full items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              className="flex h-8 w-full items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
               <Icon name={collapsed ? "ChevronsRight" : "ChevronsLeft"} className="h-4 w-4" />
             </button>

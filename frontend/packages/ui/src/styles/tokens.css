@@ -1,79 +1,79 @@
 /**
  * Design tokens — single source of truth.
  *
- * Identity: emerald + teal on deep blue-black, glass surfaces, violet only
- * for AI emphasis. Dark is the primary experience; light is a full theme.
- * Components use semantic tokens (bg-background, text-muted-foreground,
- * bg-glass, …). Named scales exist for accents; the legacy names (ember,
- * volt, void, ink, cloud, slate, mist) are aliases kept so existing
- * classes keep rendering in the new identity.
+ * Identity: orange-first on warm neutrals. Light is warm paper (#F3F3F0) with
+ * white panels; dark is warm charcoal (#171715), never pure black. Orange
+ * marks primary actions, the active place and AI activity; lime, teal, blue
+ * and violet are supporting accents for real distinctions (charts, entity
+ * types), never decoration. Components use semantic tokens (bg-card,
+ * text-muted-foreground, text-brand-ink, …). Legacy scale names (ember, volt,
+ * ink, cloud, mist) are aliases so older classes render in this identity.
+ *
+ * Text-safe variants: the spec's #8A8882 muted text, #B7791F warning and
+ * #21865B success sit under 4.5:1 for small text on #F3F3F0, so light mode
+ * uses slightly deeper values for text (contrast checked 2026-10-19).
  */
 
 :root {
-  /* ---- Brand scales ---------------------------------------------- */
-  --emerald-50: #ecfdf5;
-  --emerald-100: #d1fae5;
-  --emerald-200: #a7f3d0;
-  --emerald-300: #6ee7b7;
-  --emerald-400: #34d399; /* primary emerald */
-  --emerald-500: #10b981;
-  --emerald-600: #059669; /* deep emerald */
-  --emerald-700: #047857; /* light-theme brand */
-  --emerald-800: #065f46;
-  --emerald-900: #064e3b;
+  /* ---- Orange brand scale ---------------------------------------- */
+  --orange-50: #fff8f2;
+  --orange-100: #fff3ea; /* pale background */
+  --orange-200: #ffe4d2; /* soft */
+  --orange-300: #f5c5a7; /* border */
+  --orange-400: #ff914d; /* primary brand */
+  --orange-500: #f47732; /* strong */
+  --orange-600: #e86524; /* deep */
+  --orange-700: #b04a12; /* ink: orange text on light surfaces (≥4.5:1) */
+  --orange-800: #8a3a0e;
+  --orange-900: #5e280b;
 
-  --teal-50: #f0fdfa;
-  --teal-100: #ccfbf1;
-  --teal-200: #99f6e4;
-  --teal-300: #5eead4;
-  --teal-400: #2dd4bf; /* soft teal */
-  --teal-500: #14b8a6;
-  --teal-600: #0d9488;
-  --teal-700: #0f766e; /* light-theme teal */
-  --teal-800: #115e59;
-  --teal-900: #134e4a;
+  /* ---- Supporting accents (sparingly) ----------------------------- */
+  --lime-300: #e6ff94;
+  --lime-400: #d8ff57;
+  --lime-600: #afcf35;
+  --teal-400: #6ec7b2;
+  --teal-700: #2c7a68;
+  --blue-400: #91b9f4;
+  --blue-700: #386db5;
+  --violet-400: #b6a2e8;
+  --violet-700: #6f55b8;
 
-  --signal-400: #60a5fa; /* informational blue */
-  --signal-600: #2563eb;
-  --violet-300: #c4b5fd; /* premium highlight */
-  --violet-400: #a78bfa; /* AI emphasis, sparingly */
-
-  /* ---- Cool neutral scale (light → dark) ------------------------- */
+  /* ---- Warm neutral scale (light → dark) -------------------------- */
   --gray-0: #ffffff;
-  --gray-50: #f7f9fc;
-  --gray-100: #eef2f8;
-  --gray-200: #e1e7f0;
-  --gray-300: #c9d2df;
-  --gray-400: #a1aec3;
-  --gray-500: #738198;
-  --gray-600: #586579;
-  --gray-700: #3b4556;
-  --gray-800: #1c2433;
-  --gray-850: #111827;
-  --gray-900: #0d1220;
-  --gray-950: #080b12;
+  --gray-50: #f8f7f4;
+  --gray-100: #f3f3f0;
+  --gray-200: #e7e4de;
+  --gray-300: #d8d3cb;
+  --gray-400: #a9a59d;
+  --gray-500: #8a8882;
+  --gray-600: #65635f;
+  --gray-700: #4a473f;
+  --gray-800: #2b2a26;
+  --gray-850: #242421;
+  --gray-900: #1d1d1a;
+  --gray-950: #171715;
 
   /* ---- Legacy aliases (old class names, new identity) ------------ */
-  --ember-50: var(--emerald-50);
-  --ember-100: var(--emerald-100);
-  --ember-200: var(--emerald-200);
-  --ember-300: var(--emerald-300);
-  --ember-400: var(--emerald-400);
-  --ember-500: var(--emerald-500);
-  --ember-600: var(--emerald-600);
-  --ember-700: var(--emerald-700);
-  --ember-800: var(--emerald-800);
-  --ember-900: var(--emerald-900);
-  --volt-50: var(--teal-50);
-  --volt-100: var(--teal-100);
-  --volt-200: var(--teal-200);
-  --volt-300: var(--teal-300);
-  --volt-400: var(--teal-400);
-  --volt-500: var(--teal-500);
-  --volt-600: var(--teal-600);
-  --volt-700: var(--teal-700);
-  --volt-800: var(--teal-800);
-  --volt-900: var(--teal-900);
+  --ember-50: var(--orange-50);
+  --ember-100: var(--orange-100);
+  --ember-200: var(--orange-200);
+  --ember-300: var(--orange-300);
+  --ember-400: var(--orange-400);
+  --ember-500: var(--orange-500);
+  --ember-600: var(--orange-600);
+  --ember-700: var(--orange-700);
+  --ember-800: var(--orange-800);
+  --ember-900: var(--orange-900);
+  --volt-50: var(--orange-50);
+  --volt-100: var(--orange-100);
+  --volt-200: var(--orange-200);
+  --volt-300: var(--orange-300);
+  --volt-400: var(--orange-400);
+  --volt-500: var(--orange-500);
+  --volt-600: var(--orange-600);
+  --volt-700: var(--orange-700);
+  --volt-800: var(--orange-800);
+  --volt-900: var(--orange-900);
   --ink-50: var(--gray-50);
   --ink-100: var(--gray-100);
   --ink-200: var(--gray-200);
@@ -107,68 +107,82 @@
   --mist-800: var(--gray-800);
   --mist-900: var(--gray-900);
 
-  --spark-from: var(--emerald-400);
-  --spark-via: var(--teal-400);
-  --spark-to: var(--signal-400);
+  /* Brand gradient: orange only, used on the logo tile and marketing CTA. */
+  --spark-from: var(--orange-400);
+  --spark-via: var(--orange-500);
+  --spark-to: var(--orange-600);
 
   /* ---- Semantic: light theme ------------------------------------- */
-  --background: var(--gray-50);
-  --background-2: var(--gray-100);
-  --foreground: #101828;
-  --muted: rgba(16, 24, 40, 0.04);
-  --muted-foreground: #475467;
-  --faint: #667085;
-  --border: rgba(16, 24, 40, 0.1);
-  --divider: rgba(16, 24, 40, 0.07);
-  --input: rgba(16, 24, 40, 0.12);
-  --ring: var(--emerald-700);
-  --primary: var(--emerald-700);
-  --primary-foreground: #ffffff;
-  --secondary: rgba(16, 24, 40, 0.05);
-  --secondary-foreground: #101828;
+  --background: #f3f3f0;
+  --background-2: #f8f7f4; /* sidebar, drawers, secondary surface */
+  --surface-tint: #f5ede5; /* warm emphasis panel */
+  --foreground: #202020;
+  --muted: rgba(32, 32, 32, 0.045);
+  --muted-foreground: #65635f;
+  --faint: #706e68;
+  --border: #e7e4de;
+  --border-strong: #d8d3cb;
+  --divider: #eeebe6;
+  --input: #d8d3cb;
+  --ring: #cc5a1e;
+  --primary: #ff914d;
+  --primary-hover: #f47732;
+  --primary-foreground: #202020;
+  --secondary: rgba(32, 32, 32, 0.06);
+  --secondary-foreground: #202020;
   --card: #ffffff;
-  --card-foreground: #101828;
+  --card-foreground: #202020;
   --popover: #ffffff;
-  --popover-foreground: #101828;
-  --accent: rgba(4, 120, 87, 0.08);
-  --accent-foreground: #101828;
-  --brand: var(--emerald-700);
+  --popover-foreground: #202020;
+  --accent: #fff3ea;
+  --accent-foreground: #202020;
+  --brand: #f47732; /* fills, indicators, icons */
+  --brand-ink: var(--orange-700); /* orange text */
+  --brand-soft: #fff3ea; /* pale orange surface */
+  --brand-border: #f5c5a7;
   --brand-2: var(--teal-700);
-  --info: var(--signal-600);
-  --ai: #7c3aed;
-  --destructive: #e11d48;
+  --info: #3466aa;
+  --ai: var(--brand);
+  --destructive: #c84646;
   --destructive-foreground: #ffffff;
-  --error: #e11d48;
-  --success: var(--emerald-700);
+  --error: #b83c3c;
+  --success: #1c7550;
   --success-foreground: #ffffff;
-  --warning: #b45309;
+  --warning: #8f5e10;
   --warning-foreground: #ffffff;
 
-  --glass: rgba(255, 255, 255, 0.72);
-  --glass-strong: rgba(255, 255, 255, 0.88);
-  --glass-border: rgba(16, 24, 40, 0.08);
-  --glass-blur: 20px;
-  --glow: rgba(4, 120, 87, 0.16);
+  /* Chart series: orange leads; the rest only when series differ. */
+  --chart-1: #f47732;
+  --chart-2: #2c7a68;
+  --chart-3: #386db5;
+  --chart-4: #6f55b8;
+  --chart-5: #afcf35;
 
-  /* ---- Radius (8 / 16 / 20 / 24 / pill) -------------------------- */
+  --glass: rgba(255, 255, 255, 0.78);
+  --glass-strong: rgba(255, 255, 255, 0.9);
+  --glass-border: rgba(32, 32, 32, 0.08);
+  --glass-blur: 16px;
+  --glow: rgba(244, 119, 50, 0.22);
+
+  /* ---- Radius: 8 controls · 14 panels · 20 bento · 24 feature ----- */
   --radius-sm: 0.375rem;
   --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
-  --radius-xl: 1rem;
+  --radius-lg: 0.625rem;
+  --radius-xl: 0.875rem;
   --radius-2xl: 1.25rem;
   --radius-3xl: 1.5rem;
   --radius-full: 9999px;
 
-  /* ---- Shadows --------------------------------------------------- */
-  --shadow-xs: 0 1px 2px 0 rgba(16, 24, 40, 0.05);
-  --shadow-sm: 0 1px 3px 0 rgba(16, 24, 40, 0.08), 0 1px 2px -1px rgba(16, 24, 40, 0.06);
-  --shadow-md: 0 4px 12px -2px rgba(16, 24, 40, 0.08), 0 2px 4px -2px rgba(16, 24, 40, 0.05);
-  --shadow-lg: 0 12px 28px -6px rgba(16, 24, 40, 0.12), 0 4px 8px -4px rgba(16, 24, 40, 0.06);
-  --shadow-xl: 0 24px 48px -12px rgba(16, 24, 40, 0.18);
-  --shadow-spark: 0 0 0 1px var(--glow), 0 8px 28px -10px var(--glow);
+  /* ---- Shadows: soft and warm ------------------------------------ */
+  --shadow-xs: 0 1px 2px 0 rgba(40, 32, 20, 0.04);
+  --shadow-sm: 0 1px 2px 0 rgba(40, 32, 20, 0.04), 0 1px 3px 0 rgba(40, 32, 20, 0.05);
+  --shadow-md: 0 6px 18px -6px rgba(40, 32, 20, 0.1), 0 2px 4px -2px rgba(40, 32, 20, 0.04);
+  --shadow-lg: 0 18px 40px -14px rgba(40, 32, 20, 0.16), 0 4px 8px -4px rgba(40, 32, 20, 0.05);
+  --shadow-xl: 0 28px 64px -20px rgba(40, 32, 20, 0.24);
+  --shadow-spark: 0 0 0 1px var(--glow), 0 8px 24px -10px var(--glow);
 
   /* ---- Type ------------------------------------------------------ */
-  --font-display: var(--font-space-grotesk, "Space Grotesk"), "Inter", system-ui, sans-serif;
+  --font-display: var(--font-manrope, "Manrope"), var(--font-inter, "Inter"), system-ui, sans-serif;
   --font-sans: var(--font-inter, "Inter"), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-mono: var(--font-jetbrains-mono, "JetBrains Mono"), ui-monospace, "Cascadia Code",
     monospace;
@@ -201,50 +215,62 @@
   --z-toast: 60;
 }
 
-/* Dark theme (primary) — toggled by next-themes via the `dark` class. */
+/* Dark theme — warm charcoal. Toggled by next-themes via the `dark` class. */
 .dark {
-  --background: var(--gray-950);
-  --background-2: var(--gray-900);
-  --foreground: #f3f6fc;
-  --muted: rgba(255, 255, 255, 0.055);
-  --muted-foreground: #a1aec3;
-  --faint: #738198;
-  --border: rgba(255, 255, 255, 0.11);
-  --divider: rgba(255, 255, 255, 0.08);
-  --input: rgba(255, 255, 255, 0.13);
-  --ring: var(--emerald-400);
-  --primary: var(--emerald-400);
-  --primary-foreground: #04130d;
-  --secondary: rgba(255, 255, 255, 0.085);
-  --secondary-foreground: #f3f6fc;
-  --card: var(--gray-850);
-  --card-foreground: #f3f6fc;
-  --popover: var(--gray-900);
-  --popover-foreground: #f3f6fc;
-  --accent: rgba(255, 255, 255, 0.085);
-  --accent-foreground: #f3f6fc;
-  --brand: var(--emerald-400);
+  --background: #171715;
+  --background-2: #1d1d1a;
+  --surface-tint: #2a241e;
+  --foreground: #f4f0e9;
+  --muted: rgba(244, 240, 233, 0.055);
+  --muted-foreground: #c0bbb2;
+  --faint: #918b82;
+  --border: #393832;
+  --border-strong: #4a473f;
+  --divider: #2f2e29;
+  --input: #4a473f;
+  --ring: #ff9b5e;
+  --primary: #ff9b5e;
+  --primary-hover: #ffad78;
+  --primary-foreground: #1a1208;
+  --secondary: rgba(244, 240, 233, 0.08);
+  --secondary-foreground: #f4f0e9;
+  --card: #242421;
+  --card-foreground: #f4f0e9;
+  --popover: #2b2a26;
+  --popover-foreground: #f4f0e9;
+  --accent: rgba(255, 145, 77, 0.12);
+  --accent-foreground: #f4f0e9;
+  --brand: #ff9b5e;
+  --brand-ink: #ffc19d;
+  --brand-soft: rgba(255, 145, 77, 0.12);
+  --brand-border: rgba(255, 145, 77, 0.28);
   --brand-2: var(--teal-400);
-  --info: var(--signal-400);
-  --ai: var(--violet-400);
-  --destructive: #fb7185;
-  --destructive-foreground: #1a0509;
-  --error: #fb7185;
-  --success: var(--emerald-400);
-  --success-foreground: #04130d;
-  --warning: #fbbf24;
-  --warning-foreground: #1a1303;
+  --info: #82aaea;
+  --ai: var(--brand);
+  --destructive: #eb7d7d;
+  --destructive-foreground: #1d0b0b;
+  --error: #eb7d7d;
+  --success: #5bbf8e;
+  --success-foreground: #0b1d14;
+  --warning: #e0a84a;
+  --warning-foreground: #1d1405;
 
-  --glass: rgba(255, 255, 255, 0.055);
-  --glass-strong: rgba(255, 255, 255, 0.085);
-  --glass-border: rgba(255, 255, 255, 0.11);
-  --glow: rgba(52, 211, 153, 0.22);
+  --chart-1: #ff9b5e;
+  --chart-2: #6ec7b2;
+  --chart-3: #91b9f4;
+  --chart-4: #b6a2e8;
+  --chart-5: #d8ff57;
+
+  --glass: rgba(36, 36, 33, 0.82);
+  --glass-strong: rgba(43, 42, 38, 0.92);
+  --glass-border: rgba(244, 240, 233, 0.09);
+  --glow: rgba(255, 145, 77, 0.22);
 
   --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
-  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.35), 0 1px 2px -1px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 6px 16px -4px rgba(0, 0, 0, 0.45), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
-  --shadow-lg: 0 16px 36px -10px rgba(0, 0, 0, 0.55), 0 4px 10px -4px rgba(0, 0, 0, 0.35);
-  --shadow-xl: 0 28px 60px -16px rgba(0, 0, 0, 0.6);
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.32), 0 1px 3px 0 rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 8px 20px -8px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 18px 40px -14px rgba(0, 0, 0, 0.6), 0 4px 10px -4px rgba(0, 0, 0, 0.35);
+  --shadow-xl: 0 28px 64px -20px rgba(0, 0, 0, 0.65);
 }
 
 /* Honour reduced-motion globally. */

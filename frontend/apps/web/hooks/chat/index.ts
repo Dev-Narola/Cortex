@@ -1,5 +1,6 @@
 export { useConversation } from "./useConversation"
 export { useCreateConversation } from "./useCreateConversation"
+export { useStartConversation } from "./useStartConversation"
 export {
   useConversations,
   useDeleteConversation,

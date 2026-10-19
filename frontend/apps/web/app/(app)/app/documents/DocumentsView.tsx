@@ -27,9 +27,9 @@
 
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 
-import { Card, CardContent, Spinner } from "@cortex/ui"
+import { Button, Card, PageHeader, Spinner } from "@cortex/ui"
 
 import { ConnectionIndicator } from "@/components/documents/ConnectionIndicator"
 import { DocumentErrorState } from "@/components/documents/DocumentErrorState"
@@ -40,70 +40,113 @@ import { DocumentsTable } from "@/components/documents/DocumentsTable"
 import { DocumentDetailDrawer } from "@/components/documents/detail/DocumentDetailDrawer"
 import { UploadDocumentModal } from "@/components/documents/upload/UploadDocumentModal"
 import { useDocuments, useIngestionStatus } from "@/hooks/documents"
+import {
+  type DocumentSort,
+  type DocumentStatusFilter,
+  filterDocuments,
+  matchesStatus,
+} from "@/lib/documents/filter"
+
+/** The API's page-size ceiling; search, filter and sort apply to these rows. */
+const PAGE = 200
 
 export function DocumentsView() {
-  const { data, isLoading, isError, error, refetch, isFetching } = useDocuments()
+  const { data, isLoading, isError, error, refetch, isFetching } = useDocuments({ limit: PAGE })
   const { connectionState } = useIngestionStatus()
   const [uploadOpen, setUploadOpen] = useState(false)
+  const [query, setQuery] = useState("")
+  const [status, setStatus] = useState<DocumentStatusFilter>("all")
+  const [sort, setSort] = useState<DocumentSort>("newest")
   // `/app/documents?upload=1` (dashboard CTA) opens the upload dialog.
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("upload") === "1") setUploadOpen(true)
   }, [])
 
+  const items = data?.items ?? []
+  const visible = useMemo(
+    () => filterDocuments(items, { query, status, sort }),
+    [items, query, status, sort],
+  )
+  const statusCounts = useMemo(
+    () =>
+      Object.fromEntries(
+        (["all", "indexed", "processing", "failed"] as const).map((f) => [
+          f,
+          items.filter((d) => matchesStatus(d.status, f)).length,
+        ]),
+      ),
+    [items],
+  )
+  const narrowed = query.trim() !== "" || status !== "all"
+
   return (
     <DocumentSelectionProvider>
-      <div className="space-y-6">
-        {/* Page header — matches the (app) layout's
-            main padding + the dashboard hero. The
-            toolbar doubles as the "actions" row. */}
-        <header className="space-y-1">
-          <h1 className="font-display text-3xl font-semibold tracking-tight">Documents</h1>
-          <p className="text-sm text-muted-foreground">
-            Upload, search, and inspect every document in your tenant.
-          </p>
-        </header>
+      <div className="mx-auto flex max-w-7xl flex-col gap-6">
+        <PageHeader
+          title="Documents"
+          description="Everything Cortex can answer from. Upload a file or import a page; each one is parsed, chunked and embedded, and you can watch it happen live."
+        />
 
-        <Card>
-          {/* Toolbar sits inside the card so the table
-              aligns with the chrome. Hidden on the error
-              state to keep the retry surface uncluttered.
-              The connection indicator lives in the
-              description slot so the user can see the
-              live channel state at a glance. */}
+        <Card radius="xl" padding="none" className="overflow-hidden">
           {isError ? null : (
             <DocumentToolbar
               total={data?.total ?? 0}
               loading={isLoading}
               onUpload={() => setUploadOpen(true)}
+              query={query}
+              onQueryChange={setQuery}
+              status={status}
+              onStatusChange={setStatus}
+              statusCounts={data ? statusCounts : undefined}
+              sort={sort}
+              onSortChange={setSort}
               connectionSlot={<ConnectionIndicator state={connectionState} />}
             />
           )}
 
-          <CardContent className="p-0">
-            {isError ? (
-              <div className="p-4">
-                <DocumentErrorState error={error} onRetry={() => void refetch()} />
-              </div>
-            ) : isLoading ? (
-              <output
-                className="flex min-h-[280px] items-center justify-center p-8"
-                aria-live="polite"
+          {isError ? (
+            <div className="p-4">
+              <DocumentErrorState error={error} onRetry={() => void refetch()} />
+            </div>
+          ) : isLoading ? (
+            <output
+              className="flex min-h-[280px] items-center justify-center p-8"
+              aria-live="polite"
+            >
+              <Spinner size="lg" />
+            </output>
+          ) : data && data.items.length === 0 ? (
+            <div className="p-4">
+              <DocumentsEmptyState onUpload={() => setUploadOpen(true)} />
+            </div>
+          ) : visible.length === 0 ? (
+            <div className="flex flex-col items-center gap-3 px-6 py-14 text-center">
+              <p className="text-sm text-muted-foreground">No documents match these filters.</p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setQuery("")
+                  setStatus("all")
+                }}
               >
-                <Spinner size="lg" />
-              </output>
-            ) : data && data.items.length === 0 ? (
-              <div className="p-4">
-                <DocumentsEmptyState onUpload={() => setUploadOpen(true)} />
-              </div>
-            ) : data ? (
-              <DocumentsTable documents={data.items} />
-            ) : null}
-          </CardContent>
+                Clear filters
+              </Button>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <DocumentsTable documents={visible} />
+            </div>
+          )}
+
+          {data && data.total > data.items.length ? (
+            <p className="border-t border-divider px-5 py-3 text-xs text-muted-foreground">
+              Showing the {data.items.length} most recent of {data.total} documents
+              {narrowed ? "; search and filters apply to these." : "."}
+            </p>
+          ) : null}
         </Card>
 
-        {/* Background refetch indicator — subtle. Lives
-            in the corner of the page so the user knows
-            something is happening. */}
         {isFetching && !isLoading ? (
           <p className="text-right text-xs text-muted-foreground" aria-live="polite">
             Refreshing…

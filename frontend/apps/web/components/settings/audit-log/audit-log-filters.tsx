@@ -215,7 +215,7 @@ export function AuditLogFilters({ value, onChange, disabled }: AuditLogFiltersPr
           }
           disabled={disabled}
           data-testid="audit-log-filter-from"
-          className="h-10 rounded-md border border-border bg-muted px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-volt-500"
+          className="h-10 rounded-md border border-border bg-muted px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         />
       </div>
       <div className="flex flex-col gap-1">
@@ -234,7 +234,7 @@ export function AuditLogFilters({ value, onChange, disabled }: AuditLogFiltersPr
           }
           disabled={disabled}
           data-testid="audit-log-filter-to"
-          className="h-10 rounded-md border border-border bg-muted px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-volt-500"
+          className="h-10 rounded-md border border-border bg-muted px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         />
       </div>
       {hasAnyFilter ? (
@@ -244,7 +244,7 @@ export function AuditLogFilters({ value, onChange, disabled }: AuditLogFiltersPr
             onClick={() => onChange({})}
             disabled={disabled}
             data-testid="audit-log-filter-clear"
-            className="text-xs font-medium text-volt-400 transition-colors hover:text-volt-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-volt-500 disabled:cursor-not-allowed disabled:opacity-50"
+            className="text-xs font-medium text-brand-ink transition-colors hover:text-brand-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
           >
             Clear filters
           </button>

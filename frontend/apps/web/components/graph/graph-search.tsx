@@ -81,7 +81,7 @@ export function GraphSearch({
       data-testid="graph-search"
       className="pointer-events-auto w-full max-w-sm"
     >
-      <div className="flex h-9 w-full items-center gap-2 rounded-md border border-border bg-muted px-3 text-sm text-foreground shadow-sm backdrop-blur-sm focus-within:ring-2 focus-within:ring-volt-500/50">
+      <div className="glass flex h-10 w-full items-center gap-2 rounded-full px-4 text-sm text-foreground shadow-md focus-within:ring-2 focus-within:ring-ring/50">
         <Icon name="Search" size="sm" tone="muted" aria-hidden />
         <input
           type="search"
@@ -98,7 +98,7 @@ export function GraphSearch({
             type="button"
             onClick={handleClear}
             aria-label="Clear search"
-            className="inline-flex shrink-0 items-center justify-center rounded-sm p-0.5 text-faint transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-volt-500"
+            className="inline-flex shrink-0 items-center justify-center rounded-sm p-0.5 text-faint transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           >
             <Icon name="X" size="xs" />
           </button>

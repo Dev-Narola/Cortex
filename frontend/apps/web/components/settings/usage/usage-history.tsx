@@ -114,7 +114,7 @@ export function UsageHistorySection() {
   if (events.length === 0) {
     return (
       <Card data-testid="usage-history-empty">
-        <CardContent className="space-y-2 p-4 sm:p-6 text-center">
+        <CardContent className="space-y-2 p-0 sm:p-1 text-center">
           <p className="text-sm font-medium text-foreground">No recent events</p>
           <p className="text-sm text-muted-foreground">
             Once Cortex records a billable event, it will appear here within seconds.
@@ -126,7 +126,7 @@ export function UsageHistorySection() {
 
   return (
     <Card data-testid="usage-history">
-      <CardContent className="space-y-3 p-4 sm:p-6">
+      <CardContent className="space-y-3 p-0 sm:p-1">
         <h3 className="font-display text-sm font-semibold tracking-tight">Usage history</h3>
         <p className="text-xs text-faint">
           Newest first. Showing the most recent {events.length} events for the current period.

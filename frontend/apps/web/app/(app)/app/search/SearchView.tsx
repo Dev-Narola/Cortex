@@ -12,7 +12,7 @@ import { useQuery } from "@tanstack/react-query"
 import { useRouter } from "next/navigation"
 import { type FormEvent, useState } from "react"
 
-import { Button, Card, EmptyState, Icon, Skeleton } from "@cortex/ui"
+import { Button, Card, EmptyState, Icon, PageHeader, Skeleton } from "@cortex/ui"
 
 import { useDocumentSelectionStore } from "@/components/documents/DocumentSelectionStore"
 import { highlight } from "@/components/search/highlight"
@@ -45,22 +45,18 @@ export function SearchView({ initialQuery }: { initialQuery: string }) {
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-6">
-      <header className="space-y-1">
-        <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground">
-          Search
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Hybrid keyword and semantic search across every indexed document, reranked for relevance.
-        </p>
-      </header>
+      <PageHeader
+        title="Search"
+        description="Hybrid keyword and semantic search across every indexed document, reranked for relevance."
+      />
 
       <form
         onSubmit={onSubmit}
         // biome-ignore lint/a11y/useSemanticElements: <search> isn't announced by all screen readers yet; role="search" is
         role="search"
-        className="glass flex items-center gap-2 rounded-2xl p-2 shadow-md"
+        className="flex items-center gap-2 rounded-full border border-border bg-card p-1.5 pl-3 shadow-md transition-[border-color,box-shadow] duration-base focus-within:border-brand-border focus-within:shadow-[0_0_0_4px_var(--brand-soft)]"
       >
-        <Icon name="Search" className="ml-2 h-5 w-5 shrink-0 text-faint" aria-hidden />
+        <Icon name="Search" className="ml-1 h-5 w-5 shrink-0 text-faint" aria-hidden />
         <label htmlFor="search-q" className="sr-only">
           Search your knowledge base
         </label>
@@ -74,7 +70,7 @@ export function SearchView({ initialQuery }: { initialQuery: string }) {
           placeholder="e.g. how are documents chunked?"
           className="h-10 min-w-0 flex-1 bg-transparent text-base text-foreground outline-none placeholder:text-faint"
         />
-        <Button type="submit" disabled={!draft.trim() || search.isFetching}>
+        <Button type="submit" className="h-10" disabled={!draft.trim() || search.isFetching}>
           {search.isFetching ? "Searching…" : "Search"}
         </Button>
       </form>
@@ -89,7 +85,7 @@ export function SearchView({ initialQuery }: { initialQuery: string }) {
         ) : search.isLoading ? (
           [0, 1, 2].map((i) => <Skeleton key={i} size="h-28 w-full" className="rounded-2xl" />)
         ) : search.isError ? (
-          <Card variant="glass" radius="xl" className="flex items-center justify-between gap-4">
+          <Card radius="xl" className="flex items-center justify-between gap-4">
             <p className="text-sm text-muted-foreground">
               Search failed. Check your connection and try again.
             </p>
@@ -114,7 +110,7 @@ export function SearchView({ initialQuery }: { initialQuery: string }) {
                   <button
                     type="button"
                     onClick={() => openDetail(r.document_id)}
-                    className="glass group block w-full rounded-2xl p-5 text-left shadow-sm transition-[transform,border-color,box-shadow] duration-base hover:-translate-y-0.5 hover:border-brand/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="group block w-full rounded-2xl border border-border bg-card p-5 text-left shadow-xs transition-[transform,border-color,box-shadow] duration-base hover:-translate-y-0.5 hover:border-border-strong hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <Icon
@@ -125,7 +121,7 @@ export function SearchView({ initialQuery }: { initialQuery: string }) {
                       <span className="min-w-0 truncate font-medium text-foreground">
                         {r.document_title ?? "Untitled document"}
                       </span>
-                      <span className="text-faint">· passage {r.chunk_index + 1}</span>
+                      <span className="shrink-0 text-faint">· passage {r.chunk_index + 1}</span>
                       <span
                         className="tabular ml-auto shrink-0 font-mono text-faint"
                         title="Relevance score"

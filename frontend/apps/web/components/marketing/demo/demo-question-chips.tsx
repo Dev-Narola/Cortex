@@ -73,7 +73,7 @@ export function DemoQuestionChips({ activeDemoId, disabled, onSelect }: DemoQues
                 className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
                   isActive
                     ? "border-transparent bg-spark text-foreground shadow-spark"
-                    : "border-border bg-background text-foreground hover:border-volt-500 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-volt-500 disabled:cursor-not-allowed disabled:opacity-50"
+                    : "border-border bg-background text-foreground hover:border-brand hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                 }`}
               >
                 {entry.chipLabel}

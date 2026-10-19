@@ -287,6 +287,6 @@ describe("Reduced-motion behaviour catalogue (F9 P3)", () => {
     // rule handles it.
     expect(glow?.className ?? "").toMatch(/opacity-100/)
     // The dot caret is also present.
-    expect(within(article).getAllByText(/assistant/i).length).toBeGreaterThan(0)
+    expect(within(article).getAllByText(/cortex/i).length).toBeGreaterThan(0)
   })
 })

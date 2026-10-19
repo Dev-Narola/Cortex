@@ -26,7 +26,7 @@ describe("Avatar", () => {
   })
   it("applies the tone axis", () => {
     render(<Avatar name="Ada" tone="primary" data-testid="avatar" />)
-    expect(screen.getByTestId("avatar").className).toMatch(/ember/)
+    expect(screen.getByTestId("avatar").className).toMatch(/bg-brand-soft/)
   })
   it("applies the size axis", () => {
     render(<Avatar name="Ada" size="lg" data-testid="avatar" />)

@@ -37,7 +37,7 @@ export default function PricingPage() {
           <div
             key={tier.name}
             className={`rounded-xl border p-6 ${
-              tier.featured ? "border-ember-500 bg-ember-500/5" : "border-border bg-background"
+              tier.featured ? "border-brand-border bg-brand-soft" : "border-border bg-card"
             }`}
           >
             <h2 className="font-display text-2xl font-semibold">{tier.name}</h2>
@@ -45,7 +45,7 @@ export default function PricingPage() {
             <p className="mt-4 text-sm text-muted-foreground">{tier.blurb}</p>
             <a
               href="/register"
-              className="mt-6 inline-flex h-10 items-center justify-center rounded-md bg-ink-900 px-4 text-sm font-medium text-foreground hover:bg-ink-800"
+              className="mt-6 inline-flex h-10 items-center justify-center rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               {tier.cta}
             </a>

@@ -27,8 +27,8 @@ export interface TopbarSearchProps extends ButtonHTMLAttributes<HTMLButtonElemen
 const TopbarSearch = forwardRef<HTMLButtonElement, TopbarSearchProps>(
   ({ className, placeholder = "Search…", shortcut = "⌘K", ...props }, ref) => {
     const classNames = cn(
-      "flex h-9 w-full max-w-md items-center gap-2 rounded-md border border-border bg-muted/40 px-3 text-sm text-muted-foreground",
-      "transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+      "flex h-9 w-full max-w-md items-center gap-2 rounded-full border border-border bg-card px-3.5 text-sm text-muted-foreground shadow-xs",
+      "transition-colors hover:border-border-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
       className,
     )
     return (

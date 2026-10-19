@@ -298,7 +298,7 @@ describe("toGraph (F6 Part 4 determinism + layout bounds)", () => {
       source_chunk_id: null,
     }))
     const result = toGraph({ root, relations: [], neighbors })
-    const maxRadius = 12 // MAX_RADIUS from the adapter
+    const maxRadius = 16 // MAX_RADIUS from the adapter (sunflower disc)
     for (const node of result.nodes) {
       const [x, y, z] = node.position
       const distance = Math.sqrt(x * x + y * y + z * z)

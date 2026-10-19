@@ -92,7 +92,7 @@ function AuditLogRow({
       // biome-ignore lint/a11y/useSemanticElements: a clickable table row can't be a <button>; it keeps row semantics plus Enter/Space
       role="button"
       aria-label={`View details for ${actionLabel(event.action)}`}
-      className="cursor-pointer transition-colors hover:bg-card/40 focus-visible:bg-card/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-volt-500"
+      className="cursor-pointer transition-colors hover:bg-card/40 focus-visible:bg-card/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
         {formatTimestamp(event.created_at)}

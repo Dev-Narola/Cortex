@@ -126,23 +126,23 @@ export function SettingsTabs() {
   const visibleTabs = TABS.filter((t) => canSeeTab(role, t))
 
   return (
-    <nav aria-label="Settings sections" className="w-full md:w-56 md:shrink-0">
+    <nav aria-label="Settings sections" className="-mx-1 overflow-x-auto px-1 pb-1">
       <ul
-        className="flex flex-row gap-1 overflow-x-auto md:flex-col md:gap-0.5 md:overflow-visible"
+        className="inline-flex gap-1 rounded-full border border-border bg-background-2 p-1"
         data-testid="settings-tabs-list"
       >
         {visibleTabs.map((tab) => {
           const active = isActive(pathname, tab.href)
           return (
-            <li key={tab.href} className="shrink-0 md:shrink">
+            <li key={tab.href} className="shrink-0">
               <Link
                 href={tab.href as never}
                 aria-current={active ? "page" : undefined}
                 data-testid={`settings-tab-${tab.href.split("/").pop()}`}
                 className={
                   active
-                    ? "flex items-center gap-2 rounded-md bg-muted px-3 py-2 text-sm font-medium text-foreground transition-colors"
-                    : "flex items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-card/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-volt-500"
+                    ? "flex h-8 items-center gap-2 rounded-full bg-card px-3.5 text-sm font-medium text-foreground shadow-xs ring-1 ring-border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    : "flex h-8 items-center gap-2 rounded-full px-3.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 }
               >
                 <Icon name={tab.icon} size="sm" tone={active ? "accent" : "muted"} aria-hidden />

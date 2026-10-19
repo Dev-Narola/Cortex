@@ -62,8 +62,8 @@
 "use client"
 
 import { OrbitControls } from "@react-three/drei"
-import { Canvas } from "@react-three/fiber"
-import { useMemo } from "react"
+import { Canvas, useThree } from "@react-three/fiber"
+import { useEffect, useMemo } from "react"
 import { type BufferGeometry, CylinderGeometry, SphereGeometry } from "three"
 
 import { usePrefersReducedMotion } from "@/lib/motion/reduced-motion"
@@ -71,7 +71,27 @@ import { GraphEdge } from "./graph-edge"
 import { GraphNode } from "./graph-node"
 import type { GraphData, GraphNodeState } from "./types"
 
-const VOID_BACKGROUND = "#0B0D12"
+/** Above these sizes names show on hover/selection only, so they never pile up. */
+const ALWAYS_LABEL_MAX_NODES = 24
+const ALWAYS_LABEL_MAX_EDGES = 16
+
+/** Pull the camera back far enough to see the whole disc (fov 50°). */
+function FitCamera({ extent }: { extent: number }) {
+  const camera = useThree((s) => s.camera)
+  const controls = useThree((s) => s.controls) as {
+    target?: { set: (...v: number[]) => void }
+    update?: () => void
+  } | null
+  const invalidate = useThree((s) => s.invalidate)
+  useEffect(() => {
+    camera.position.set(0, 0, Math.min(60, Math.max(7, extent * 2.3 + 1.5)))
+    camera.lookAt(0, 0, 0)
+    controls?.target?.set(0, 0, 0)
+    controls?.update?.()
+    invalidate()
+  }, [extent, camera, controls, invalidate])
+  return null
+}
 
 /**
  * **F6 Part 4 — geometry budget.**
@@ -192,14 +212,22 @@ export function GraphCanvas({
 
   const nodeIndex = data.nodes
   const hasSelection = selectedNodeId !== null
+  const extent = useMemo(
+    () =>
+      data.nodes.reduce((m, n) => Math.max(m, Math.abs(n.position[0]), Math.abs(n.position[1])), 0),
+    [data.nodes],
+  )
+  const labelNodes = data.nodes.length <= ALWAYS_LABEL_MAX_NODES
+  const labelEdges = data.edges.length <= ALWAYS_LABEL_MAX_EDGES
 
   return (
     <Canvas
       style={{ width: "100%", height: "100%" }}
-      gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
+      gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
       camera={{ position: [0, 0, 9], fov: 50, near: 0.1, far: 100 }}
       onCreated={({ gl }) => {
-        gl.setClearColor(VOID_BACKGROUND, 1)
+        // Transparent: the themed card behind the canvas is the background.
+        gl.setClearColor(0x000000, 0)
       }}
       shadows={false}
       // **F6 Part 4 — frameloop is "demand".** Without
@@ -212,8 +240,9 @@ export function GraphCanvas({
       // cost is a fraction.
       frameloop="demand"
     >
-      <ambientLight intensity={0.4} />
-      <directionalLight position={[5, 8, 5]} intensity={0.8} />
+      <ambientLight intensity={0.75} />
+      <directionalLight position={[5, 8, 8]} intensity={0.9} />
+      <FitCamera extent={extent} />
 
       {data.edges.map((edge) => (
         <GraphEdge
@@ -224,6 +253,7 @@ export function GraphCanvas({
           onSelect={onEdgeSelect}
           // **F6 Part 4 — shared cylinder.**
           geometry={sharedCylinderGeometry}
+          showLabel={labelEdges}
         />
       ))}
       {data.nodes.map((node) => (
@@ -237,6 +267,7 @@ export function GraphCanvas({
           // ``scale`` on the node side still controls
           // per-node size.
           geometry={sharedSphereGeometry}
+          showLabel={labelNodes}
         />
       ))}
 
@@ -244,7 +275,7 @@ export function GraphCanvas({
         enableDamping={!reducedMotion}
         dampingFactor={0.1}
         minDistance={3}
-        maxDistance={30}
+        maxDistance={70}
         makeDefault
       />
     </Canvas>

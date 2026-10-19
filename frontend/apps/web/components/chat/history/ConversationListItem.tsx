@@ -281,7 +281,7 @@ export function ConversationListItem({
         title={conversation.title}
         className={cn(
           "group relative flex w-full items-start gap-1 rounded-md px-2.5 py-2 text-left text-sm transition-colors",
-          "hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-volt-500/40",
+          "hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
           isActive ? "bg-ember-500/10 text-foreground" : "text-foreground/80",
           className,
         )}
@@ -300,7 +300,7 @@ export function ConversationListItem({
           name="MessageSquare"
           className={cn(
             "mt-0.5 h-3.5 w-3.5 shrink-0",
-            isActive ? "text-ember-600" : "text-muted-foreground",
+            isActive ? "text-brand-ink" : "text-muted-foreground",
           )}
           aria-hidden
         />

@@ -55,7 +55,7 @@
 
 import { Html } from "@react-three/drei"
 import type { ThreeEvent } from "@react-three/fiber"
-import { memo, useCallback } from "react"
+import { memo, useCallback, useState } from "react"
 import type { BufferGeometry } from "three"
 
 import type { GraphNode as GraphNodeData, GraphNodeState } from "./types"
@@ -79,6 +79,23 @@ export interface GraphNodeProps {
    * would defeat the optimisation).
    */
   geometry: BufferGeometry
+  /** Always show the name (small graphs, the selection). Otherwise it shows on hover. */
+  showLabel?: boolean
+}
+
+/**
+ * Entity types get the supporting accents (a real distinction); orange is
+ * reserved for the selection and the traced path. Works on both themes.
+ */
+const TYPE_COLORS = ["#2c9c85", "#4f86d0", "#8b6fd6", "#9ab52e", "#c2853a", "#5f9ea0"] as const
+const SELECTED_COLOR = "#ff914d"
+const ACTIVE_PATH_COLOR = "#f47732"
+
+function typeColorFor(type: string | undefined): string {
+  const key = (type ?? "").toLowerCase()
+  let h = 0
+  for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0
+  return TYPE_COLORS[h % TYPE_COLORS.length] ?? TYPE_COLORS[0]
 }
 
 /**
@@ -100,17 +117,11 @@ export interface GraphNodeProps {
  * close to default — dimming is about presence,
  * not palette.
  */
-function nodeColorFor(state: GraphNodeState): string {
-  switch (state) {
-    case "selected":
-      return "#bef264" // volt-300 — brightest
-    case "active-path":
-      return "#f97316" // Ember-500 — spec-defined for active traversal
-    case "dimmed":
-      return "#365314" // volt-900 — almost background
-    default:
-      return "#84cc16" // volt-500 — the spec default
-  }
+function nodeColorFor(state: GraphNodeState, type?: string): string {
+  if (state === "selected") return SELECTED_COLOR
+  if (state === "active-path") return ACTIVE_PATH_COLOR
+  // Dimmed keeps its type colour; opacityFor fades it.
+  return typeColorFor(type)
 }
 
 /**
@@ -151,7 +162,8 @@ function opacityFor(state: GraphNodeState): number {
  * so tests can pin the colour / scale / opacity
  * mapping without rendering the JSX.
  */
-function GraphNodeImpl({ node, state, onSelect, geometry }: GraphNodeProps) {
+function GraphNodeImpl({ node, state, onSelect, geometry, showLabel = true }: GraphNodeProps) {
+  const [hovered, setHovered] = useState(false)
   const handleClick = useCallback(
     (e: ThreeEvent<MouseEvent>) => {
       // Stop the click from reaching the orbit
@@ -166,7 +178,8 @@ function GraphNodeImpl({ node, state, onSelect, geometry }: GraphNodeProps) {
 
   // Pulled out so the test can pin the mapping
   // without rendering the JSX.
-  const color = nodeColorFor(state)
+  const color = nodeColorFor(state, node.type)
+  const labelVisible = showLabel || hovered || state === "selected" || state === "active-path"
   const scale = scaleFor(state)
   const opacity = opacityFor(state)
 
@@ -197,13 +210,18 @@ function GraphNodeImpl({ node, state, onSelect, geometry }: GraphNodeProps) {
         scale={scale}
         geometry={geometry}
         onClick={handleClick}
+        onPointerOver={(e) => {
+          e.stopPropagation()
+          setHovered(true)
+        }}
+        onPointerOut={() => setHovered(false)}
         userData={{ nodeId: node.id, state }}
         data-testid={`graph-node-${node.id}`}
       >
         <meshStandardMaterial
           color={color}
           emissive={color}
-          emissiveIntensity={state === "selected" ? 0.6 : 0.25}
+          emissiveIntensity={state === "selected" ? 0.45 : hovered ? 0.35 : 0.12}
           transparent={opacity < 1}
           opacity={opacity}
         />
@@ -214,14 +232,20 @@ function GraphNodeImpl({ node, state, onSelect, geometry }: GraphNodeProps) {
           Tailwind and matches the rest of the
           app. ``distanceFactor`` keeps the label
           readable at any zoom level. */}
-      <Html position={[0, 0.7, 0]} center distanceFactor={8} zIndexRange={[0, 0]}>
-        <span
-          className="select-none whitespace-nowrap rounded-md bg-background/80 px-2 py-0.5 text-xs font-medium text-foreground shadow-sm ring-1 ring-border"
-          data-testid={`graph-node-label-${node.id}`}
-        >
-          {node.label}
-        </span>
-      </Html>
+      {labelVisible ? (
+        <Html position={[0, 0.7, 0]} center distanceFactor={8} zIndexRange={[0, 0]}>
+          <span
+            className={`pointer-events-none select-none whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium shadow-sm ring-1 ${
+              state === "selected"
+                ? "bg-primary text-primary-foreground ring-transparent"
+                : "bg-popover/90 text-foreground ring-border"
+            }`}
+            data-testid={`graph-node-label-${node.id}`}
+          >
+            {node.label}
+          </span>
+        </Html>
+      ) : null}
     </group>
   )
 }
@@ -238,6 +262,7 @@ function GraphNodeImpl({ node, state, onSelect, geometry }: GraphNodeProps) {
  */
 export const GraphNode = memo(GraphNodeImpl, (prev, next) => {
   if (prev.state !== next.state) return false
+  if (prev.showLabel !== next.showLabel) return false
   if (prev.onSelect !== next.onSelect) return false
   if (prev.geometry !== next.geometry) return false
   if (prev.node.id !== next.node.id) return false
@@ -257,6 +282,7 @@ export const GraphNode = memo(GraphNodeImpl, (prev, next) => {
  */
 export const GraphNodeInternals = {
   nodeColorFor,
+  typeColorFor,
   scaleFor,
   opacityFor,
 }

@@ -39,16 +39,17 @@ export const cardVariants = cva(
   {
     variants: {
       variant: {
-        default: "border-border bg-card shadow-sm",
+        default: "border-border bg-card shadow-xs",
         elevated: "border-border bg-card shadow-md",
         outline: "border-border bg-transparent",
-        // Frosted surface for bento cards, nav and overlays. Keep dense
-        // tables and long text on `default` (opaque) for readability.
-        glass: "glass shadow-md",
-        // Clickable cards only: lift + brand border on hover/focus.
+        // Bento panels. Content cards stay opaque for readability; real
+        // glass (the `glass` utility) is reserved for floating chrome:
+        // top bar, popovers, dialogs, the composer.
+        glass: "border-border bg-card shadow-xs",
+        // Clickable cards only: small lift + stronger border on hover/focus.
         interactive:
-          "glass cursor-pointer shadow-md hover:-translate-y-0.5 hover:border-brand/40 hover:shadow-lg focus-within:border-brand/40 active:translate-y-0",
-        hoverable: "border-border bg-card shadow-sm hover:border-brand/30",
+          "cursor-pointer border-border bg-card shadow-xs hover:-translate-y-0.5 hover:border-border-strong hover:shadow-md focus-within:border-brand-border active:translate-y-0",
+        hoverable: "border-border bg-card shadow-xs hover:border-border-strong",
       },
       padding: {
         none: "",

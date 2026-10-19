@@ -87,7 +87,7 @@ export function SidebarNav({ collapsed = false }: SidebarNavProps): ReactNode {
   const isAdmin = role === "owner" || role === "admin"
 
   return (
-    <nav aria-label="App sections" className="flex flex-col gap-5 px-2">
+    <nav aria-label="App sections" className="flex flex-col gap-5 px-3">
       {NAV_GROUPS.map((group) => {
         const items = group.items.filter((i) => isAdmin || !i.adminOnly)
         if (items.length === 0) return null
@@ -96,7 +96,7 @@ export function SidebarNav({ collapsed = false }: SidebarNavProps): ReactNode {
             {collapsed ? (
               <div className="mx-3 mb-2 h-px bg-divider" aria-hidden />
             ) : (
-              <p className="mb-1.5 px-3 text-[11px] font-medium uppercase tracking-[0.08em] text-faint">
+              <p className="mb-1.5 px-3 text-[11px] font-medium uppercase tracking-[0.06em] text-faint">
                 {group.label}
               </p>
             )}

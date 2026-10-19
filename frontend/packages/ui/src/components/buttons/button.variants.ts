@@ -33,10 +33,10 @@ import { type VariantProps, cva } from "class-variance-authority"
 export const buttonVariants = cva(
   [
     // Base — every button
-    "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium",
-    "transition-[background-color,color,box-shadow,transform] duration-fast",
+    "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-medium",
+    "transition-[background-color,border-color,color,box-shadow,transform] duration-fast ease-out",
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-    "active:translate-y-px",
+    "active:scale-[0.98]",
     "disabled:pointer-events-none disabled:opacity-50",
     "data-[loading=true]:pointer-events-none data-[loading=true]:opacity-80",
     "[&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
@@ -44,20 +44,21 @@ export const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90",
-        primary: "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90",
-        secondary: "bg-muted text-foreground hover:bg-cloud-200",
-        outline: "border border-border bg-background hover:bg-muted hover:text-foreground",
-        ghost: "hover:bg-muted hover:text-foreground",
+        default: "bg-primary text-primary-foreground shadow-xs hover:bg-primary-hover",
+        primary: "bg-primary text-primary-foreground shadow-xs hover:bg-primary-hover",
+        secondary: "bg-secondary text-foreground hover:bg-border",
+        outline:
+          "border border-border bg-card text-foreground shadow-xs hover:border-border-strong hover:bg-background-2",
+        ghost: "text-muted-foreground hover:bg-muted hover:text-foreground",
         destructive: "bg-destructive text-destructive-foreground hover:opacity-90",
-        link: "text-ember-600 underline-offset-4 hover:underline",
-        spark: "bg-spark text-gray-950 shadow-spark hover:opacity-95",
+        link: "rounded-sm text-brand-ink underline-offset-4 hover:underline",
+        spark: "bg-primary text-primary-foreground shadow-spark hover:bg-primary-hover",
       },
       size: {
-        sm: "h-8 rounded-md px-3 text-xs",
-        md: "h-10 px-4 py-2",
-        lg: "h-11 rounded-md px-6 text-base",
-        icon: "h-10 w-10",
+        sm: "h-8 px-3.5 text-xs",
+        md: "h-10 px-[1.125rem] py-2",
+        lg: "h-11 px-6 text-base",
+        icon: "h-9 w-9",
       },
     },
     defaultVariants: {

@@ -42,6 +42,8 @@ import {
 
 import { Button, Icon, Textarea } from "@cortex/ui"
 
+import { BoltMark } from "./BoltMark"
+
 export interface MessageInputProps {
   value: string
   onChange: (value: string) => void
@@ -104,15 +106,16 @@ export function MessageInput({
   return (
     <form
       onSubmit={handleSubmit}
-      className={`border-t border-border bg-card/50 px-4 py-3 sm:px-6 ${className ?? ""}`}
+      className={`px-3 pt-2 pb-3 sm:px-6 sm:pb-4 ${className ?? ""}`}
       aria-label="Send a message"
     >
       <div
         className={
-          "flex items-end gap-2 rounded-xl border border-border bg-muted/40 px-3 py-2 " +
-          "transition-colors focus-within:border-volt-500 focus-within:ring-2 focus-within:ring-volt-500/30"
+          "flex items-end gap-2 rounded-[1.375rem] border border-border bg-card py-1.5 pr-1.5 pl-3 shadow-sm " +
+          "transition-[border-color,box-shadow] duration-base focus-within:border-brand-border focus-within:shadow-[0_0_0_4px_var(--brand-soft)]"
         }
       >
+        <BoltMark className="mb-2.5 h-5 w-5" />
         <Textarea
           aria-label="Message"
           value={value}
@@ -121,12 +124,12 @@ export function MessageInput({
           placeholder={placeholder}
           disabled={disabled}
           rows={1}
-          className="min-h-10 flex-1 resize-none border-0 bg-transparent px-1 py-1.5 text-sm shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+          className="min-h-10 flex-1 resize-none border-0 bg-transparent px-1 py-1.5 text-sm shadow-none focus-within:ring-0 focus-within:ring-offset-0 focus-visible:ring-0 focus-visible:ring-offset-0"
         />
         <Button
           type="submit"
           size="icon"
-          variant="spark"
+          variant="default"
           disabled={sendDisabled}
           aria-label="Send message"
           title={sendDisabled ? "Type a message to send" : "Send"}
@@ -134,8 +137,10 @@ export function MessageInput({
           <Icon name="Send" className="h-4 w-4" />
         </Button>
       </div>
-      <p className="mt-1.5 px-1 text-[10px] text-muted-foreground">
-        Enter to send · Shift+Enter for newline
+      <p className="mt-1.5 px-3 text-[11px] text-faint">
+        <kbd className="font-sans font-medium text-muted-foreground">Enter</kbd> to send ·{" "}
+        <kbd className="font-sans font-medium text-muted-foreground">Shift+Enter</kbd> for a new
+        line
       </p>
     </form>
   )

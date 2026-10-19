@@ -149,13 +149,13 @@ export function GraphNodeDetail({
     <aside
       aria-labelledby="graph-node-detail-title"
       data-testid="graph-node-detail"
-      className="pointer-events-auto w-full max-w-sm rounded-xl border border-border bg-card/90 p-4 text-foreground shadow-xl backdrop-blur-md ring-1 ring-border"
+      className="glass-strong pointer-events-auto w-full max-w-sm rounded-2xl p-4 text-foreground shadow-xl"
     >
       <header className="mb-3 flex items-start justify-between gap-3">
         <div className="flex items-start gap-3 min-w-0">
           <div
             aria-hidden
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-volt-500/10 text-volt-400"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-soft text-brand-ink"
           >
             <Icon name={IconForType} size="md" tone="accent" />
           </div>

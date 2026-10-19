@@ -40,6 +40,7 @@
 
 import { useTenantUsageSummary } from "@/hooks/usage"
 
+import { SectionHeader } from "../section-header"
 import { UsageBreakdownSection } from "./usage-breakdown"
 import { UsageHistorySection } from "./usage-history"
 import { UsageSummarySection } from "./usage-summary"
@@ -55,17 +56,16 @@ export function UsagePanel() {
 
   return (
     <div className="space-y-6" data-testid="usage-panel" aria-label="Usage and billing">
-      <header className="space-y-1">
-        <h2 className="font-display text-base font-semibold tracking-tight">Usage &amp; Billing</h2>
-        <p className="text-sm text-muted-foreground">
-          Track your workspace usage, estimated cost, and current limits.
-        </p>
+      <SectionHeader
+        title="Usage & Billing"
+        description="Track your workspace usage, estimated cost, and current limits."
+      >
         <p className="text-xs text-faint" data-testid="usage-period-context">
           {summary.data
             ? `Current period: ${formatPeriodLabel(summary.data.period.from, summary.data.period.to)}`
             : "Current period: loading…"}
         </p>
-      </header>
+      </SectionHeader>
 
       <UsageSummarySection />
       <UsageBreakdownSection />

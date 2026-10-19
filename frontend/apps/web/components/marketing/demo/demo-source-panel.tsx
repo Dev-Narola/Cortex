@@ -88,7 +88,7 @@ export function DemoSourcePanel({ citation, open, onOpenChange }: DemoSourcePane
                   {citation.documentTitle}
                 </DrawerTitle>
                 <DrawerClose
-                  className="text-xs text-faint transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-volt-500"
+                  className="text-xs text-faint transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   data-testid={`demo-source-close-${citation.id}`}
                 >
                   Close

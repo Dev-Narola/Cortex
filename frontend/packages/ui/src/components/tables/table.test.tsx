@@ -79,7 +79,7 @@ describe("Table", () => {
     )
     const row = screen.getByTestId("row")
     expect(row.getAttribute("data-state")).toBe("selected")
-    expect(row.className).toMatch(/ember/)
+    expect(row.className).toMatch(/bg-brand-soft/)
   })
 
   it("TableCell renders a td with the right alignment", () => {

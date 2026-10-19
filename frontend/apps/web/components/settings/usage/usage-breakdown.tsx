@@ -167,7 +167,7 @@ export function UsageBreakdownSection() {
 
   return (
     <Card data-testid="usage-breakdown">
-      <CardContent className="space-y-3 p-4 sm:p-6">
+      <CardContent className="space-y-3 p-0 sm:p-1">
         <h3 className="font-display text-sm font-semibold tracking-tight">Usage breakdown</h3>
         <p className="text-xs text-faint">
           Per-event-type totals for the current period. Costs are the actual backend roll-ups — no
@@ -221,7 +221,7 @@ export function UsageBreakdownSection() {
 function EmptyBreakdown() {
   return (
     <Card data-testid="usage-breakdown-empty">
-      <CardContent className="space-y-2 p-4 sm:p-6 text-center">
+      <CardContent className="space-y-2 p-0 sm:p-1 text-center">
         <p className="text-sm font-medium text-foreground">No usage yet</p>
         <p className="text-sm text-muted-foreground">
           Usage will appear here once Cortex processes documents or handles AI requests.

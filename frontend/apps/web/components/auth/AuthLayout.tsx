@@ -29,7 +29,7 @@
 import Link from "next/link"
 import type { ReactNode } from "react"
 
-import { Card, CardContent, Logo, Text } from "@cortex/ui"
+import { Card, Icon, Logo, Text } from "@cortex/ui"
 
 export interface AuthLayoutProps {
   title: string
@@ -43,6 +43,12 @@ export interface AuthLayoutProps {
   homeHref?: string
 }
 
+const POINTS = [
+  { icon: "Search", text: "Hybrid keyword + semantic search, reranked for relevance" },
+  { icon: "Quote", text: "Answers cite the exact passage they came from" },
+  { icon: "Bot", text: "Agents and MCP tools that work on your own documents" },
+] as const
+
 export function AuthLayout({
   title,
   description,
@@ -52,32 +58,61 @@ export function AuthLayout({
   homeHref = "/",
 }: AuthLayoutProps) {
   return (
-    <div className="flex min-h-screen flex-col bg-background">
-      {/* Top bar — logo + back link. */}
-      <header className="flex items-center justify-between border-b border-border bg-background/80 px-6 py-4 backdrop-blur sm:px-10">
-        <Link
-          href={homeHref as never}
-          aria-label="Cortex home"
-          className="rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-        >
-          <Logo size="md" />
-        </Link>
-        {backHref ? (
+    <div className="flex min-h-screen flex-col bg-background lg:flex-row">
+      {/* Brand panel (desktop): what Cortex is, in three lines. */}
+      <aside className="relative hidden p-4 lg:flex lg:w-[44%] lg:max-w-2xl">
+        <div className="flex w-full flex-col justify-between overflow-hidden rounded-3xl border border-brand-border bg-brand-soft p-10">
           <Link
-            href={backHref as never}
-            className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+            href={homeHref as never}
+            aria-label="Cortex home"
+            className="self-start rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            ← Back
+            <Logo size="md" />
           </Link>
-        ) : null}
-      </header>
+          <div className="space-y-8">
+            <h2 className="max-w-md font-display text-[2.5rem] font-medium leading-[1.08] tracking-[-0.03em] text-foreground">
+              Your knowledge, answered with sources.
+            </h2>
+            <ul className="space-y-3">
+              {POINTS.map((p) => (
+                <li key={p.text} className="flex items-center gap-3 text-sm text-muted-foreground">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-card text-brand shadow-xs">
+                    <Icon name={p.icon} className="h-4 w-4" aria-hidden />
+                  </span>
+                  {p.text}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            © {new Date().getFullYear()} Cortex — Knowledge, connected.
+          </p>
+        </div>
+      </aside>
 
-      {/* Card column. */}
-      <main className="flex flex-1 items-center justify-center px-6 py-12">
-        <div className="w-full max-w-sm">
-          <Card>
-            <CardContent className="space-y-2 pt-6">
-              <h1 className="font-display text-2xl font-semibold tracking-tight text-foreground">
+      <div className="flex min-h-screen flex-1 flex-col">
+        <header className="flex items-center justify-between px-6 py-5 sm:px-10">
+          <Link
+            href={homeHref as never}
+            aria-label="Cortex home"
+            className="rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 lg:invisible"
+          >
+            <Logo size="md" />
+          </Link>
+          {backHref ? (
+            <Link
+              href={backHref as never}
+              className="rounded-full px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              ← Back
+            </Link>
+          ) : null}
+        </header>
+
+        <main className="flex flex-1 items-center justify-center px-5 pb-12 sm:px-6">
+          <div className="w-full max-w-sm animate-rise-in">
+            <div className="mb-6 space-y-2">
+              <h1 className="font-display text-[1.875rem] font-medium leading-tight tracking-[-0.02em] text-foreground">
                 {title}
               </h1>
               {description ? (
@@ -85,19 +120,18 @@ export function AuthLayout({
                   {description}
                 </Text>
               ) : null}
-            </CardContent>
-            <CardContent className="pt-6">{children}</CardContent>
-            {footer ? (
-              <CardContent className="border-t border-border pt-6">{footer}</CardContent>
-            ) : null}
-          </Card>
-        </div>
-      </main>
+            </div>
+            <Card radius="xl" className="p-6 shadow-sm">
+              {children}
+            </Card>
+            {footer ? <div className="mt-5 px-1">{footer}</div> : null}
+          </div>
+        </main>
 
-      {/* Footer. */}
-      <footer className="border-t border-border px-6 py-4 text-center text-xs text-muted-foreground sm:px-10">
-        © {new Date().getFullYear()} Cortex — Knowledge, connected.
-      </footer>
+        <footer className="px-6 py-4 text-center text-xs text-muted-foreground sm:px-10 lg:hidden">
+          © {new Date().getFullYear()} Cortex — Knowledge, connected.
+        </footer>
+      </div>
     </div>
   )
 }

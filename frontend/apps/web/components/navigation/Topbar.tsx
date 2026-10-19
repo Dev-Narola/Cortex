@@ -50,7 +50,7 @@ export function Topbar({ onOpenMobileNav }: TopbarProps): ReactNode {
 
   return (
     <TopbarPrimitive
-      className="border-divider bg-background/70 backdrop-blur-xl"
+      className="h-16 border-divider bg-background/75 px-4 backdrop-blur-lg sm:px-6 lg:px-10"
       start={
         <>
           {onOpenMobileNav ? (
@@ -59,7 +59,7 @@ export function Topbar({ onOpenMobileNav }: TopbarProps): ReactNode {
                 type="button"
                 onClick={onOpenMobileNav}
                 aria-label="Open navigation"
-                className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:hidden"
+                className="-ml-1 flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:hidden"
               >
                 <Icon name="Menu" className="h-4 w-4" />
               </button>

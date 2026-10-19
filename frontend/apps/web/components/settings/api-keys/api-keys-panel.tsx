@@ -71,6 +71,7 @@ import { useApiKeys, useRevokeApiKey } from "@/hooks/api-keys"
 import { useAuthStore } from "@/lib/auth/store"
 import type { ApiKey, ApiKeyCreated } from "@/services/api-keys"
 
+import { SectionHeader } from "../section-header"
 import { ApiKeyReveal } from "./api-key-reveal"
 import { ApiKeyRow } from "./api-key-row"
 import { GenerateApiKeyModal } from "./generate-api-key-modal"
@@ -154,17 +155,12 @@ export function ApiKeysPanel() {
   const keys = data ?? []
 
   return (
-    <Card data-testid="api-keys-panel">
-      <CardContent className="space-y-4 p-4 sm:p-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="font-display text-base font-semibold tracking-tight">API Keys</h2>
-            <p className="text-sm text-muted-foreground">
-              Create and revoke API keys for connecting external tools to your Cortex workspace. The
-              full key is shown exactly once at creation.
-            </p>
-          </div>
-          {userIsAdmin ? (
+    <section data-testid="api-keys-panel" className="space-y-4">
+      <SectionHeader
+        title="API Keys"
+        description="Create and revoke API keys for connecting external tools to your Cortex workspace. The full key is shown exactly once at creation."
+        actions={
+          userIsAdmin ? (
             <Button
               type="button"
               variant="default"
@@ -175,62 +171,65 @@ export function ApiKeysPanel() {
               <Icon name="KeyRound" className="h-3.5 w-3.5" />
               <span>Generate New Key</span>
             </Button>
-          ) : null}
-        </div>
+          ) : undefined
+        }
+      />
+      <Card radius="xl">
+        <CardContent className="space-y-4 p-0 sm:p-1">
+          {isLoading ? <ApiKeysPanelSkeleton /> : null}
 
-        {isLoading ? <ApiKeysPanelSkeleton /> : null}
-
-        {!isLoading && isError ? (
-          <ErrorState
-            title="Unable to load API keys"
-            description="We couldn't reach the API-keys service. Check your connection and try again."
-            retryLabel="Retry"
-            onRetry={() => {
-              void refetch()
-            }}
-            code={
-              error && "status" in error
-                ? String((error as { status?: number }).status ?? "")
-                : undefined
-            }
-          />
-        ) : null}
-
-        {!isLoading && !isError ? (
-          keys.length === 0 ? (
-            <ApiKeysPanelEmpty canGenerate={userIsAdmin} onGenerate={openGenerate} />
-          ) : (
-            <ApiKeyList
-              keys={keys}
-              canRevoke={userIsAdmin}
-              confirmingKeyId={revokeTarget?.id ?? null}
-              onRequestRevoke={requestRevoke}
+          {!isLoading && isError ? (
+            <ErrorState
+              title="Unable to load API keys"
+              description="We couldn't reach the API-keys service. Check your connection and try again."
+              retryLabel="Retry"
+              onRetry={() => {
+                void refetch()
+              }}
+              code={
+                error && "status" in error
+                  ? String((error as { status?: number }).status ?? "")
+                  : undefined
+              }
             />
-          )
-        ) : null}
+          ) : null}
 
-        {revokeError ? (
-          <div
-            role="alert"
-            data-testid="api-keys-revoke-error"
-            className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive"
-          >
-            <div className="flex items-center justify-between gap-3">
-              <span>{revokeError}</span>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setRevokeError(null)}
-                className="text-destructive"
-                data-testid="api-keys-revoke-error-dismiss"
-              >
-                Dismiss
-              </Button>
+          {!isLoading && !isError ? (
+            keys.length === 0 ? (
+              <ApiKeysPanelEmpty canGenerate={userIsAdmin} onGenerate={openGenerate} />
+            ) : (
+              <ApiKeyList
+                keys={keys}
+                canRevoke={userIsAdmin}
+                confirmingKeyId={revokeTarget?.id ?? null}
+                onRequestRevoke={requestRevoke}
+              />
+            )
+          ) : null}
+
+          {revokeError ? (
+            <div
+              role="alert"
+              data-testid="api-keys-revoke-error"
+              className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <span>{revokeError}</span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setRevokeError(null)}
+                  className="text-destructive"
+                  data-testid="api-keys-revoke-error-dismiss"
+                >
+                  Dismiss
+                </Button>
+              </div>
             </div>
-          </div>
-        ) : null}
-      </CardContent>
+          ) : null}
+        </CardContent>
+      </Card>
 
       <GenerateApiKeyModal
         open={generateOpen}
@@ -249,7 +248,7 @@ export function ApiKeysPanel() {
         pending={revokeMutation.isPending}
         onConfirm={handleConfirmRevoke}
       />
-    </Card>
+    </section>
   )
 }
 

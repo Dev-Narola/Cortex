@@ -36,8 +36,8 @@ const SIZES = {
 
 const TONES = {
   default: "bg-muted text-muted-foreground",
-  primary: "bg-ember-100 text-ember-700",
-  accent: "bg-volt-100 text-volt-800",
+  primary: "bg-brand-soft text-brand-ink",
+  accent: "bg-surface-tint text-foreground",
   inverse: "bg-gray-900 text-gray-50",
 } as const
 

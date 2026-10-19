@@ -53,7 +53,7 @@ function components(citations: ReadonlyArray<MarkdownCitation>): Components {
           href={href}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-brand underline underline-offset-2"
+          className="text-brand-ink underline underline-offset-2"
         >
           {children}
         </a>
