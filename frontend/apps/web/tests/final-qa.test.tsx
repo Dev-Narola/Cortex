@@ -207,6 +207,8 @@ describe("Final QA — F9 Part 5 (design token discipline + Spark rationing + ty
       path.join("components", "graph", "graph-canvas.tsx"),
       path.join("components", "graph", "graph-edge.tsx"),
       path.join("components", "graph", "graph-node.tsx"),
+      // Entity-type palette shared by the 3D and 2D canvases (WebGL/SVG fills).
+      path.join("components", "graph", "colors.ts"),
       // The Spark Glow (rgba only) lives
       // here — already allow-listed in
       // the rgb test above, but this

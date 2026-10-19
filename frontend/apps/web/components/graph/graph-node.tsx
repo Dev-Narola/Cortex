@@ -58,6 +58,7 @@ import type { ThreeEvent } from "@react-three/fiber"
 import { memo, useCallback, useState } from "react"
 import type { BufferGeometry } from "three"
 
+import { ACTIVE_PATH_COLOR, SELECTED_COLOR, typeColorFor } from "./colors"
 import type { GraphNode as GraphNodeData, GraphNodeState } from "./types"
 
 export interface GraphNodeProps {
@@ -83,40 +84,6 @@ export interface GraphNodeProps {
   showLabel?: boolean
 }
 
-/**
- * Entity types get the supporting accents (a real distinction); orange is
- * reserved for the selection and the traced path. Works on both themes.
- */
-const TYPE_COLORS = ["#2c9c85", "#4f86d0", "#8b6fd6", "#9ab52e", "#c2853a", "#5f9ea0"] as const
-const SELECTED_COLOR = "#ff914d"
-const ACTIVE_PATH_COLOR = "#f47732"
-
-function typeColorFor(type: string | undefined): string {
-  const key = (type ?? "").toLowerCase()
-  let h = 0
-  for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0
-  return TYPE_COLORS[h % TYPE_COLORS.length] ?? TYPE_COLORS[0]
-}
-
-/**
- * Map a node state → palette colour.
- *
- * **F6 Part 3 — Ember for active-path.** The
- * spec calls out the visual rule: default nodes
- * are Volt, active-query-path nodes are Ember.
- * The active-path colour is the bright Ember-500
- * (the same Ember used for accents + the
- * auth-hint cookie path), so the eye picks it up
- * even when the rest of the graph is at volt
- * brightness.
- *
- * **The exact shades are pinned so the visual
- * hierarchy is stable across renders.** The
- * dimmed state drops opacity (handled separately
- * in the material) so the colour itself can stay
- * close to default — dimming is about presence,
- * not palette.
- */
 function nodeColorFor(state: GraphNodeState, type?: string): string {
   if (state === "selected") return SELECTED_COLOR
   if (state === "active-path") return ACTIVE_PATH_COLOR

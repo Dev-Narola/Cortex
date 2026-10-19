@@ -284,7 +284,7 @@ function TeamMemberTable({ members }: { members: TeamMember[] }) {
             <TableCell tag="th">Member</TableCell>
             <TableCell tag="th">Role</TableCell>
             <TableCell tag="th">Status</TableCell>
-            <TableCell tag="th" className="hidden sm:table-cell">
+            <TableCell tag="th" className="hidden lg:table-cell">
               Joined
             </TableCell>
             <TableCell tag="th">
@@ -367,7 +367,7 @@ function TeamMemberTable({ members }: { members: TeamMember[] }) {
                     {m.is_active === false ? "Deactivated" : "Active"}
                   </Badge>
                 </TableCell>
-                <TableCell className="hidden whitespace-nowrap text-xs text-muted-foreground sm:table-cell">
+                <TableCell className="hidden whitespace-nowrap text-xs text-muted-foreground lg:table-cell">
                   {formatDate(m.created_at)}
                 </TableCell>
                 <TableCell className="text-right">

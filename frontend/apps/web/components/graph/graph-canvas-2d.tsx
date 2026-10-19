@@ -48,6 +48,7 @@ import { type ReactNode, useMemo } from "react"
 
 import { GRAPH_2D_VIEWPORT_THRESHOLD_PX, useGraphCapability } from "@/lib/graph/graph-capability"
 
+import { ACTIVE_PATH_COLOR, SELECTED_COLOR, typeColorFor } from "./colors"
 import type { GraphData, GraphNodeState } from "./types"
 
 export interface GraphCanvas2DProps {
@@ -88,6 +89,7 @@ interface PositionedNode {
   x: number
   y: number
   state: GraphNodeState
+  type: string
 }
 
 function layoutNodes(
@@ -98,7 +100,16 @@ function layoutNodes(
   // The "root" of the radial layout is the selected
   // node. If nothing is selected we pick the first
   // node (so the layout always renders *something*).
-  const rootId = selectedNodeId ?? data.nodes[0]?.id ?? null
+  const degree = new Map<string, number>()
+  for (const e of data.edges) {
+    degree.set(e.source, (degree.get(e.source) ?? 0) + 1)
+    degree.set(e.target, (degree.get(e.target) ?? 0) + 1)
+  }
+  const hub = data.nodes.reduce<string | null>(
+    (best, n) => (best === null || (degree.get(n.id) ?? 0) > (degree.get(best) ?? 0) ? n.id : best),
+    null,
+  )
+  const rootId = selectedNodeId ?? hub
   if (!rootId) return { nodes: [], rootId: null }
 
   // First ring: nodes directly connected to the root.
@@ -145,6 +156,7 @@ function layoutNodes(
         x,
         y,
         state,
+        type: node.type,
       })
     })
   }
@@ -158,9 +170,16 @@ function layoutNodes(
       x: CENTRE,
       y: CENTRE,
       state: stateFor(root.id, selectedNodeId, hasSelection, activePathEntityIds),
+      type: root.type,
     })
   }
-
+  // Overview: entities beyond two hops (or disconnected) join the outer ring,
+  // so the whole graph is visible without a selection.
+  if (!hasSelection) {
+    for (const n of data.nodes) {
+      if (n.id !== rootId && !firstRing.has(n.id)) secondRing.add(n.id)
+    }
+  }
   placeOnRing([...firstRing], FIRST_RING_RADIUS)
   placeOnRing([...secondRing], SECOND_RING_RADIUS, -Math.PI / 4)
 
@@ -184,23 +203,16 @@ function stateFor(
   return "default"
 }
 
-function nodeFillClass(state: GraphNodeState): string {
-  switch (state) {
-    case "active-path":
-      return "fill-ember-500"
-    case "selected":
-      return "fill-volt-500"
-    case "dimmed":
-      return "fill-muted"
-    default:
-      return "fill-muted"
-  }
+function nodeFill(state: GraphNodeState, type: string): string {
+  if (state === "active-path") return ACTIVE_PATH_COLOR
+  if (state === "selected") return SELECTED_COLOR
+  return typeColorFor(type)
 }
 
 function edgeStrokeClass(isActive: boolean, hasSelection: boolean): string {
   if (isActive) return "stroke-ember-500"
-  if (hasSelection) return "stroke-muted"
-  return "stroke-muted"
+  if (hasSelection) return "stroke-border"
+  return "stroke-border-strong"
 }
 
 function nodeRadius(state: GraphNodeState): number {
@@ -328,9 +340,10 @@ export function GraphCanvas2D({
                 <circle r={Math.max(r + 6, 18)} fill="transparent" />
                 <circle
                   r={r}
-                  className={nodeFillClass(node.state)}
-                  stroke={node.state === "selected" ? "#0BE3C4" : "transparent"}
-                  strokeWidth={node.state === "selected" ? 2 : 0}
+                  fill={nodeFill(node.state, node.type)}
+                  fillOpacity={node.state === "dimmed" ? 0.35 : 1}
+                  className="stroke-card"
+                  strokeWidth={node.state === "selected" ? 4 : 2}
                 />
                 {/* Label. We always render the label
                     on the SVG; on the radial layout
@@ -341,7 +354,7 @@ export function GraphCanvas2D({
                 <text
                   y={r + 18}
                   textAnchor="middle"
-                  className="fill-muted-foreground font-mono text-[12px]"
+                  className="fill-foreground text-[13px] font-medium"
                 >
                   {node.label.length > 18 ? `${node.label.slice(0, 17)}…` : node.label}
                 </text>
@@ -361,10 +374,9 @@ export function GraphCanvas2D({
         data-testid="graph-2d-mode-notice"
         className="pointer-events-none absolute bottom-4 left-1/2 z-10 -translate-x-1/2"
       >
-        <div className="max-w-sm rounded-md border border-border bg-card/90 px-3 py-1.5 text-center text-xs text-muted-foreground shadow-lg backdrop-blur">
-          2D view — shown because the device or viewport doesn&apos;t meet the 3D capability
-          threshold (viewport &lt; {GRAPH_2D_VIEWPORT_THRESHOLD_PX}px, or reduced motion, or low
-          CPU).
+        <div className="glass max-w-xs rounded-2xl px-3.5 py-2 text-center text-xs text-muted-foreground shadow-md">
+          Simplified 2D view (screens under {GRAPH_2D_VIEWPORT_THRESHOLD_PX}px, reduced motion, or
+          low-power devices). Tap an entity to centre it.
         </div>
       </output>
 
@@ -376,7 +388,7 @@ export function GraphCanvas2D({
       {rootId ? (
         <div
           data-testid="graph-2d-root-label"
-          className="pointer-events-none absolute left-3 top-3 z-10 rounded-md border border-border bg-card/80 px-2.5 py-1 font-mono text-[11px] text-muted-foreground shadow-sm backdrop-blur"
+          className="glass pointer-events-none absolute left-4 top-16 z-10 rounded-full px-3 py-1 text-xs text-muted-foreground shadow-sm"
         >
           root · {nodeMap.get(rootId)?.label ?? rootId}
         </div>
